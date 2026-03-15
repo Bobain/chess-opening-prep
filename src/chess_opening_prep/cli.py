@@ -71,9 +71,10 @@ def main(argv: list[str] | None = None) -> None:
     )
     p_push.add_argument("pgn_file", help="Path to the PGN file to push")
     p_push.add_argument(
-        "--replace",
+        "--no-replace",
         action="store_true",
-        help="Acknowledge that import adds chapters (may create duplicates)",
+        dest="no_replace",
+        help="Append chapters instead of replacing (default: replace all existing chapters)",
     )
 
     # --- pull ---
@@ -174,7 +175,7 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "push":
         from chess_opening_prep.lichess import push_pgn
 
-        push_pgn(args.pgn_file, replace=args.replace)
+        push_pgn(args.pgn_file, replace=not args.no_replace)
 
     elif args.command == "pull":
         from chess_opening_prep.lichess import pull_pgn

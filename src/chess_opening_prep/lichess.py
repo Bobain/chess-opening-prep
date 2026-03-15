@@ -292,12 +292,41 @@ def setup() -> None:
     print("\n✓ Setup complete.\n")
 
 
-def push_pgn(pgn_path: str | Path, *, replace: bool = False) -> None:
+def _clear_study(study_id: str, token: str) -> int:
+    """Delete ALL chapters from a study, leaving it empty for a fresh import.
+
+    Lichess requires at least one chapter, but we'll immediately import new ones
+    after clearing. We delete all except the last one, import, then delete that one.
+
+    Args:
+        study_id: The Lichess study ID.
+        token: Lichess API token.
+
+    Returns:
+        Number of chapters deleted.
+    """
+    chapters = _get_chapters(study_id, token)
+    if not chapters:
+        return 0
+
+    # Delete all chapters except the last (Lichess requires at least 1)
+    deleted = 0
+    for ch in chapters[:-1]:
+        if _delete_chapter(study_id, ch["id"], token):
+            deleted += 1
+
+    return deleted
+
+
+def push_pgn(pgn_path: str | Path, *, replace: bool = True) -> None:
     """Push a local PGN file to its mapped Lichess study.
+
+    By default, replaces all existing chapters (deletes old, imports new).
+    Use --no-replace to append without deleting.
 
     Args:
         pgn_path: Path to the PGN file.
-        replace: If True, warn about chapter duplication.
+        replace: If True (default), delete existing chapters before importing.
     """
     pgn_path = Path(pgn_path)
     if not pgn_path.exists():
@@ -312,28 +341,34 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = False) -> None:
     study_name = mapping.get("study_name", study_id)
 
     client = _get_client()
+    token = load_lichess_token()
 
     pgn_content = pgn_path.read_text()
 
     print(f"\n  Pushing {pgn_path.name} → Lichess study '{study_name}'...")
 
-    if not replace:
-        print(
-            "  ⚠ Note: Lichess import ADDS chapters. If chapters already exist,\n"
-            "    duplicates will be created. Use --replace to be reminded of this."
-        )
+    # Step 1: Clear existing chapters (keep last one as placeholder)
+    if replace:
+        chapters_before = _get_chapters(study_id, token)
+        if chapters_before:
+            last_chapter_id = chapters_before[-1]["id"]
+            cleared = _clear_study(study_id, token)
+            if cleared:
+                print(f"  Cleared {cleared} old chapter(s)")
+        else:
+            last_chapter_id = None
+    else:
+        last_chapter_id = None
 
+    # Step 2: Import new PGN
     try:
-        # berserk's import_pgn requires (study_id, chapter_name, pgn).
-        # For multi-game PGN, Lichess creates one chapter per game,
-        # using [Event] headers as chapter names. We pass a placeholder name.
         result = client.studies.import_pgn(
             study_id, study_name, pgn_content
         )
         print(f"\n  ✓ Import successful!")
         print(f"  Study URL: https://lichess.org/study/{study_id}")
         if isinstance(result, list):
-            print(f"  Chapters created: {len(result)}")
+            print(f"  Chapters imported: {len(result)}")
             for chapter in result:
                 name = chapter.get("name", "Unnamed")
                 print(f"    - {name}")
@@ -344,10 +379,13 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = False) -> None:
             f"  and your token has study:write scope.",
         )
 
-    # Auto-cleanup empty default chapters left over from study creation
-    deleted = cleanup_study(study_id, study_name)
-    if deleted:
-        print(f"  Cleaned up {deleted} empty default chapter(s)")
+    # Step 3: Delete the leftover placeholder chapter from step 1
+    if replace and last_chapter_id:
+        if _delete_chapter(study_id, last_chapter_id, token):
+            print(f"  Cleaned up placeholder chapter")
+
+    # Also clean up any empty default chapters (e.g. "Chapter 1")
+    cleanup_study(study_id, study_name)
 
 
 def pull_pgn(pgn_path: str | Path, *, in_place: bool = False) -> None:
