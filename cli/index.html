@@ -410,6 +410,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -554,6 +565,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleanup
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -650,6 +672,17 @@ chess-opening-prep analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --engine
 <pre><code class="language-bash">chess-opening-prep pull &lt;file.pgn&gt; [--in-place]
 </code></pre>
 <p>By default, writes to <code>*_from_lichess.pgn</code>. Use <code>--in-place</code> to overwrite.</p>
+<h2 id="cleanup">cleanup</h2>
+<p>Remove empty default chapters (e.g. "Chapter 1") from Lichess studies.</p>
+<pre><code class="language-bash"># Clean up all configured studies
+chess-opening-prep cleanup
+
+# Clean up a specific study
+chess-opening-prep cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn
+</code></pre>
+<p>Lichess auto-creates an empty "Chapter 1" when a study is created. After importing PGN via <code>push</code>, this leaves a stale empty chapter. The <code>cleanup</code> command removes these.</p>
+<p>!!! note
+    <code>push</code> runs cleanup automatically after import — you only need this command for manual cleanup.</p>
 <h2 id="status">status</h2>
 <p>Show sync status of all repertoire files.</p>
 <pre><code class="language-bash">chess-opening-prep status
