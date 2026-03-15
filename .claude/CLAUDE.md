@@ -2,8 +2,19 @@
 
 ## Player
 - Level: ~1000 Elo chess.com rapid (15+10), ~700 estimated FIDE
-- Lichess account connected (used with Chessdriller)
+- Lichess: [bobainbobain](https://lichess.org/@/bobainbobain)
+- Chess.com: [Tonigor1982](https://www.chess.com/member/Tonigor1982)
 - Target depth: essentials (5-6 moves + common deviations)
+
+## Lichess Studies
+- [Whites - Queen's Gambit](https://lichess.org/study/ucjmuish)
+- [Black vs e4 - Scandinavian](https://lichess.org/study/IoJ5waZo)
+- [Black vs d4 - Slav](https://lichess.org/study/x3z4bEQ6)
+
+## Chessdriller
+- [chessdriller.org](https://chessdriller.org/) — login via Lichess OAuth
+- Reads directly from the Lichess Studies above
+- Daily drill with spaced repetition
 
 ## Repertoire
 - **White**: Queen's Gambit (1.d4 2.c4) — Harrwitz Attack (5.Bf4) vs QGD
@@ -15,6 +26,8 @@
 
 ### Commands
 - `chess-opening-prep analyze <file>` — Stockfish analysis with [%eval] annotations
+- `chess-opening-prep validate <file>` — Lint PGN annotations against mandatory conventions
+- `chess-opening-prep import <username>` — Import games from Lichess/chess.com, detect deviations
 - `chess-opening-prep setup` — Interactive setup (auth, studies, config)
 - `chess-opening-prep push <file>` — Push PGN to Lichess study
 - `chess-opening-prep pull <file>` — Pull PGN from Lichess study
@@ -22,8 +35,10 @@
 - `chess-opening-prep status` — Show sync state of all files
 
 ### Configuration
-- `config.json` — Study IDs, Stockfish path
+- `config.json` — Study IDs, Stockfish path, player usernames (gitignored, user-specific)
+- `config.example.json` — Template for new users (committed)
 - `.env` — Lichess API token (gitignored)
+- `.env.example` — Template for new users (committed)
 - Dependencies: `uv sync`
 
 ## PGN Files
@@ -75,8 +90,9 @@ Zone 1: Local Files      →  Zone 2: Lichess Study
 1. CLI/Claude creates/modifies `*_annote.pgn` files locally
 2. ALL comment conventions must be followed
 3. Theory verified via web search (variation names, consensus, players)
-4. `chess-opening-prep analyze` for Stockfish validation
-5. `chess-opening-prep push` to publish to Lichess Study
+4. `chess-opening-prep validate` to check annotations
+5. `chess-opening-prep analyze` for Stockfish validation
+6. `chess-opening-prep push` to publish to Lichess Study
 
 ### Zone 2: Interactive study
 1. Lichess Study = **source of truth**

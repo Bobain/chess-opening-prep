@@ -71,10 +71,14 @@ uv venv && uv sync
 ## 7. Configure
 
 ```bash
-# Save your Lichess token
-echo "LICHESS_API_TOKEN=lip_your_token_here" > .env
+# Create your personal config from the template
+cp config.example.json config.json
 
-# Run interactive setup
+# Save your Lichess token
+cp .env.example .env
+# Edit .env and replace lip_your_token_here with your actual token
+
+# Run interactive setup (verifies auth, finds studies, saves config)
 chess-opening-prep setup
 ```
 
@@ -83,8 +87,11 @@ The `setup` command will:
 1. Verify your Lichess authentication
 2. Check Stockfish availability
 3. List your existing Lichess studies
-4. Auto-match studies to PGN files
-5. Save the configuration to `config.json`
+4. Auto-match studies to PGN files by name
+5. Save your personal configuration to `config.json`
+
+!!! note
+    Both `config.json` and `.env` are gitignored — they contain your personal data (study IDs, API token) and will never be pushed to the repository. Each user has their own.
 
 ## 8. Verify
 

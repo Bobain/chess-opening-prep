@@ -162,7 +162,8 @@ def find_stockfish(config: dict[str, Any] | None = None) -> Path:
     # From config
     if config:
         sf_config = config.get("stockfish", {})
-        if path := sf_config.get("path"):
+        path = sf_config.get("path", "")
+        if path and path != "auto":
             candidates.append(Path(path))
         if fallback := sf_config.get("fallback_path"):
             candidates.append(Path(fallback))
