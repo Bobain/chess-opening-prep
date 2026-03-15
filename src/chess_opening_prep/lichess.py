@@ -6,12 +6,11 @@ PGN content to/from Lichess Studies.
 
 from __future__ import annotations
 
-import subprocess
+import json
+import re
 import sys
 import webbrowser
 from pathlib import Path
-
-import json
 
 import berserk
 import requests
@@ -55,6 +54,103 @@ def _get_client() -> berserk.Client:
             ),
         )
     return None  # unreachable
+
+
+def _get_chapters(study_id: str, token: str) -> list[dict[str, str]]:
+    """List all chapters in a study with their IDs and names.
+
+    Parses the exported PGN headers to extract chapter metadata,
+    since berserk doesn't expose a chapter listing endpoint.
+
+    Args:
+        study_id: The Lichess study ID.
+        token: Lichess API token.
+
+    Returns:
+        List of dicts with 'id', 'name', and 'has_moves' keys.
+    """
+    resp = requests.get(
+        f"https://lichess.org/api/study/{study_id}.pgn",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if resp.status_code != 200:
+        return []
+
+    chapters = []
+    current: dict[str, str] = {}
+    has_moves = False
+
+    for line in resp.text.splitlines():
+        if line.startswith('[ChapterName "'):
+            current["name"] = line.split('"')[1]
+        elif line.startswith("[ChapterURL "):
+            match = re.search(r"/study/\w+/(\w+)", line)
+            if match:
+                current["id"] = match.group(1)
+        elif line.strip() and not line.startswith("[") and line.strip() != "*":
+            has_moves = True
+        elif line == "" and current.get("id"):
+            current["has_moves"] = str(has_moves)
+            chapters.append(current)
+            current = {}
+            has_moves = False
+
+    # Flush last chapter
+    if current.get("id"):
+        current["has_moves"] = str(has_moves)
+        chapters.append(current)
+
+    return chapters
+
+
+def _delete_chapter(study_id: str, chapter_id: str, token: str) -> bool:
+    """Delete a chapter from a Lichess study.
+
+    Args:
+        study_id: The Lichess study ID.
+        chapter_id: The chapter ID to delete.
+        token: Lichess API token.
+
+    Returns:
+        True if deletion succeeded (HTTP 204), False otherwise.
+    """
+    resp = requests.delete(
+        f"https://lichess.org/api/study/{study_id}/{chapter_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    return resp.status_code == 204
+
+
+def cleanup_study(study_id: str, study_name: str = "") -> int:
+    """Remove empty default chapters (e.g. 'Chapter 1') from a study.
+
+    Lichess auto-creates an empty 'Chapter 1' when a study is created.
+    After importing PGN, this leaves a stale empty chapter. This function
+    detects and removes such chapters.
+
+    Args:
+        study_id: The Lichess study ID.
+        study_name: Display name for logging.
+
+    Returns:
+        Number of chapters deleted.
+    """
+    token = load_lichess_token()
+    chapters = _get_chapters(study_id, token)
+
+    deleted = 0
+    for ch in chapters:
+        name = ch.get("name", "")
+        has_moves = ch.get("has_moves") == "True"
+
+        # Delete chapters that look like Lichess defaults: named "Chapter N" with no moves
+        if re.match(r"^Chapter \d+$", name) and not has_moves:
+            if _delete_chapter(study_id, ch["id"], token):
+                label = study_name or study_id
+                print(f"  🗑 Deleted empty chapter '{name}' from {label}")
+                deleted += 1
+
+    return deleted
 
 
 def setup() -> None:
@@ -247,6 +343,11 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = False) -> None:
             hint=f"Check that study '{study_name}' (id: {study_id}) exists\n"
             f"  and your token has study:write scope.",
         )
+
+    # Auto-cleanup empty default chapters left over from study creation
+    deleted = cleanup_study(study_id, study_name)
+    if deleted:
+        print(f"  Cleaned up {deleted} empty default chapter(s)")
 
 
 def pull_pgn(pgn_path: str | Path, *, in_place: bool = False) -> None:

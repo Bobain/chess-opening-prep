@@ -116,6 +116,15 @@ chess-opening-prep pull pgn/repertoire_blancs_gambit_dame_annote.pgn
 chess-opening-prep pull pgn/repertoire_blancs_gambit_dame_annote.pgn --in-place
 ```
 
+### `chess-opening-prep cleanup [file.pgn]`
+
+Remove empty default chapters (e.g. "Chapter 1") from Lichess studies. Runs automatically after `push`.
+
+```bash
+chess-opening-prep cleanup                                              # all studies
+chess-opening-prep cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn # one study
+```
+
 ### `chess-opening-prep status`
 
 Show sync status of all repertoire files, Stockfish availability, and Lichess configuration.

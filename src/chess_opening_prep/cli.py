@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from chess_opening_prep import __version__
 
@@ -87,6 +88,18 @@ def main(argv: list[str] | None = None) -> None:
         help="Overwrite the local file instead of creating *_from_lichess.pgn",
     )
 
+    # --- cleanup ---
+    p_cleanup = subparsers.add_parser(
+        "cleanup",
+        help="Remove empty default chapters (e.g. 'Chapter 1') from Lichess studies",
+    )
+    p_cleanup.add_argument(
+        "pgn_file",
+        nargs="?",
+        default=None,
+        help="PGN file to clean up (default: all configured studies)",
+    )
+
     # --- status ---
     subparsers.add_parser(
         "status",
@@ -124,6 +137,30 @@ def main(argv: list[str] | None = None) -> None:
         from chess_opening_prep.lichess import pull_pgn
 
         pull_pgn(args.pgn_file, in_place=args.in_place)
+
+    elif args.command == "cleanup":
+        from chess_opening_prep.lichess import cleanup_study
+        from chess_opening_prep.config import load_config, get_study_mapping
+
+        config = load_config()
+        studies = config.get("studies", {})
+
+        if args.pgn_file:
+            pgn_name = Path(args.pgn_file).name
+            mapping = get_study_mapping(config, pgn_name)
+            total = cleanup_study(mapping["study_id"], mapping.get("study_name", ""))
+        else:
+            total = 0
+            for pgn_file, info in studies.items():
+                study_id = info.get("study_id", "")
+                if study_id.startswith("STUDY_ID"):
+                    continue
+                total += cleanup_study(study_id, info.get("study_name", pgn_file))
+
+        if total == 0:
+            print("  ✓ No empty default chapters found")
+        else:
+            print(f"\n  ✓ Cleaned up {total} empty chapter(s) total")
 
     elif args.command == "status":
         from chess_opening_prep.status import show_status

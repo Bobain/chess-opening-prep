@@ -64,6 +64,23 @@ chess-opening-prep pull <file.pgn> [--in-place]
 
 By default, writes to `*_from_lichess.pgn`. Use `--in-place` to overwrite.
 
+## cleanup
+
+Remove empty default chapters (e.g. "Chapter 1") from Lichess studies.
+
+```bash
+# Clean up all configured studies
+chess-opening-prep cleanup
+
+# Clean up a specific study
+chess-opening-prep cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn
+```
+
+Lichess auto-creates an empty "Chapter 1" when a study is created. After importing PGN via `push`, this leaves a stale empty chapter. The `cleanup` command removes these.
+
+!!! note
+    `push` runs cleanup automatically after import — you only need this command for manual cleanup.
+
 ## status
 
 Show sync status of all repertoire files.
