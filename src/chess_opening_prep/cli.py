@@ -1,0 +1,135 @@
+"""Command-line interface for chess-opening-prep.
+
+Entry point for the CLI. Dispatches to subcommands: analyze, setup, push, pull, status.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from chess_opening_prep import __version__
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Main CLI entry point.
+
+    Args:
+        argv: Command-line arguments (defaults to sys.argv[1:]).
+    """
+    parser = argparse.ArgumentParser(
+        prog="chess-opening-prep",
+        description="Manage a chess opening repertoire: Stockfish analysis + Lichess Study sync.",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # --- analyze ---
+    p_analyze = subparsers.add_parser(
+        "analyze",
+        help="Analyze a PGN file with Stockfish and add [%%eval] annotations",
+    )
+    p_analyze.add_argument("pgn_file", help="Path to the PGN file to analyze")
+    p_analyze.add_argument(
+        "--depth",
+        type=int,
+        default=18,
+        help="Stockfish analysis depth (default: 18)",
+    )
+    p_analyze.add_argument(
+        "--threshold",
+        type=float,
+        default=1.0,
+        help="Score swing threshold for blunder detection (default: 1.0)",
+    )
+    p_analyze.add_argument(
+        "--engine",
+        type=str,
+        default=None,
+        help="Path to the Stockfish binary (overrides config.json)",
+    )
+    p_analyze.add_argument(
+        "--in-place",
+        action="store_true",
+        help="Overwrite the original file instead of creating *_analyzed.pgn",
+    )
+
+    # --- setup ---
+    subparsers.add_parser(
+        "setup",
+        help="Interactive setup: verify auth, find studies, configure config.json",
+    )
+
+    # --- push ---
+    p_push = subparsers.add_parser(
+        "push",
+        help="Push a local PGN file to its mapped Lichess study",
+    )
+    p_push.add_argument("pgn_file", help="Path to the PGN file to push")
+    p_push.add_argument(
+        "--replace",
+        action="store_true",
+        help="Acknowledge that import adds chapters (may create duplicates)",
+    )
+
+    # --- pull ---
+    p_pull = subparsers.add_parser(
+        "pull",
+        help="Pull the latest PGN from a Lichess study to a local file",
+    )
+    p_pull.add_argument("pgn_file", help="PGN filename to pull (used to look up study mapping)")
+    p_pull.add_argument(
+        "--in-place",
+        action="store_true",
+        help="Overwrite the local file instead of creating *_from_lichess.pgn",
+    )
+
+    # --- status ---
+    subparsers.add_parser(
+        "status",
+        help="Show sync status of all repertoire files",
+    )
+
+    args = parser.parse_args(argv)
+
+    if args.command is None:
+        parser.print_help()
+        sys.exit(0)
+
+    if args.command == "analyze":
+        from chess_opening_prep.analyze import analyze_pgn
+
+        analyze_pgn(
+            args.pgn_file,
+            depth=args.depth,
+            threshold=args.threshold,
+            engine_path=args.engine,
+            in_place=args.in_place,
+        )
+
+    elif args.command == "setup":
+        from chess_opening_prep.lichess import setup
+
+        setup()
+
+    elif args.command == "push":
+        from chess_opening_prep.lichess import push_pgn
+
+        push_pgn(args.pgn_file, replace=args.replace)
+
+    elif args.command == "pull":
+        from chess_opening_prep.lichess import pull_pgn
+
+        pull_pgn(args.pgn_file, in_place=args.in_place)
+
+    elif args.command == "status":
+        from chess_opening_prep.status import show_status
+
+        show_status()
+
+
+if __name__ == "__main__":
+    main()
