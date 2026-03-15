@@ -10,15 +10,15 @@
   },
   "studies": {
     "repertoire_blancs_gambit_dame_annote.pgn": {
-      "study_id": "STUDY_ID_HERE",
+      "study_id": "ucjmuish",
       "study_name": "Whites - Queen's Gambit"
     },
     "repertoire_noirs_vs_e4_scandinave_annote.pgn": {
-      "study_id": "STUDY_ID_HERE",
+      "study_id": "IoJ5waZo",
       "study_name": "Black vs e4 - Scandinavian"
     },
     "repertoire_noirs_vs_d4_slave_annote.pgn": {
-      "study_id": "STUDY_ID_HERE",
+      "study_id": "x3z4bEQ6",
       "study_name": "Black vs d4 - Slav"
     }
   }

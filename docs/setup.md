@@ -21,13 +21,31 @@
 curl -H "Authorization: Bearer lip_your_token" https://lichess.org/api/account
 ```
 
-## 3. Set Up Chessdriller
+## 3. Create Lichess Studies
+
+The CLI cannot create studies via the API (Lichess limitation), so you must create them manually. This is a one-time step.
+
+1. Go to [lichess.org/study](https://lichess.org/study)
+2. Click **"+ Create a study"**
+3. Set the **Name** to one of these exact names (so the CLI can auto-detect them):
+    - `Whites - Queen's Gambit`
+    - `Black vs e4 - Scandinavian`
+    - `Black vs d4 - Slav`
+4. **Visibility**: leave as `Unlisted` (default)
+5. Leave all other settings as defaults
+6. Click **START**
+7. A "New chapter" dialog will appear — **close it** (click ✕). The CLI will create chapters automatically when you push PGN files.
+8. Repeat for the other 2 studies
+
+After creating all 3 studies, run `chess-opening-prep setup` to auto-detect them.
+
+## 4. Set Up Chessdriller
 
 1. Go to [chessdriller.org](https://chessdriller.org/)
 2. Log in with your Lichess account (OAuth — no separate account needed)
 3. Chessdriller reads directly from your Lichess Studies
 
-## 4. Install En-Croissant (Optional)
+## 5. Install En-Croissant (Optional)
 
 [En-Croissant](https://encroissant.org/) is a desktop chess GUI for visual validation.
 
@@ -38,7 +56,7 @@ curl -H "Authorization: Bearer lip_your_token" https://lichess.org/api/account
 !!! warning
     En-Croissant modifies PGN files while they're open. Always **close files** in En-Croissant before running CLI commands.
 
-## 5. Install chess-opening-prep
+## 6. Install chess-opening-prep
 
 ```bash
 # From PyPI
@@ -50,7 +68,7 @@ cd chess-opening-prep
 uv venv && uv sync
 ```
 
-## 6. Configure
+## 7. Configure
 
 ```bash
 # Save your Lichess token
@@ -68,7 +86,7 @@ The `setup` command will:
 4. Auto-match studies to PGN files
 5. Save the configuration to `config.json`
 
-## 7. Verify
+## 8. Verify
 
 ```bash
 chess-opening-prep status

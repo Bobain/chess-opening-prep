@@ -11,7 +11,10 @@ import sys
 import webbrowser
 from pathlib import Path
 
+import json
+
 import berserk
+import requests
 
 from chess_opening_prep.config import (
     error_exit,
@@ -96,8 +99,20 @@ def setup() -> None:
     account = client.account.get()
     username = account["username"]
 
+    # berserk doesn't have a method to list studies with metadata,
+    # so we use the Lichess API directly (ndjson format).
+    studies = []
     try:
-        studies = list(client.studies.get_by_user(username))
+        token = load_lichess_token()
+        resp = requests.get(
+            f"https://lichess.org/api/study/by/{username}",
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/x-ndjson"},
+            stream=True,
+        )
+        if resp.status_code == 200:
+            for line in resp.iter_lines():
+                if line:
+                    studies.append(json.loads(line))
     except Exception:
         studies = []
 
@@ -213,7 +228,12 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = False) -> None:
         )
 
     try:
-        result = client.studies.import_pgn(study_id, pgn_content)
+        # berserk's import_pgn requires (study_id, chapter_name, pgn).
+        # For multi-game PGN, Lichess creates one chapter per game,
+        # using [Event] headers as chapter names. We pass a placeholder name.
+        result = client.studies.import_pgn(
+            study_id, study_name, pgn_content
+        )
         print(f"\n  ✓ Import successful!")
         print(f"  Study URL: https://lichess.org/study/{study_id}")
         if isinstance(result, list):
