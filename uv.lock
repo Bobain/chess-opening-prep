@@ -244,7 +244,7 @@ wheels = [
 
 [[package]]
 name = "chess-self-coach"
-version = "0.1.10"
+version = "0.1.11"
 source = { editable = "." }
 dependencies = [
     { name = "berserk" },
