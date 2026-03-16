@@ -1,10 +1,14 @@
-# API Reference
+# Python API Reference
 
 Auto-generated from source code docstrings.
 
 ::: chess_self_coach.config
 
 ::: chess_self_coach.analyze
+
+::: chess_self_coach.trainer
+
+::: chess_self_coach.importer
 
 ::: chess_self_coach.lichess
 

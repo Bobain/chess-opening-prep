@@ -20,11 +20,24 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - name: Install dependencies
         run: uv sync --group docs
 
+      - name: Generate JS API docs
+        run: npx jsdoc-to-markdown@9 pwa/app.js > docs/pwa-api.md
+
       - name: Build documentation
         run: uv run mkdocs build
+
+      - name: Copy PWA to site/train/
+        run: |
+          mkdir -p site/train
+          cp pwa/index.html pwa/app.js pwa/style.css pwa/manifest.json pwa/sw.js site/train/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

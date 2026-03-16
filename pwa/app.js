@@ -1,24 +1,54 @@
 /**
- * Find the Better Move — Training PWA
+ * @module ChessSelfCoach
+ * @description Chess Self-Coach — Training PWA.
  *
  * Loads pre-generated training data (from chess-self-coach train --prepare),
  * displays mistake positions on a chessground board, and uses SM-2 spaced
  * repetition to schedule reviews.
+ *
+ * Dependencies (loaded from CDN at runtime):
+ * - [chessground](https://github.com/lichess-org/chessground) — interactive chess board
+ * - [chess.js](https://github.com/jhlywa/chess.js) — move validation
  */
 
 // --- State ---
-let Chessground, Chess;
+/** @type {Function} Chessground constructor (loaded from CDN) */
+let Chessground;
+/** @type {Function} Chess constructor (loaded from CDN) */
+let Chess;
+/** @type {?Object} Parsed training_data.json */
 let trainingData = null;
+/** @type {Object.<string, SRSState>} SRS state keyed by position ID */
 let srsState = {};
+/** @type {Array.<Object>} Positions selected for the current session */
 let session = [];
+/** @type {number} Index of the current position in the session */
 let currentIndex = 0;
+/** @type {number} Number of attempts on the current position */
 let attempts = 0;
+/** @type {Array.<{id: string, correct: boolean, attempts: number}>} Results for the current session */
 let sessionResults = [];
+/** @type {?Object} Current chessground instance */
 let cg = null;
 
+/**
+ * @typedef {Object} SRSState
+ * @property {number} interval - Days until next review
+ * @property {number} ease - Ease factor (minimum 1.3)
+ * @property {number} repetitions - Consecutive correct answers
+ * @property {string} next_review - ISO date string (YYYY-MM-DD)
+ * @property {Array.<{date: string, correct: boolean}>} history - Review history
+ */
+
 // --- Settings ---
+
+/** @type {{sessionSize: number, difficulty: string}} */
 const DEFAULT_SETTINGS = { sessionSize: 10, difficulty: 'all' };
 
+/**
+ * Load user settings from localStorage.
+ * @returns {{sessionSize: number, difficulty: string}} Merged settings with defaults.
+ */
 function loadSettings() {
   try {
     return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('train_settings') || '{}') };
@@ -27,12 +57,27 @@ function loadSettings() {
   }
 }
 
+/**
+ * Save user settings to localStorage.
+ * @param {{sessionSize: number, difficulty: string}} s - Settings to save.
+ */
 function saveSettings(s) {
   localStorage.setItem('train_settings', JSON.stringify(s));
 }
 
 // --- SRS (SM-2 algorithm) ---
 
+/**
+ * Update SRS state using the SM-2 algorithm (Piotr Wozniak, 1987).
+ *
+ * - Correct: interval progresses (1d → 3d → interval*ease), ease increases
+ * - Wrong: interval resets to 1d, repetitions reset, ease decreases
+ * - Ease factor never drops below 1.3
+ *
+ * @param {SRSState} state - Current SRS state for a position.
+ * @param {boolean} correct - Whether the answer was correct.
+ * @returns {SRSState} Updated SRS state.
+ */
 function updateSRS(state, correct) {
   const quality = correct ? 4 : 1;
   let { interval = 0, ease = 2.5, repetitions = 0, history = [] } = state;
@@ -76,6 +121,16 @@ function saveSRSState() {
 
 // --- Session selection ---
 
+/**
+ * Select positions for a training session using SRS priority.
+ *
+ * Priority order: overdue (past review date) → new (never seen, blunders first)
+ * → learning (interval < 7 days). Mastered or not-yet-due positions are skipped.
+ *
+ * @param {Array.<Object>} positions - All available training positions.
+ * @param {number} count - Maximum positions to select.
+ * @returns {Array.<Object>} Selected positions for the session.
+ */
 function selectPositions(positions, count) {
   const today = new Date().toISOString().split('T')[0];
   const settings = loadSettings();
@@ -119,6 +174,11 @@ function selectPositions(positions, count) {
 
 // --- Board ---
 
+/**
+ * Compute legal move destinations for chessground from a FEN.
+ * @param {string} fen - FEN string of the position.
+ * @returns {Map.<string, Array.<string>>} Map of source square → destination squares.
+ */
 function getLegalDests(fen) {
   const chess = new Chess(fen);
   const dests = new Map();
@@ -129,6 +189,12 @@ function getLegalDests(fen) {
   return dests;
 }
 
+/**
+ * Initialize the chessground board for a training position.
+ * Destroys any existing board, sets orientation to the player's color,
+ * and configures legal move destinations.
+ * @param {Object} position - Training position from training_data.json.
+ */
 function setupBoard(position) {
   const boardEl = document.getElementById('board');
   const color = position.player_color;
@@ -153,6 +219,12 @@ function setupBoard(position) {
   });
 }
 
+/**
+ * Handle a move made on the board. Validates with chess.js, compares to
+ * acceptable moves, and shows feedback. Allows up to 3 attempts.
+ * @param {string} orig - Source square (e.g. "e2").
+ * @param {string} dest - Destination square (e.g. "e4").
+ */
 function handleMove(orig, dest) {
   const position = session[currentIndex];
   const chess = new Chess(position.fen);
@@ -181,6 +253,13 @@ function handleMove(orig, dest) {
 
 // --- Feedback ---
 
+/**
+ * Display feedback after an answer (correct, wrong, or gave up).
+ * Shows the explanation and, on failure, plays the best move on the board.
+ * @param {boolean} correct - Whether the answer was correct.
+ * @param {Object} position - Current training position.
+ * @param {boolean} [gaveUp=false] - True if the player exhausted all attempts.
+ */
 function showFeedback(correct, position, gaveUp = false) {
   const feedbackEl = document.getElementById('feedback');
   const feedbackText = document.getElementById('feedback-text');
@@ -234,6 +313,10 @@ function showTryAgain() {
   document.getElementById('explanation').textContent = '';
 }
 
+/**
+ * Record the result of a position attempt. Updates SRS state and saves to localStorage.
+ * @param {boolean} correct - Whether the answer was correct.
+ */
 function recordResult(correct) {
   const position = session[currentIndex];
   const state = srsState[position.id] || {
@@ -249,6 +332,11 @@ function recordResult(correct) {
 
 // --- Session flow ---
 
+/**
+ * Display a position in the session. Sets up the board, prompt, and game info.
+ * If index exceeds session length, shows the session summary.
+ * @param {number} index - Position index in the session array.
+ */
 function showPosition(index) {
   if (index >= session.length) {
     showSummary();
@@ -295,6 +383,10 @@ function showSummary() {
   modal.classList.remove('hidden');
 }
 
+/**
+ * Start a new training session. Selects positions via SRS priority,
+ * resets session state, and shows the first position.
+ */
 function startSession() {
   const settings = loadSettings();
   session = selectPositions(trainingData.positions, settings.sessionSize);
@@ -313,6 +405,12 @@ function startSession() {
 
 // --- Init ---
 
+/**
+ * Initialize the PWA. Loads dependencies from CDN, fetches training data,
+ * restores SRS state from localStorage, wires up UI controls, registers
+ * the service worker, and starts the first session.
+ * @async
+ */
 async function init() {
   // Load dependencies from CDN
   try {

@@ -15,4 +15,7 @@ nav:
   - Home: index.md
   - Setup Guide: setup.md
   - CLI Reference: cli.md
-  - API Reference: api.md
+  - Training Mode: training.md
+  - API Reference:
+    - Python: api.md
+    - PWA (JavaScript): pwa-api.md
