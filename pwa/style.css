@@ -93,11 +93,7 @@ cg-container {
   width: 1.5rem !important;
   height: 100% !important;
   display: flex !important;
-  flex-direction: column !important;
-}
-
-.cg-wrap coords.ranks.black {
-  flex-direction: column-reverse !important;
+  flex-direction: column;
 }
 
 .cg-wrap coords.ranks coord {
@@ -114,12 +110,9 @@ cg-container {
   width: 100% !important;
   height: 1.5rem !important;
   display: flex !important;
-  flex-direction: row !important;
+  flex-direction: row;
 }
 
-.cg-wrap coords.files.black {
-  flex-direction: row-reverse !important;
-}
 
 .cg-wrap coords coord {
   font-weight: 600 !important;
