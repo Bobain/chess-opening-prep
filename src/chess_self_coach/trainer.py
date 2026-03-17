@@ -570,9 +570,10 @@ def prepare_training_data(
     lichess_user = players.get("lichess", "")
     chesscom_user = players.get("chesscom")
 
-    if not lichess_user:
+    if not lichess_user and not chesscom_user:
         print(
-            "No Lichess username in config.json (players.lichess)", file=sys.stderr
+            "No player configured. Run 'chess-self-coach setup' to set your Lichess and/or chess.com username.",
+            file=sys.stderr,
         )
         sys.exit(1)
 
@@ -608,8 +609,9 @@ def prepare_training_data(
     print("\n  Fetching games...")
     all_games: list[chess.pgn.Game] = []
 
-    lichess_games = fetch_lichess_games(lichess_user, max_games)
-    all_games.extend(lichess_games)
+    if lichess_user:
+        lichess_games = fetch_lichess_games(lichess_user, max_games)
+        all_games.extend(lichess_games)
 
     if chesscom_user:
         chesscom_games = fetch_chesscom_games(chesscom_user, max_games)

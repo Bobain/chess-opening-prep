@@ -161,12 +161,8 @@ def setup() -> None:
     """
     print("\n🔧 chess-self-coach setup\n")
 
-    # Step 1: Verify auth
-    print("Step 1: Checking Lichess authentication...")
-    client = _get_client()
-
-    # Step 2: Check Stockfish
-    print("\nStep 2: Checking Stockfish...")
+    # Step 1: Check Stockfish
+    print("Step 1: Checking Stockfish...")
     from chess_self_coach.config import find_stockfish, check_stockfish_version
 
     try:
@@ -190,130 +186,161 @@ def setup() -> None:
     version = check_stockfish_version(sf_path, config.get("stockfish", {}).get("expected_version"))
     print(f"  Found {version} at {sf_path}")
 
-    # Step 3: Configure player usernames for game import
-    print("\nStep 3: Player usernames (for training mode)...")
+    # Step 2: Game platforms (at least one required)
+    print("\nStep 2: Game platforms (at least one required)")
     players = config.get("players", {})
+    username = None
+    client = None
 
-    # Lichess username comes from the API token
-    account = client.account.get()
-    username = account["username"]
-    players["lichess"] = username
-    print(f"  Lichess: {username} (from API token)")
+    # Lichess (optional)
+    print("\n  Lichess:")
+    token = load_lichess_token(required=False)
+    if token:
+        try:
+            client = _get_client()
+            account = client.account.get()
+            username = account["username"]
+            players["lichess"] = username
+            print(f"    ✓ Token verified: {username}")
+        except Exception as e:
+            print(f"    ✗ Token invalid: {e}")
+            players.pop("lichess", None)
+    else:
+        print("    No token found in .env (optional — skip if you only use chess.com)")
+        players.pop("lichess", None)
 
-    # Chess.com username must be entered manually
+    # Chess.com (optional)
+    print("\n  Chess.com:")
     current_chesscom = players.get("chesscom", "")
     if current_chesscom:
-        print(f"  Chess.com: {current_chesscom} (already configured)")
-        change = input("  Change it? [y/N] ").strip().lower()
+        print(f"    Currently configured: {current_chesscom}")
+        change = input("    Change it? [y/N] ").strip().lower()
         if change == "y":
             current_chesscom = ""
     if not current_chesscom:
-        chesscom_input = input("  Enter your chess.com username (or press Enter to skip): ").strip()
+        chesscom_input = input("    Enter your chess.com username (optional, press Enter to skip): ").strip()
         if chesscom_input:
             players["chesscom"] = chesscom_input
-            print(f"  ✓ Chess.com: {chesscom_input}")
+            current_chesscom = chesscom_input
+            print(f"    ✓ Chess.com: {chesscom_input}")
         else:
-            print("  Skipped (only Lichess games will be imported)")
+            players.pop("chesscom", None)
+            current_chesscom = ""
+
+    # Validate: at least one platform
+    lichess_user = players.get("lichess", "")
+    chesscom_user = players.get("chesscom", "")
+    if not lichess_user and not chesscom_user:
+        print("\n  ✗ Error: at least one platform (Lichess or chess.com) is required.")
+        print("    - For Lichess: create a token at https://lichess.org/account/oauth/token/create")
+        print('    - Then: echo "LICHESS_API_TOKEN=lip_..." > .env')
+        print("    - For chess.com: re-run setup and enter your username")
+        sys.exit(1)
+
+    # Summary
+    platforms = []
+    if lichess_user:
+        platforms.append(f"Lichess ({lichess_user})")
+    if chesscom_user:
+        platforms.append(f"chess.com ({chesscom_user})")
+    print(f"\n  ✓ Configured: {' + '.join(platforms)}")
 
     config["players"] = players
 
-    # Step 4: List user's studies and try to match
-    print("\nStep 4: Looking for existing Lichess studies...")
+    # Step 3: Lichess Studies (only if Lichess is configured)
+    if client and username:
+        print("\nStep 3: Looking for existing Lichess studies...")
 
-    # berserk doesn't have a method to list studies with metadata,
-    # so we use the Lichess API directly (ndjson format).
-    studies = []
-    try:
-        token = load_lichess_token()
-        resp = requests.get(
-            f"https://lichess.org/api/study/by/{username}",
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/x-ndjson"},
-            stream=True,
-        )
-        if resp.status_code == 200:
-            for line in resp.iter_lines():
-                if line:
-                    studies.append(json.loads(line))
-    except Exception:
         studies = []
+        try:
+            resp = requests.get(
+                f"https://lichess.org/api/study/by/{username}",
+                headers={"Authorization": f"Bearer {token}", "Accept": "application/x-ndjson"},
+                stream=True,
+            )
+            if resp.status_code == 200:
+                for line in resp.iter_lines():
+                    if line:
+                        studies.append(json.loads(line))
+        except Exception:
+            studies = []
 
-    # Expected study names and their PGN files
-    expected_studies = {
-        "repertoire_blancs_gambit_dame_annote.pgn": "Whites - Queen's Gambit",
-        "repertoire_noirs_vs_e4_scandinave_annote.pgn": "Black vs e4 - Scandinavian",
-        "repertoire_noirs_vs_d4_slave_annote.pgn": "Black vs d4 - Slav",
-    }
+        expected_studies = {
+            "repertoire_blancs_gambit_dame_annote.pgn": "Whites - Queen's Gambit",
+            "repertoire_noirs_vs_e4_scandinave_annote.pgn": "Black vs e4 - Scandinavian",
+            "repertoire_noirs_vs_d4_slave_annote.pgn": "Black vs d4 - Slav",
+        }
 
-    studies_config = config.get("studies", {})
+        studies_config = config.get("studies", {})
 
-    if studies:
-        print(f"  Found {len(studies)} study/studies on your account:")
-        for study in studies:
-            study_name = study.get("name", "Unnamed")
-            study_id = study.get("id", "???")
-            print(f"    - {study_name} (id: {study_id})")
-
-        # Try to auto-match by name
-        for pgn_file, expected_name in expected_studies.items():
-            if pgn_file in studies_config and not studies_config[pgn_file].get(
-                "study_id", ""
-            ).startswith("STUDY_ID"):
-                print(f"  ✓ {pgn_file} already configured")
-                continue
-
-            matched = None
+        if studies:
+            print(f"  Found {len(studies)} study/studies on your account:")
             for study in studies:
-                study_name = study.get("name", "")
-                if expected_name.lower() in study_name.lower():
-                    matched = study
-                    break
+                study_name = study.get("name", "Unnamed")
+                study_id = study.get("id", "???")
+                print(f"    - {study_name} (id: {study_id})")
 
-            if matched:
-                studies_config[pgn_file] = {
-                    "study_id": matched["id"],
-                    "study_name": matched["name"],
-                }
-                print(f"  ✓ Auto-matched {pgn_file} → {matched['name']} ({matched['id']})")
-            else:
+            for pgn_file, expected_name in expected_studies.items():
+                if pgn_file in studies_config and not studies_config[pgn_file].get(
+                    "study_id", ""
+                ).startswith("STUDY_ID"):
+                    print(f"  ✓ {pgn_file} already configured")
+                    continue
+
+                matched = None
+                for study in studies:
+                    study_name = study.get("name", "")
+                    if expected_name.lower() in study_name.lower():
+                        matched = study
+                        break
+
+                if matched:
+                    studies_config[pgn_file] = {
+                        "study_id": matched["id"],
+                        "study_name": matched["name"],
+                    }
+                    print(f"  ✓ Auto-matched {pgn_file} → {matched['name']} ({matched['id']})")
+                else:
+                    studies_config[pgn_file] = {
+                        "study_id": "STUDY_ID_HERE",
+                        "study_name": expected_name,
+                    }
+                    print(f"  ✗ No match for {pgn_file} (expected: '{expected_name}')")
+        else:
+            print("  No studies found on your account.")
+            for pgn_file, expected_name in expected_studies.items():
                 studies_config[pgn_file] = {
                     "study_id": "STUDY_ID_HERE",
                     "study_name": expected_name,
                 }
-                print(f"  ✗ No match for {pgn_file} (expected: '{expected_name}')")
-    else:
-        print("  No studies found on your account.")
-        for pgn_file, expected_name in expected_studies.items():
-            studies_config[pgn_file] = {
-                "study_id": "STUDY_ID_HERE",
-                "study_name": expected_name,
-            }
 
-    config["studies"] = studies_config
+        config["studies"] = studies_config
+
+        missing = [
+            (pgn, info["study_name"])
+            for pgn, info in studies_config.items()
+            if info.get("study_id", "").startswith("STUDY_ID")
+        ]
+
+        if missing:
+            print(f"\n  {len(missing)} study/studies need to be created on Lichess:")
+            for pgn, name in missing:
+                print(f"    - {name} (for {pgn})")
+            print("\n  Opening Lichess study page in your browser...")
+            try:
+                webbrowser.open("https://lichess.org/study")
+            except Exception:
+                print("  Could not open browser. Go to: https://lichess.org/study")
+            print(
+                "\n  After creating the studies, run 'chess-self-coach setup' again\n"
+                "  to auto-detect them, or edit config.json manually."
+            )
+        else:
+            print("\n  ✓ All studies configured!")
+    else:
+        print("\nStep 3: Lichess Studies (skipped — no Lichess account)")
+
     save_config(config)
-
-    # Check if any studies still need to be created
-    missing = [
-        (pgn, info["study_name"])
-        for pgn, info in studies_config.items()
-        if info.get("study_id", "").startswith("STUDY_ID")
-    ]
-
-    if missing:
-        print(f"\n  {len(missing)} study/studies need to be created on Lichess:")
-        for pgn, name in missing:
-            print(f"    - {name} (for {pgn})")
-        print("\n  Opening Lichess study page in your browser...")
-        try:
-            webbrowser.open("https://lichess.org/study")
-        except Exception:
-            print("  Could not open browser. Go to: https://lichess.org/study")
-        print(
-            "\n  After creating the studies, run 'chess-self-coach setup' again\n"
-            "  to auto-detect them, or edit config.json manually."
-        )
-    else:
-        print("\n  ✓ All studies configured!")
-
     print("\n✓ Setup complete.\n")
 
 
