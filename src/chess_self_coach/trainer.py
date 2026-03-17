@@ -638,6 +638,51 @@ def prepare_training_data(
     print(f"    Inaccuracies: {inaccuracies}")
 
 
+def refresh_explanations() -> None:
+    """Regenerate explanations in training_data.json without re-running Stockfish.
+
+    Reads existing positions, rebuilds explanations using generate_explanation(),
+    and writes back. SRS progress and all other fields are preserved.
+    """
+    root = _find_project_root()
+    data_path = root / "training_data.json"
+
+    if not data_path.exists():
+        print("No training data found. Run: chess-self-coach train --prepare", file=sys.stderr)
+        sys.exit(1)
+
+    with open(data_path) as f:
+        data = json.load(f)
+
+    positions = data.get("positions", [])
+    updated = 0
+    for pos in positions:
+        board = chess.Board(pos["fen"])
+        was_mate = abs(pos["cp_loss"]) >= _MATE_CP or "forced mate" in pos.get("explanation", "")
+
+        # Parse score_after to cp
+        score_after_str = pos.get("score_after", "+0.00")
+        try:
+            score_after_cp = int(float(score_after_str) * 100)
+        except (ValueError, TypeError):
+            score_after_cp = None
+
+        new_explanation = generate_explanation(
+            board, pos["player_move"], pos["best_move"],
+            pos["cp_loss"], pos["category"],
+            was_mate=was_mate, score_after_cp=score_after_cp,
+        )
+        if new_explanation != pos.get("explanation"):
+            pos["explanation"] = new_explanation
+            updated += 1
+
+    with open(data_path, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    print(f"  Refreshed {updated}/{len(positions)} explanation(s) in {data_path}")
+
+
 def print_stats() -> None:
     """Show training progress from training_data.json."""
     root = _find_project_root()

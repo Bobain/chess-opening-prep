@@ -142,8 +142,9 @@ Incremental by default: only new games are analyzed, existing positions and SRS 
 chess-self-coach train --prepare                    # 20 games, depth 18, parallel
 chess-self-coach train --prepare --games 10         # fewer games (faster)
 chess-self-coach train --prepare --depth 12         # lower depth (faster)
-chess-self-coach train --prepare --fresh            # discard existing data, start from scratch
 chess-self-coach train --prepare --engine /path/sf   # custom Stockfish
+chess-self-coach train --prepare --fresh            # [dev] discard existing data, start from scratch
+chess-self-coach train --refresh-explanations       # [dev] regenerate explanations without Stockfish
 ```
 
 ### `chess-self-coach train --serve`

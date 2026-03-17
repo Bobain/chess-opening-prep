@@ -189,9 +189,15 @@ def main(argv: list[str] | None = None) -> None:
         help="Path to the Stockfish binary (overrides config.json)",
     )
     p_train.add_argument(
+        "--refresh-explanations",
+        action="store_true",
+        dest="refresh_explanations",
+        help="[Dev] Regenerate explanations without re-running Stockfish",
+    )
+    p_train.add_argument(
         "--fresh",
         action="store_true",
-        help="Discard existing training data and start from scratch",
+        help="[Dev] Discard existing training data and start from scratch",
     )
 
     args = parser.parse_args(argv)
@@ -281,7 +287,11 @@ def main(argv: list[str] | None = None) -> None:
             serve_pwa,
         )
 
-        if args.prepare:
+        if args.refresh_explanations:
+            from chess_self_coach.trainer import refresh_explanations
+
+            refresh_explanations()
+        elif args.prepare:
             prepare_training_data(
                 max_games=args.games,
                 depth=args.depth,
