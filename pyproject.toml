@@ -1,7 +1,7 @@
 [project]
 name = "chess-self-coach"
 version = "0.1.12"
-description = "CLI to manage a chess opening repertoire: Stockfish analysis + Lichess Study sync"
+description = "Learn from your own chess mistakes: Stockfish analysis + spaced repetition training"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
