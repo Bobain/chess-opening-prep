@@ -488,8 +488,9 @@ function showPosition(index) {
   sessionAppearances.set(position.id, count);
 
   document.getElementById('progress').textContent = `${completedCount + 1} / ${sessionOriginalSize}`;
+  const context = position.context || '';
   document.getElementById('prompt').textContent =
-    `You played ${position.player_move}. Can you find a better move?`;
+    `${context} You played ${position.player_move}. Can you find a better move?`;
   document.getElementById('game-info').textContent =
     `vs ${position.game.opponent} (${position.game.source}, ${position.game.date})`;
 

@@ -139,7 +139,9 @@ def generate_explanation(
     Returns:
         Explanation string.
     """
-    loss_str = _format_cp_loss_human(cp_loss, was_mate=was_mate)
+    score_after_is_mate = score_after_cp is not None and abs(score_after_cp) >= _MATE_CP
+    any_mate = was_mate or score_after_is_mate
+    loss_str = _format_cp_loss_human(cp_loss, was_mate=any_mate)
     parts = [f"You played {actual_san} ({category}, lost {loss_str})."]
 
     # Detect mate → draw transition (stalemate or fortress)
@@ -201,6 +203,37 @@ def generate_explanation(
                 parts.append(f"Your {piece_name} on {sq_name} is left undefended.")
 
     return " ".join(parts)
+
+
+def _generate_context(
+    category: str,
+    cp_loss: int,
+    was_mate: bool,
+    score_after_cp: int | None,
+) -> str:
+    """Generate a short context sentence shown BEFORE the player answers.
+
+    Tells the player what went wrong with their move, to frame the exercise.
+    """
+    score_after_is_mate = score_after_cp is not None and abs(score_after_cp) >= _MATE_CP
+
+    if was_mate and score_after_cp is not None and abs(score_after_cp) < 50:
+        return "Your move threw away a winning position and led to a draw."
+    if was_mate:
+        return "Your move threw away a forced mate."
+    if score_after_is_mate:
+        return "Your move allowed your opponent to force checkmate."
+    if cp_loss >= _MATE_CP:
+        return "Your move allowed your opponent to force checkmate."
+
+    pawns = cp_loss / 100.0
+    if pawns >= 5:
+        return f"Your move lost a decisive advantage ({pawns:.1f} pawns)."
+    if pawns >= 2:
+        return f"Your move lost significant material ({pawns:.1f} pawns)."
+    if pawns >= 1:
+        return f"Your move lost about {pawns:.1f} pawns of advantage."
+    return f"Your move was slightly inaccurate ({pawns:.1f} pawns)."
 
 
 def _make_position_id(fen: str, actual_san: str) -> str:
@@ -367,12 +400,14 @@ def extract_mistakes(
             continue
 
         was_mate = pos.get("is_mate", False)
+        score_after_cp = next_pos["score_cp"]
         board = chess.Board(pos["fen"])
         explanation = generate_explanation(
             board, pos["actual_san"], pos["best_san"], cp_loss, category,
             was_mate=was_mate,
-            score_after_cp=next_pos["score_cp"],
+            score_after_cp=score_after_cp,
         )
+        context = _generate_context(category, cp_loss, was_mate, score_after_cp)
 
         mistakes.append({
             "id": _make_position_id(pos["fen"], pos["actual_san"]),
@@ -380,6 +415,7 @@ def extract_mistakes(
             "player_color": "white" if player_color == chess.WHITE else "black",
             "player_move": pos["actual_san"],
             "best_move": pos["best_san"],
+            "context": context,
             "score_before": _format_score_cp(pos["score_cp"]),
             "score_after": _format_score_cp(next_pos["score_cp"]),
             "cp_loss": cp_loss,
@@ -672,8 +708,12 @@ def refresh_explanations() -> None:
             pos["cp_loss"], pos["category"],
             was_mate=was_mate, score_after_cp=score_after_cp,
         )
-        if new_explanation != pos.get("explanation"):
+        new_context = _generate_context(
+            pos["category"], pos["cp_loss"], was_mate, score_after_cp,
+        )
+        if new_explanation != pos.get("explanation") or new_context != pos.get("context"):
             pos["explanation"] = new_explanation
+            pos["context"] = new_context
             updated += 1
 
     with open(data_path, "w") as f:
