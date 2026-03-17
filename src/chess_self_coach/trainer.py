@@ -8,9 +8,12 @@ a JSON file for the PWA drill interface.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import os
 import sys
 import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,20 +38,20 @@ INACCURACY_THRESHOLD = 50
 _MATE_CP = 10000
 
 
-def _score_to_cp(score: chess.engine.PovScore) -> int | None:
+def _score_to_cp(score: chess.engine.PovScore) -> tuple[int | None, bool]:
     """Convert a PovScore to centipawns from white's perspective.
 
     Args:
         score: Engine PovScore.
 
     Returns:
-        Centipawns (white perspective), or None if unavailable.
+        Tuple of (centipawns from white perspective, is_mate).
     """
     white = score.white()
     if white.is_mate():
         mate = white.mate()
-        return _MATE_CP if mate > 0 else -_MATE_CP
-    return white.score()
+        return (_MATE_CP if mate > 0 else -_MATE_CP), True
+    return white.score(), False
 
 
 def _format_score_cp(cp: int | None) -> str:
@@ -93,13 +96,17 @@ def _classify_mistake(cp_loss: int) -> str | None:
     return None
 
 
-def _format_cp_loss_human(cp_loss: int) -> str:
+def _format_cp_loss_human(cp_loss: int, was_mate: bool = False) -> str:
     """Format centipawn loss for human display.
 
-    Returns 'mate' for mate-scale losses, or pawn-based values otherwise.
+    Args:
+        cp_loss: Centipawn loss value.
+        was_mate: True if the score before the move was a forced mate.
+
+    Returns human-readable loss string.
     """
-    if cp_loss >= _MATE_CP:
-        return "mate"
+    if cp_loss >= _MATE_CP or was_mate:
+        return "a forced mate"
     pawns = cp_loss / 100.0
     if pawns == int(pawns):
         return f"{int(pawns)} pawn{'s' if int(pawns) != 1 else ''}"
@@ -112,6 +119,7 @@ def generate_explanation(
     best_san: str,
     cp_loss: int,
     category: str,
+    was_mate: bool = False,
 ) -> str:
     """Generate a rule-based explanation for a mistake.
 
@@ -124,11 +132,12 @@ def generate_explanation(
         best_san: The best move according to Stockfish (SAN).
         cp_loss: Centipawn loss.
         category: Mistake category string.
+        was_mate: True if the position before was a forced mate.
 
     Returns:
         Explanation string.
     """
-    loss_str = _format_cp_loss_human(cp_loss)
+    loss_str = _format_cp_loss_human(cp_loss, was_mate=was_mate)
     parts = [f"You played {actual_san} ({category}, lost {loss_str})."]
 
     # Analyze the actual move for stalemate detection
@@ -277,15 +286,27 @@ def extract_mistakes(
             node = next_node
             continue
 
-        score_cp = _score_to_cp(score)
+        score_cp, is_mate = _score_to_cp(score)
         best_move = pv[0] if pv else None
+
+        # Convert PV to SAN (up to 5 moves)
+        pv_san = []
+        pv_board = board.copy()
+        for move in pv[:5]:
+            try:
+                pv_san.append(pv_board.san(move))
+                pv_board.push(move)
+            except (ValueError, AssertionError):
+                break
 
         positions.append({
             "fen": board.fen(),
             "turn": board.turn,
             "score_cp": score_cp,
+            "is_mate": is_mate,
             "best_san": board.san(best_move) if best_move else None,
             "actual_san": board.san(actual_move),
+            "pv": pv_san,
         })
         node = next_node
 
@@ -294,12 +315,15 @@ def extract_mistakes(
     info = engine.analyse(board, chess.engine.Limit(depth=depth))
     score = info.get("score")
     if score:
+        score_cp, is_mate = _score_to_cp(score)
         positions.append({
             "fen": board.fen(),
             "turn": board.turn,
-            "score_cp": _score_to_cp(score),
+            "score_cp": score_cp,
+            "is_mate": is_mate,
             "best_san": None,
             "actual_san": None,
+            "pv": [],
         })
 
     # Find the player's mistakes
@@ -336,9 +360,11 @@ def extract_mistakes(
         if category is None or not pos["best_san"]:
             continue
 
+        was_mate = pos.get("is_mate", False)
         board = chess.Board(pos["fen"])
         explanation = generate_explanation(
-            board, pos["actual_san"], pos["best_san"], cp_loss, category
+            board, pos["actual_san"], pos["best_san"], cp_loss, category,
+            was_mate=was_mate,
         )
 
         mistakes.append({
@@ -353,6 +379,7 @@ def extract_mistakes(
             "category": category,
             "explanation": explanation,
             "acceptable_moves": [pos["best_san"]],
+            "pv": pos.get("pv", []),
             "game": {
                 "source": _detect_source(game),
                 "opponent": _get_opponent(game, player_color),
@@ -365,6 +392,54 @@ def extract_mistakes(
         })
 
     return mistakes
+
+
+def _physical_core_count() -> int:
+    """Return the number of physical CPU cores.
+
+    Reads /proc/cpuinfo on Linux, falls back to os.cpu_count() // 2.
+    """
+    try:
+        cores = set()
+        with open("/proc/cpuinfo") as f:
+            physical_id = core_id = None
+            for line in f:
+                if line.startswith("physical id"):
+                    physical_id = line.split(":")[1].strip()
+                elif line.startswith("core id"):
+                    core_id = line.split(":")[1].strip()
+                    if physical_id is not None:
+                        cores.add((physical_id, core_id))
+        if cores:
+            return len(cores)
+    except OSError:
+        pass
+    return os.cpu_count() // 2 or 1
+
+
+def _analyze_game_worker(
+    pgn_str: str,
+    sf_path_str: str,
+    depth: int,
+    player_color: chess.Color,
+    idx: int,
+    total: int,
+    label: str,
+) -> tuple[int, int, str, list[dict], float]:
+    """Worker function for parallel game analysis.
+
+    Each worker opens its own Stockfish instance, analyzes one game,
+    and returns the results. Designed for ProcessPoolExecutor.
+    """
+    game = chess.pgn.read_game(io.StringIO(pgn_str))
+    engine = chess.engine.SimpleEngine.popen_uci(sf_path_str)
+    try:
+        start = time.time()
+        mistakes = extract_mistakes(game, engine, depth, player_color)
+        elapsed = time.time() - start
+    finally:
+        engine.quit()
+    return idx, total, label, mistakes, elapsed
 
 
 def prepare_training_data(
@@ -419,33 +494,47 @@ def prepare_training_data(
         return
 
     # Analyze each game
-    print(f"\n  Analyzing {len(all_games)} game(s) with Stockfish (depth {depth})...")
+    workers = max(1, _physical_core_count() - 1)
+    workers = min(workers, len(all_games))
+    print(f"\n  Analyzing {len(all_games)} game(s) with Stockfish (depth {depth}, {workers} workers)...")
     print("  This may take several minutes...\n")
     all_mistakes: list[dict] = []
 
-    engine = chess.engine.SimpleEngine.popen_uci(str(sf_path))
-    try:
-        for i, game in enumerate(all_games):
-            player_color = _determine_player_color(game, lichess_user, chesscom_user)
-            if player_color is None:
-                continue
+    # Build tasks: (game_pgn_str, depth, player_color, index, label)
+    tasks = []
+    for i, game in enumerate(all_games):
+        player_color = _determine_player_color(game, lichess_user, chesscom_user)
+        if player_color is None:
+            continue
+        white = game.headers.get("White", "?")
+        black = game.headers.get("Black", "?")
+        # Serialize game to PGN string for pickling
+        exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True)
+        pgn_str = game.accept(exporter)
+        tasks.append((pgn_str, str(sf_path), depth, player_color, i + 1, len(all_games), f"{white} vs {black}"))
 
-            white = game.headers.get("White", "?")
-            black = game.headers.get("Black", "?")
-            print(
-                f"  [{i + 1}/{len(all_games)}] {white} vs {black}...",
-                end="",
-                flush=True,
-            )
-
-            start = time.time()
-            mistakes = extract_mistakes(game, engine, depth, player_color)
-            elapsed = time.time() - start
-
-            print(f" {len(mistakes)} mistake(s) ({elapsed:.1f}s)")
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(_analyze_game_worker, *t): t for t in tasks}
+        done_count = 0
+        total_tasks = len(tasks)
+        wall_start = time.time()
+        for future in as_completed(futures):
+            idx, total, label, mistakes, elapsed = future.result()
+            done_count += 1
             all_mistakes.extend(mistakes)
-    finally:
-        engine.quit()
+
+            # ETA based on wall-clock time
+            wall_elapsed = time.time() - wall_start
+            avg_per_game = wall_elapsed / done_count
+            remaining = avg_per_game * (total_tasks - done_count)
+            eta_min, eta_sec = divmod(int(remaining), 60)
+            eta_str = f"{eta_min}m{eta_sec:02d}s" if eta_min else f"{eta_sec}s"
+
+            print(
+                f"  [{done_count}/{total_tasks}] {label}... "
+                f"{len(mistakes)} mistake(s) ({elapsed:.1f}s) "
+                f"— ETA {eta_str}"
+            )
 
     # Deduplicate by position ID (same mistake in multiple games)
     seen: set[str] = set()

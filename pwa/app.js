@@ -306,6 +306,19 @@ function showFeedback(correct, position, gaveUp = false) {
 
   explanationEl.textContent = position.explanation;
 
+  // Show PV line if available
+  const pvLineEl = document.getElementById('pv-line');
+  const playLineBtn = document.getElementById('play-line-btn');
+  const pvMoves = position.pv || [];
+  if (pvMoves.length > 1) {
+    pvLineEl.textContent = 'Best line: ' + pvMoves.join(' ');
+    pvLineEl.classList.remove('hidden');
+    playLineBtn.classList.remove('hidden');
+  } else {
+    pvLineEl.classList.add('hidden');
+    playLineBtn.classList.add('hidden');
+  }
+
   // Disable further moves
   if (cg) {
     cg.set({ movable: { dests: new Map() } });
@@ -340,6 +353,33 @@ function showFeedback(correct, position, gaveUp = false) {
       }
       showPosBtn.textContent = 'Show original position';
     }
+  };
+
+  // Play line: animate PV moves on the board
+  playLineBtn.onclick = () => {
+    if (!cg || pvMoves.length === 0) return;
+    playLineBtn.disabled = true;
+    const chess = new Chess(position.fen);
+    let step = 0;
+    const interval = setInterval(() => {
+      if (step >= pvMoves.length) {
+        clearInterval(interval);
+        playLineBtn.disabled = false;
+        return;
+      }
+      const move = chess.move(pvMoves[step]);
+      if (!move) {
+        clearInterval(interval);
+        playLineBtn.disabled = false;
+        return;
+      }
+      cg.set({
+        fen: chess.fen(),
+        lastMove: [move.from, move.to],
+        movable: { dests: new Map() },
+      });
+      step++;
+    }, 800);
   };
 }
 

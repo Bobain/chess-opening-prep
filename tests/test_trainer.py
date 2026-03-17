@@ -37,31 +37,31 @@ def _make_game(pgn_text: str) -> chess.pgn.Game:
 def test_score_to_cp_positive():
     """Positive centipawn score from white's perspective."""
     score = chess.engine.PovScore(chess.engine.Cp(150), chess.WHITE)
-    assert _score_to_cp(score) == 150
+    assert _score_to_cp(score) == (150, False)
 
 
 def test_score_to_cp_negative():
     """Negative centipawn score from white's perspective."""
     score = chess.engine.PovScore(chess.engine.Cp(-100), chess.WHITE)
-    assert _score_to_cp(score) == -100
+    assert _score_to_cp(score) == (-100, False)
 
 
 def test_score_to_cp_mate_positive():
-    """Positive mate score returns sentinel value."""
+    """Positive mate score returns sentinel value and is_mate=True."""
     score = chess.engine.PovScore(chess.engine.Mate(3), chess.WHITE)
-    assert _score_to_cp(score) == 10000
+    assert _score_to_cp(score) == (10000, True)
 
 
 def test_score_to_cp_mate_negative():
-    """Negative mate score returns negative sentinel value."""
+    """Negative mate score returns negative sentinel value and is_mate=True."""
     score = chess.engine.PovScore(chess.engine.Mate(-2), chess.WHITE)
-    assert _score_to_cp(score) == -10000
+    assert _score_to_cp(score) == (-10000, True)
 
 
 def test_score_to_cp_black_perspective():
     """Score from black's POV is converted to white's perspective."""
     score = chess.engine.PovScore(chess.engine.Cp(200), chess.BLACK)
-    assert _score_to_cp(score) == -200
+    assert _score_to_cp(score) == (-200, False)
 
 
 # --- compute_cp_loss ---

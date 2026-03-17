@@ -171,17 +171,23 @@ def fetch_lichess_games(username: str, max_games: int = 100) -> list[chess.pgn.G
         pgn_text = "".join(exported) if hasattr(exported, "__iter__") else str(exported)
         pgn_io = io.StringIO(pgn_text)
 
+        skipped_variants = 0
         while True:
-            try:
-                game = chess.pgn.read_game(pgn_io)
-            except Exception as e:
-                print(f"  ⚠ Skipping unreadable game: {e}", file=sys.stderr)
-                continue
+            game = chess.pgn.read_game(pgn_io)
             if game is None:
                 break
+            variant = game.headers.get("Variant", "Standard")
+            if variant != "Standard":
+                site = game.headers.get("Site", "?")
+                print(f"  ⚠ Skipping {variant} game: {site}", file=sys.stderr)
+                skipped_variants += 1
+                continue
             games.append(game)
 
-        print(f"  Fetched {len(games)} game(s) from Lichess for {username}")
+        msg = f"  Fetched {len(games)} game(s) from Lichess for {username}"
+        if skipped_variants:
+            msg += f" ({skipped_variants} variant game(s) excluded)"
+        print(msg)
     except berserk.exceptions.ResponseError as e:
         error_exit(
             f"Failed to fetch Lichess games: {e}",

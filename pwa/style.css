@@ -178,7 +178,16 @@ cg-container {
   justify-content: center;
 }
 
-#show-position-btn {
+#pv-line {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--success);
+  font-family: monospace;
+  letter-spacing: 0.03em;
+}
+
+#show-position-btn,
+#play-line-btn {
   background: var(--surface);
   color: var(--text-dim);
   border: 1px solid rgba(255,255,255,0.2);
@@ -189,7 +198,8 @@ cg-container {
   transition: background 0.15s;
 }
 
-#show-position-btn:hover {
+#show-position-btn:hover,
+#play-line-btn:hover {
   background: var(--primary);
   color: var(--text);
 }
