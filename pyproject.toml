@@ -1,6 +1,6 @@
 [project]
-name = "chess-opening-prep"
-version = "0.1.8"
+name = "chess-self-coach"
+version = "0.1.12"
 description = "CLI to manage a chess opening repertoire: Stockfish analysis + Lichess Study sync"
 readme = "README.md"
 license = "MIT"
@@ -13,10 +13,10 @@ dependencies = [
 ]
 
 [project.scripts]
-chess-opening-prep = "chess_opening_prep.cli:main"
+chess-self-coach = "chess_self_coach.cli:main"
 
 [dependency-groups]
-test = ["pytest", "pytest-mock"]
+test = ["pytest", "pytest-mock", "pytest-playwright"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
 
 [build-system]

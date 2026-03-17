@@ -22,17 +22,20 @@
 - **Black vs 1.d4**: Slav Defense (1...d5 2...c6) — Czech Variation (...dxc4, ...Bf5 BEFORE e6)
 - **Black vs London**: Anti-London with immediate ...c5
 
-## CLI Tool: chess-opening-prep
+## CLI Tool: chess-self-coach
 
 ### Commands
-- `chess-opening-prep analyze <file>` — Stockfish analysis with [%eval] annotations
-- `chess-opening-prep validate <file>` — Lint PGN annotations against mandatory conventions
-- `chess-opening-prep import <username>` — Import games from Lichess/chess.com, detect deviations
-- `chess-opening-prep setup` — Interactive setup (auth, studies, config)
-- `chess-opening-prep push <file>` — Push PGN to Lichess study
-- `chess-opening-prep pull <file>` — Pull PGN from Lichess study
-- `chess-opening-prep cleanup [file]` — Remove empty default chapters from Lichess studies
-- `chess-opening-prep status` — Show sync state of all files
+- `chess-self-coach analyze <file>` — Stockfish analysis with [%eval] annotations
+- `chess-self-coach validate <file>` — Lint PGN annotations against mandatory conventions
+- `chess-self-coach import <username>` — Import games from Lichess/chess.com, detect deviations
+- `chess-self-coach setup` — Interactive setup (auth, studies, config)
+- `chess-self-coach push <file>` — Push PGN to Lichess study
+- `chess-self-coach pull <file>` — Pull PGN from Lichess study
+- `chess-self-coach cleanup [file]` — Remove empty default chapters from Lichess studies
+- `chess-self-coach status` — Show sync state of all files
+- `chess-self-coach train --prepare [--games N] [--depth 18]` — Analyze games, extract mistakes, export training_data.json
+- `chess-self-coach train --serve` — Open the training PWA in the browser
+- `chess-self-coach train --stats` — Show training progress statistics
 
 ### Configuration
 - `config.json` — Study IDs, Stockfish path, player usernames (gitignored, user-specific)
@@ -90,15 +93,15 @@ Zone 1: Local Files      →  Zone 2: Lichess Study
 1. CLI/Claude creates/modifies `*_annote.pgn` files locally
 2. ALL comment conventions must be followed
 3. Theory verified via web search (variation names, consensus, players)
-4. `chess-opening-prep validate` to check annotations
-5. `chess-opening-prep analyze` for Stockfish validation
-6. `chess-opening-prep push` to publish to Lichess Study
+4. `chess-self-coach validate` to check annotations
+5. `chess-self-coach analyze` for Stockfish validation
+6. `chess-self-coach push` to publish to Lichess Study
 
 ### Zone 2: Interactive study
 1. Lichess Study = **source of truth**
 2. User studies interactively on Lichess (play moves, engine analysis)
 3. Lichess has Stockfish 18 NNUE running in the browser
-4. `chess-opening-prep pull` to sync changes back to local
+4. `chess-self-coach pull` to sync changes back to local
 
 ### Zone 2 → Drill
 1. Chessdriller connects directly to Lichess studies
@@ -131,10 +134,68 @@ After EVERY chess theory discussion (Q&A about openings, style, move choices, re
 
 ## Code Guidelines
 
-Follow the Karpathy principles (see CONTRIBUTING.md):
-1. **Think Before Coding** — State assumptions, surface tradeoffs
-2. **Simplicity First** — Minimum code, nothing speculative
-3. **Surgical Changes** — Touch only what you must
-4. **Goal-Driven Execution** — Define success criteria, loop until verified
-
 All code, comments, docstrings, error messages, and logs must be in **English**.
+
+### Karpathy Principles
+
+Behavioral guidelines to reduce common LLM coding mistakes. These bias toward caution over speed — for trivial tasks, use judgment.
+
+#### 1. Think Before Coding
+
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+#### 2. Simplicity First
+
+**Minimum code that solves the problem. Nothing speculative.**
+
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+#### 3. Surgical Changes
+
+**Touch only what you must. Clean up only your own mess.**
+
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+
+The test: Every changed line should trace directly to the user's request.
+
+#### 4. Goal-Driven Execution
+
+**Define success criteria. Loop until verified.**
+
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
+
+**These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

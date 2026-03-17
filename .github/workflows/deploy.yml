@@ -1,0 +1,81 @@
+name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --group test
+
+      - name: Run unit tests
+        run: uv run pytest tests/ --ignore=tests/e2e -v
+
+      - name: Install Playwright browsers
+        run: uv run playwright install chromium --with-deps
+
+      - name: Run e2e tests
+        run: uv run pytest tests/e2e/ -v
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: uv sync --group docs
+
+      - name: Generate JS API docs
+        run: npx jsdoc-to-markdown@9 pwa/app.js > docs/pwa-api.md
+
+      - name: Build documentation
+        run: uv run mkdocs build
+
+      - name: Inject version into service worker
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          sed -i "s/__VERSION__/$VERSION/g" pwa/sw.js
+
+      - name: Assemble site
+        run: |
+          mv site docs_build
+          mkdir -p site/docs site/train
+          cp landing/index.html site/
+          cp -r docs_build/* site/docs/
+          cp pwa/index.html pwa/app.js pwa/style.css pwa/manifest.json pwa/sw.js site/train/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
