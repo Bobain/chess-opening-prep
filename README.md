@@ -72,8 +72,14 @@ uv venv && uv sync
 
 ```bash
 echo "LICHESS_API_TOKEN=lip_your_token_here" > .env
-chess-self-coach setup    # interactive setup: verifies auth, configures config.json
+chess-self-coach setup    # interactive: verifies auth, asks for chess.com username, finds studies
 ```
+
+The setup wizard will:
+1. Verify your Lichess token
+2. Find Stockfish on your system
+3. Ask for your **chess.com username** (for importing games)
+4. Auto-detect your Lichess Studies
 
 ## CLI Reference
 

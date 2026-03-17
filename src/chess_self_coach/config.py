@@ -103,14 +103,17 @@ def save_config(config: dict[str, Any]) -> None:
     print(f"  Config saved to {config_path}")
 
 
-def load_lichess_token() -> str:
+def load_lichess_token(required: bool = True) -> str | None:
     """Load the Lichess API token from .env or environment.
 
+    Args:
+        required: If True, exit on missing token. If False, return None.
+
     Returns:
-        The API token string.
+        The API token string, or None if not found and not required.
 
     Raises:
-        SystemExit: If no token is found or it looks invalid.
+        SystemExit: If required=True and no token is found or it looks invalid.
     """
     root = _find_project_root()
     env_path = root / ENV_FILE
@@ -122,6 +125,8 @@ def load_lichess_token() -> str:
     token = os.environ.get("LICHESS_API_TOKEN", "").strip()
 
     if not token:
+        if not required:
+            return None
         error_exit(
             "Lichess API token not found.",
             hint=(
@@ -135,6 +140,8 @@ def load_lichess_token() -> str:
         )
 
     if not token.startswith("lip_"):
+        if not required:
+            return None
         error_exit(
             f"Lichess token looks invalid (expected 'lip_...' prefix, got '{token[:8]}...').",
             hint="Regenerate your token at https://lichess.org/account/oauth/token/create",

@@ -223,16 +223,31 @@ def main(argv: list[str] | None = None) -> None:
         setup()
 
     elif args.command == "push":
+        from chess_self_coach.config import load_lichess_token
+
+        if not load_lichess_token(required=False):
+            print("Lichess token required for push. Set LICHESS_API_TOKEN in .env", file=sys.stderr)
+            sys.exit(1)
         from chess_self_coach.lichess import push_pgn
 
         push_pgn(args.pgn_file, replace=not args.no_replace)
 
     elif args.command == "pull":
+        from chess_self_coach.config import load_lichess_token
+
+        if not load_lichess_token(required=False):
+            print("Lichess token required for pull. Set LICHESS_API_TOKEN in .env", file=sys.stderr)
+            sys.exit(1)
         from chess_self_coach.lichess import pull_pgn
 
         pull_pgn(args.pgn_file, in_place=args.in_place)
 
     elif args.command == "cleanup":
+        from chess_self_coach.config import load_lichess_token
+
+        if not load_lichess_token(required=False):
+            print("Lichess token required for cleanup. Set LICHESS_API_TOKEN in .env", file=sys.stderr)
+            sys.exit(1)
         from chess_self_coach.lichess import cleanup_study
         from chess_self_coach.config import load_config, get_study_mapping
 
