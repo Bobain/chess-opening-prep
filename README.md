@@ -2,61 +2,50 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Opening repertoire manager + mistake trainer with spaced repetition.
+**Learn from your own mistakes.** Chess Self-Coach fetches your games from Lichess and chess.com, finds your blunders with Stockfish, and drills you on the correct moves with spaced repetition.
 
-Two tools in one:
-1. **Repertoire manager** — Stockfish analysis of PGN files + sync with Lichess Studies for drilling via [Chessdriller](https://chessdriller.org/)
-2. **Mistake trainer** — Analyze your own games, extract mistakes, drill the correct moves in a [PWA](https://bobain.github.io/chess-self-coach/train/)
+**[Try the training PWA](https://bobain.github.io/chess-self-coach/train/)** | **[Documentation](https://bobain.github.io/chess-self-coach/docs/)** | **[Landing page](https://bobain.github.io/chess-self-coach/)**
 
-**[Documentation](https://bobain.github.io/chess-self-coach/docs/)** | **[Training PWA](https://bobain.github.io/chess-self-coach/train/)** | **[Landing page](https://bobain.github.io/chess-self-coach/)**
+## How It Works
 
-## Openings Covered
+```
+YOUR GAMES                    STOCKFISH ANALYSIS              TRAINING
+┌───────────────────┐        ┌───────────────────┐        ┌───────────────────┐
+│ Lichess + chess.com│  ───→  │ Parallel analysis  │  ───→  │ Find the Better   │
+│ 20 recent games    │        │ depth 18, 4 cores  │        │ Move (PWA)        │
+└───────────────────┘        └───────────────────┘        └───────────────────┘
+                                                           • Board position shown
+                                                           • Context: phase, advantage
+                                                           • Drag the better move
+                                                           • Explanation + best line
+                                                           • Spaced repetition (SM-2)
+                                                           • Link to original game
+```
 
-| Color | Opening | Key Variation |
-|-------|---------|--------------|
-| White | Queen's Gambit (1.d4 2.c4) | Harrwitz Attack (5.Bf4) vs QGD |
-| Black vs 1.e4 | Modern Scandinavian (1...d5 2.exd5 Nf6) | Fianchetto setup (...g6/...Bg7) |
-| Black vs 1.d4 | Slav Defense (1...d5 2...c6) | Czech Variation (...dxc4, ...Bf5 BEFORE e6) |
-| Black vs London | Anti-London with immediate ...c5 | |
+### One command to start
 
-## Prerequisites & Account Setup
+```bash
+chess-self-coach train --prepare    # fetch games + Stockfish analysis (~5 min)
+chess-self-coach train --serve      # open training in browser
+```
 
-### 1. Lichess Account
+### What you see
 
-1. Create an account at [lichess.org/signup](https://lichess.org/signup) (free)
-2. Create an API token:
-   - Go to [lichess.org/account/oauth/token/create](https://lichess.org/account/oauth/token/create)
-   - **Token description**: `chess-self-coach`
-   - Under **STUDIES & BROADCASTS**, check:
-     - "Read private studies and broadcasts" (`study:read`)
-     - "Create, update, delete studies and broadcasts" (`study:write`)
-   - Do NOT check any other scopes
-   - Click **Submit** — copy the token immediately (shown only once, starts with `lip_`)
-3. Test your token:
-   ```bash
-   curl -H "Authorization: Bearer lip_your_token" https://lichess.org/api/account
-   ```
+For each mistake in your games, the trainer shows:
+- **Context**: "Middlegame, you had a slight advantage. Your move lost significant material."
+- **The position** with material balance (captured pieces)
+- **Your task**: find the better move by dragging a piece
+- **After answering**: explanation, best line (playable), link to the original game
+- **Spaced repetition**: positions come back until mastered (intra-session + SM-2)
+- **Give up**: permanently dismiss positions you don't want to review
 
-### 2. Chessdriller
+### Mistake categories
 
-1. Go to [chessdriller.org](https://chessdriller.org/)
-2. Log in with your Lichess account (OAuth — no separate account needed)
-3. Chessdriller reads directly from your Lichess Studies — no additional configuration
-
-### 3. Stockfish
-
-The CLI uses Stockfish for position analysis. It searches for Stockfish in this order:
-1. Path specified in `config.json`
-2. System Stockfish (`/usr/games/stockfish` or in `$PATH`)
-3. Custom path via `--engine` flag
-
-To install system Stockfish: `sudo apt install stockfish`
-
-### 4. En-Croissant (Optional)
-
-[En-Croissant](https://encroissant.org/) is a desktop chess GUI for offline visual review of PGN files. It is **not required** — Lichess Study provides the same interactive study features online.
-
-If used, note that En-Croissant modifies PGN files while they're open — always close files before running CLI commands.
+| Category | Centipawn loss | Example |
+|----------|--------------|---------|
+| Blunder | >= 200 cp | Hanging a piece, allowing checkmate |
+| Mistake | 100-199 cp | Missing a tactic, losing material |
+| Inaccuracy | 50-99 cp | Passive move when active was better |
 
 ## Installation
 
@@ -64,220 +53,81 @@ If used, note that En-Croissant modifies PGN files while they're open — always
 # From PyPI
 pip install chess-self-coach
 
-# From source (development)
+# From source
 git clone https://github.com/Bobain/chess-self-coach.git
 cd chess-self-coach
 uv venv && uv sync
 ```
 
-## Configuration
+### Prerequisites
+
+- **Python >= 3.12**
+- **Stockfish** — `sudo apt install stockfish` (or provide path via `--engine`)
+- **Lichess API token** — for fetching your games ([create one here](https://lichess.org/account/oauth/token/create), scopes: `study:read` + `study:write`)
+
+### Configuration
 
 ```bash
-# Save your Lichess token
 echo "LICHESS_API_TOKEN=lip_your_token_here" > .env
-
-# Run interactive setup (verifies auth, finds studies, configures config.json)
-chess-self-coach setup
+chess-self-coach setup    # interactive setup: verifies auth, configures config.json
 ```
 
 ## CLI Reference
 
-### `chess-self-coach analyze <file.pgn>`
-
-Analyze a PGN file with Stockfish. Adds `[%eval]` annotations in standard PGN format.
+### Training (main feature)
 
 ```bash
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --depth 12
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --in-place
-```
-
-Options:
-- `--depth N` — Analysis depth (default: 18)
-- `--threshold N` — Score swing for blunder detection (default: 1.0)
-- `--engine PATH` — Override Stockfish binary path
-- `--in-place` — Overwrite original file (default: writes to `*_analyzed.pgn`)
-
-### `chess-self-coach setup`
-
-Interactive setup wizard. Verifies Lichess authentication, finds existing studies, and configures `config.json`.
-
-### `chess-self-coach push <file.pgn>`
-
-Push a local PGN file to its mapped Lichess study. Automatically cleans up empty default chapters.
-
-```bash
-chess-self-coach push pgn/repertoire_blancs_gambit_dame_annote.pgn
-```
-
-### `chess-self-coach pull <file.pgn>`
-
-Pull the latest PGN from a Lichess study to a local file.
-
-```bash
-chess-self-coach pull pgn/repertoire_blancs_gambit_dame_annote.pgn
-chess-self-coach pull pgn/repertoire_blancs_gambit_dame_annote.pgn --in-place
-```
-
-### `chess-self-coach cleanup [file.pgn]`
-
-Remove empty default chapters (e.g. "Chapter 1") from Lichess studies. Runs automatically after `push`.
-
-```bash
-chess-self-coach cleanup                                              # all studies
-chess-self-coach cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn # one study
-```
-
-### `chess-self-coach status`
-
-Show sync status of all repertoire files, Stockfish availability, and Lichess configuration.
-
-### `chess-self-coach train --prepare`
-
-Analyze your recent games (Lichess + chess.com), find mistakes with Stockfish, and export `training_data.json`.
-
-Incremental by default: only new games are analyzed, existing positions and SRS progress are preserved.
-
-```bash
+# Fetch your games and analyze with Stockfish
 chess-self-coach train --prepare                    # 20 games, depth 18, parallel
-chess-self-coach train --prepare --games 10         # fewer games (faster)
-chess-self-coach train --prepare --depth 12         # lower depth (faster)
-chess-self-coach train --prepare --engine /path/sf   # custom Stockfish
-chess-self-coach train --prepare --fresh            # [dev] discard existing data, start from scratch
-chess-self-coach train --refresh-explanations       # [dev] regenerate explanations without Stockfish
-```
+chess-self-coach train --prepare --games 50         # more games
+chess-self-coach train --prepare --depth 12         # faster analysis
 
-### `chess-self-coach train --serve`
-
-Open the training PWA in the browser. Starts a local HTTP server and copies the training data.
-
-```bash
+# Open the training interface
 chess-self-coach train --serve
-```
 
-### `chess-self-coach train --stats`
-
-Show training data statistics (positions by category and source).
-
-```bash
+# Check your stats
 chess-self-coach train --stats
 ```
 
-## Training Mode: Find the Better Move
-
-Review your own games, find your mistakes, and drill the correct moves with spaced repetition.
-
-### How it works
-
-```
-PREPARATION (your PC, once)              DRILL (browser, daily)
-┌─────────────────────────────┐         ┌──────────────────────────────┐
-│ chess-self-coach train    │         │ PWA in browser               │
-│           --prepare         │  JSON   │                              │
-│                             │ ─────→  │ 1. Shows your mistake        │
-│ 1. Fetches your games       │         │ 2. "Find a better move"      │
-│    (Lichess + chess.com)    │         │ 3. You drag a piece          │
-│ 2. Stockfish analyzes each  │         │ 4. Correct → explanation     │
-│    position (depth 18)      │         │ 5. Wrong → 3 attempts max    │
-│ 3. Finds blunders/mistakes  │         │ 6. Spaced repetition (SM-2)  │
-│ 4. Generates explanations   │         │ 7. Progress in localStorage  │
-│ 5. Exports training_data.json         │                              │
-└─────────────────────────────┘         └──────────────────────────────┘
-```
-
-### Quick start
+Incremental by default: only new games are analyzed. Existing positions and your SRS progress are preserved.
 
 ```bash
-# 1. Prepare training data (takes a few minutes — Stockfish analyzes each game)
-chess-self-coach train --prepare --games 10
-
-# 2. Open the training interface
-chess-self-coach train --serve
-
-# 3. Check your stats
-chess-self-coach train --stats
+# Developer options
+chess-self-coach train --prepare --fresh            # [dev] discard data, start from scratch
+chess-self-coach train --refresh-explanations       # [dev] regenerate texts without Stockfish
 ```
 
-### Mistake categories
+### Repertoire management (secondary)
 
-| Category | Centipawn loss | Example |
-|----------|--------------|---------|
-| Blunder | ≥ 200 cp | Hanging a piece |
-| Mistake | 100–199 cp | Missing a tactic |
-| Inaccuracy | 50–99 cp | Passive move when active was available |
+Also includes tools for managing opening repertoire PGN files synced with Lichess Studies:
 
-### PWA settings
-
-In the training interface, click the gear icon to configure:
-- **Positions per session** (default: 10)
-- **Difficulty filter**: all mistakes, blunders only, or blunders + mistakes
-- **Reset progress**: clears all spaced repetition data
-
-### Data storage
-
-- `training_data.json` — generated by `--prepare`, contains positions + explanations (gitignored)
-- **Browser localStorage** — stores your drill progress (SRS state, session history)
-- Each device has its own progress (no multi-device sync in current version)
-
-## Workflow
-
-```
-Zone 1: Local Files           →  Zone 2: Lichess Study      →  Zone 3: Training
-  (CLI prepares + analyzes)        (source of truth)              (drill mistakes)
-  *_annote.pgn                     → Chessdriller (openings)      PWA (own games)
-
-  chess-self-coach                chess-self-coach             chess-self-coach
-  analyze                           push / pull                    train
+```bash
+chess-self-coach analyze <file.pgn>     # Stockfish analysis with [%eval] annotations
+chess-self-coach push <file.pgn>        # push PGN to Lichess Study
+chess-self-coach pull <file.pgn>        # pull from Lichess Study
+chess-self-coach cleanup [file.pgn]     # remove empty default chapters
+chess-self-coach status                 # sync status of all repertoire files
+chess-self-coach setup                  # interactive configuration wizard
 ```
 
-## PGN File Structure
+## Data & Privacy
 
-Two versions per opening:
-- `*_annote.pgn` — Annotated reference version with comments, variation names, theoretical notes
-- `*.pgn` — Working copy (may contain Stockfish annotations)
-
-## Tool Versions
-
-| Tool | Version | Notes |
-|------|---------|-------|
-| Stockfish | 18 | System package is v16; v18 available via En-Croissant or direct download |
-| python-chess | >=1.11.0 | PGN parsing + UCI protocol |
-| berserk | >=0.14.0 | Official Lichess Python client |
-| Python | >=3.12 | Required |
-
-## Using with Claude Code (Optional)
-
-If you use [Claude Code](https://claude.ai/claude-code), slash commands are available:
-- `/analyze` — Run Stockfish analysis
-- `/push-lichess` — Push to Lichess study
-- `/pull-lichess` — Pull from Lichess study
-- `/sync-status` — Show sync status
+- Your games are fetched from public APIs (Lichess, chess.com)
+- `training_data.json` is stored locally (gitignored)
+- Drill progress is in your browser's localStorage
+- No server, no account, no tracking
 
 ## GitHub Pages
 
-The project is hosted on GitHub Pages with three sections:
-
 | URL | Content |
 |-----|---------|
-| [bobain.github.io/chess-self-coach/](https://bobain.github.io/chess-self-coach/) | Landing page |
-| [bobain.github.io/chess-self-coach/docs/](https://bobain.github.io/chess-self-coach/docs/) | Documentation (MkDocs + auto-generated API) |
-| [bobain.github.io/chess-self-coach/train/](https://bobain.github.io/chess-self-coach/train/) | Training PWA (installable on mobile) |
-
-## CI/CD
-
-| Workflow | Trigger | Steps |
-|----------|---------|-------|
-| **CI** (`ci.yml`) | PR to `main` | Unit tests + Playwright e2e tests |
-| **Test & Deploy** (`deploy.yml`) | Push to `main` (merge) | Tests → Build docs (mkdocstrings + jsdoc-to-markdown) → Assemble site → Deploy to GitHub Pages |
-
-Branch protection on `main`:
-- Direct push forbidden (PR required)
-- Tests must pass before merge
-- Re-runs on every push to the PR branch
+| [/chess-self-coach/](https://bobain.github.io/chess-self-coach/) | Landing page |
+| [/chess-self-coach/train/](https://bobain.github.io/chess-self-coach/train/) | Training PWA |
+| [/chess-self-coach/docs/](https://bobain.github.io/chess-self-coach/docs/) | Documentation |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for code guidelines (Karpathy principles).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code guidelines.
 
 ## License
 
