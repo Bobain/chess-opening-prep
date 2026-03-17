@@ -59,21 +59,69 @@ main {
   gap: 1rem;
 }
 
-/* Board sizing: square, responsive */
+/* Board sizing: square, responsive, with space for outside coordinates */
 #board-container {
   width: min(88vw, 480px);
   aspect-ratio: 1;
+  padding-left: 1.5rem;
+  padding-bottom: 1.5rem;
+  position: relative;
 }
 
 #board {
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
 /* Override chessground dimensions */
 cg-container {
   width: 100% !important;
   height: 100% !important;
+}
+
+/* Move coordinates outside the board */
+.cg-wrap coords {
+  pointer-events: none;
+}
+
+.cg-wrap coords.ranks {
+  position: absolute !important;
+  left: -1.5rem !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 1.5rem !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.cg-wrap coords.ranks coord {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  transform: none !important;
+}
+
+.cg-wrap coords.files {
+  position: absolute !important;
+  bottom: -1.5rem !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 1.5rem !important;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+.cg-wrap coords coord {
+  font-weight: 600 !important;
+  color: var(--text-dim) !important;
+  font-size: 0.8rem !important;
+  text-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 !important;
 }
 
 #info-panel {
@@ -125,6 +173,25 @@ cg-container {
 
 #controls {
   margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+#show-position-btn {
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#show-position-btn:hover {
+  background: var(--primary);
+  color: var(--text);
 }
 
 #next-btn,

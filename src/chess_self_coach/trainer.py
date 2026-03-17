@@ -93,6 +93,19 @@ def _classify_mistake(cp_loss: int) -> str | None:
     return None
 
 
+def _format_cp_loss_human(cp_loss: int) -> str:
+    """Format centipawn loss for human display.
+
+    Returns 'mate' for mate-scale losses, or pawn-based values otherwise.
+    """
+    if cp_loss >= _MATE_CP:
+        return "mate"
+    pawns = cp_loss / 100.0
+    if pawns == int(pawns):
+        return f"{int(pawns)} pawn{'s' if int(pawns) != 1 else ''}"
+    return f"{pawns:.1f} pawns"
+
+
 def generate_explanation(
     board: chess.Board,
     actual_san: str,
@@ -103,7 +116,7 @@ def generate_explanation(
     """Generate a rule-based explanation for a mistake.
 
     Detects basic patterns: missed captures, missed checks/checkmates,
-    hanging pieces. Falls back to a generic template.
+    hanging pieces, stalemate. Falls back to a generic template.
 
     Args:
         board: Board position BEFORE the move was played.
@@ -115,7 +128,19 @@ def generate_explanation(
     Returns:
         Explanation string.
     """
-    parts = [f"You played {actual_san} ({category}, -{cp_loss} cp)."]
+    loss_str = _format_cp_loss_human(cp_loss)
+    parts = [f"You played {actual_san} ({category}, lost {loss_str})."]
+
+    # Analyze the actual move for stalemate detection
+    board_after_actual = None
+    try:
+        actual_move = board.parse_san(actual_san)
+        board_after_actual = board.copy()
+        board_after_actual.push(actual_move)
+        if board_after_actual.is_stalemate():
+            parts.append("This leads to stalemate (draw)!")
+    except ValueError:
+        pass
 
     try:
         best_move = board.parse_san(best_san)
@@ -134,7 +159,6 @@ def generate_explanation(
     if board.is_capture(best_move):
         captured_piece = board.piece_at(best_move.to_square)
         if captured_piece is None:
-            # En passant
             parts.append(f"{best_san} wins a pawn (en passant).")
         else:
             piece_name = chess.piece_name(captured_piece.piece_type)
@@ -147,10 +171,7 @@ def generate_explanation(
         parts.append(f"{best_san} also gives check.")
 
     # Check if the actual move hangs a piece
-    try:
-        actual_move = board.parse_san(actual_san)
-        board_after_actual = board.copy()
-        board_after_actual.push(actual_move)
+    if board_after_actual:
         moving_piece = board.piece_at(actual_move.from_square)
         if moving_piece:
             attacked = board_after_actual.is_attacked_by(
@@ -163,8 +184,6 @@ def generate_explanation(
                 piece_name = chess.piece_name(moving_piece.piece_type)
                 sq_name = chess.square_name(actual_move.to_square)
                 parts.append(f"Your {piece_name} on {sq_name} is left undefended.")
-    except ValueError:
-        pass
 
     return " ".join(parts)
 
@@ -295,6 +314,16 @@ def extract_mistakes(
 
         if pos["score_cp"] is None or next_pos["score_cp"] is None:
             continue
+
+        # Skip if the played move delivers checkmate
+        board = chess.Board(pos["fen"])
+        try:
+            actual_move = board.parse_san(pos["actual_san"])
+            board.push(actual_move)
+            if board.is_checkmate():
+                continue
+        except ValueError:
+            pass
 
         cp_loss = compute_cp_loss(
             pos["score_cp"], next_pos["score_cp"], pos["turn"]

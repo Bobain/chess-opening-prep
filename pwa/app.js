@@ -265,9 +265,25 @@ function showFeedback(correct, position, gaveUp = false) {
   const feedbackText = document.getElementById('feedback-text');
   const explanationEl = document.getElementById('explanation');
   const nextBtn = document.getElementById('next-btn');
+  const showPosBtn = document.getElementById('show-position-btn');
 
   feedbackEl.classList.remove('hidden');
   nextBtn.classList.remove('hidden');
+  showPosBtn.classList.remove('hidden');
+
+  // Compute the FEN after best move for toggle
+  let bestMoveFen = null;
+  let bestMoveSquares = null;
+  try {
+    const chess = new Chess(position.fen);
+    const move = chess.move(position.best_move);
+    if (move) {
+      bestMoveFen = chess.fen();
+      bestMoveSquares = [move.from, move.to];
+    }
+  } catch {
+    // Ignore
+  }
 
   if (correct) {
     feedbackText.textContent = 'Correct!';
@@ -279,18 +295,12 @@ function showFeedback(correct, position, gaveUp = false) {
     feedbackText.className = 'incorrect';
 
     // Show the best move on the board
-    try {
-      const chess = new Chess(position.fen);
-      const move = chess.move(position.best_move);
-      if (move && cg) {
-        cg.set({
-          fen: chess.fen(),
-          lastMove: [move.from, move.to],
-          movable: { dests: new Map() },
-        });
-      }
-    } catch {
-      // Ignore if move can't be played on board
+    if (bestMoveFen && cg) {
+      cg.set({
+        fen: bestMoveFen,
+        lastMove: bestMoveSquares,
+        movable: { dests: new Map() },
+      });
     }
   }
 
@@ -300,6 +310,37 @@ function showFeedback(correct, position, gaveUp = false) {
   if (cg) {
     cg.set({ movable: { dests: new Map() } });
   }
+
+  // Toggle between original position and best move
+  let showingOriginal = false;
+  showPosBtn.textContent = 'Show original position';
+  showPosBtn.onclick = () => {
+    if (!cg) return;
+    showingOriginal = !showingOriginal;
+    if (showingOriginal) {
+      cg.set({
+        fen: position.fen,
+        lastMove: undefined,
+        movable: { dests: new Map() },
+      });
+      showPosBtn.textContent = 'Show best move';
+    } else {
+      if (bestMoveFen) {
+        cg.set({
+          fen: bestMoveFen,
+          lastMove: bestMoveSquares,
+          movable: { dests: new Map() },
+        });
+      } else {
+        cg.set({
+          fen: position.fen,
+          lastMove: undefined,
+          movable: { dests: new Map() },
+        });
+      }
+      showPosBtn.textContent = 'Show original position';
+    }
+  };
 }
 
 function showTryAgain() {
