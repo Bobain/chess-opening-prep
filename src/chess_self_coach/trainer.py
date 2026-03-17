@@ -120,6 +120,7 @@ def generate_explanation(
     cp_loss: int,
     category: str,
     was_mate: bool = False,
+    score_after_cp: int | None = None,
 ) -> str:
     """Generate a rule-based explanation for a mistake.
 
@@ -133,6 +134,7 @@ def generate_explanation(
         cp_loss: Centipawn loss.
         category: Mistake category string.
         was_mate: True if the position before was a forced mate.
+        score_after_cp: Score after the move (white perspective), for context.
 
     Returns:
         Explanation string.
@@ -140,7 +142,11 @@ def generate_explanation(
     loss_str = _format_cp_loss_human(cp_loss, was_mate=was_mate)
     parts = [f"You played {actual_san} ({category}, lost {loss_str})."]
 
-    # Analyze the actual move for stalemate detection
+    # Detect mate → draw transition (stalemate or fortress)
+    if was_mate and score_after_cp is not None and abs(score_after_cp) < 50:
+        parts.append("You had a winning position but the game is now a draw.")
+
+    # Analyze the actual move for immediate stalemate detection
     board_after_actual = None
     try:
         actual_move = board.parse_san(actual_san)
@@ -365,6 +371,7 @@ def extract_mistakes(
         explanation = generate_explanation(
             board, pos["actual_san"], pos["best_san"], cp_loss, category,
             was_mate=was_mate,
+            score_after_cp=next_pos["score_cp"],
         )
 
         mistakes.append({
