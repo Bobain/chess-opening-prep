@@ -190,10 +190,35 @@ def setup() -> None:
     version = check_stockfish_version(sf_path, config.get("stockfish", {}).get("expected_version"))
     print(f"  Found {version} at {sf_path}")
 
-    # Step 3: List user's studies and try to match
-    print("\nStep 3: Looking for existing Lichess studies...")
+    # Step 3: Configure player usernames for game import
+    print("\nStep 3: Player usernames (for training mode)...")
+    players = config.get("players", {})
+
+    # Lichess username comes from the API token
     account = client.account.get()
     username = account["username"]
+    players["lichess"] = username
+    print(f"  Lichess: {username} (from API token)")
+
+    # Chess.com username must be entered manually
+    current_chesscom = players.get("chesscom", "")
+    if current_chesscom:
+        print(f"  Chess.com: {current_chesscom} (already configured)")
+        change = input("  Change it? [y/N] ").strip().lower()
+        if change == "y":
+            current_chesscom = ""
+    if not current_chesscom:
+        chesscom_input = input("  Enter your chess.com username (or press Enter to skip): ").strip()
+        if chesscom_input:
+            players["chesscom"] = chesscom_input
+            print(f"  ✓ Chess.com: {chesscom_input}")
+        else:
+            print("  Skipped (only Lichess games will be imported)")
+
+    config["players"] = players
+
+    # Step 4: List user's studies and try to match
+    print("\nStep 4: Looking for existing Lichess studies...")
 
     # berserk doesn't have a method to list studies with metadata,
     # so we use the Lichess API directly (ndjson format).
