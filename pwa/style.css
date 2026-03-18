@@ -195,6 +195,7 @@ cg-container {
   color: var(--success);
   font-weight: 600;
   font-family: monospace;
+  white-space: pre-line;
 }
 
 #controls {

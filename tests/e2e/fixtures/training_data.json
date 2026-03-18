@@ -71,6 +71,29 @@
         "opening": "Queen's Pawn"
       },
       "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
+    },
+    {
+      "id": "test_pos_004",
+      "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+      "player_color": "white",
+      "player_move": "Qf3",
+      "best_move": "Qxf7#",
+      "score_before": "+100.00",
+      "score_after": "+2.12",
+      "cp_loss": 7888,
+      "category": "blunder",
+      "explanation": "You played Qf3 (blunder). You had checkmate with Qxf7#.",
+      "acceptable_moves": ["Qxf7#"],
+      "pv": ["Qxf7#"],
+      "game": {
+        "id": "https://lichess.org/testgame4",
+        "source": "lichess",
+        "opponent": "opponent4",
+        "date": "2026-03-15",
+        "result": "1-0",
+        "opening": "Scholar's Mate"
+      },
+      "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
     }
   ]
 }

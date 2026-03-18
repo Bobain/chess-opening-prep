@@ -438,18 +438,23 @@ function showFeedback(correct, position, gaveUp = false) {
   // Show eval summary
   const evalSummaryEl = document.getElementById('eval-summary');
   if (evalSummaryEl && position.score_after != null) {
+    const isWhite = position.player_color === 'white';
     const formatEval = (s) => {
-      if (s === '+100.00') return 'Mate';
-      if (s === '-100.00') return 'Mated';
-      if (s === 'TB:win') return 'Win (tablebase)';
-      if (s === 'TB:loss') return 'Loss (tablebase)';
+      if (s === 'TB:win') return isWhite ? 'You win (tablebase)' : 'Opponent wins (tablebase)';
+      if (s === 'TB:loss') return isWhite ? 'Opponent wins (tablebase)' : 'You win (tablebase)';
       if (s === 'TB:draw') return 'Draw (tablebase)';
+      const val = parseFloat(s);
+      if (isNaN(val)) return s;
+      const isPositive = val > 0;
+      const playerWins = isWhite ? isPositive : !isPositive;
+      if (Math.abs(val) >= 100) return playerWins ? 'You win' : 'Opponent wins';
+      if (Math.abs(val) >= 10) return playerWins ? 'You win' : 'Opponent wins';
       return s;
     };
     const yourMove = formatEval(position.score_after);
     const bestMove = formatEval(position.score_before);
     console.log(`[showFeedback] evals: your_move=${yourMove}, best_move=${bestMove}`);
-    evalSummaryEl.textContent = `Your move: ${yourMove}  |  Best move: ${bestMove}`;
+    evalSummaryEl.textContent = `Your move: ${yourMove}\nBest move: ${bestMove}`;
     evalSummaryEl.classList.remove('hidden');
   } else if (evalSummaryEl) {
     evalSummaryEl.classList.add('hidden');

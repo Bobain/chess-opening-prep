@@ -7,10 +7,11 @@ a temp directory — the real training data is never touched.
 Requirements:
     uv run playwright install chromium
 
-Test fixture positions (3 total, session size set to 3):
+Test fixture positions (4 total):
     1. White to move, starting position, best_move="d4", also accepts "e4"
     2. White to move, after 1.e4 e5, best_move="Nf3"
     3. Black to move, after 1.d4, best_move="d5"
+    4. White to move, Scholar's Mate, best_move="Qxf7#" (score_before=+100.00)
 """
 
 from __future__ import annotations
@@ -111,8 +112,8 @@ def test_next_button_advances_position(page, pwa_url):
     page.locator("#next-btn").click()
     page.wait_for_timeout(500)
 
-    # Progress stays at 1/3 (position not yet acquired — needs 2nd success)
-    expect(page.locator("#progress")).to_contain_text("1 / 3")
+    # Progress stays at 1/4 (position not yet acquired — needs 2nd success)
+    expect(page.locator("#progress")).to_contain_text("1 / 4")
     expect(page.locator("#prompt")).to_contain_text("You played")
 
 
@@ -137,15 +138,17 @@ def test_session_completion_shows_summary(page, pwa_url):
     _solve_current_position(page, "d2", "d4", "white")   # Pos 1 (1st time)
     _solve_current_position(page, "g1", "f3", "white")   # Pos 2 (1st time)
     _solve_current_position(page, "d7", "d5", "black")   # Pos 3 (1st time)
+    _solve_current_position(page, "h5", "f7", "white")   # Pos 4 (1st time)
 
     # Pass 2: reinserted positions (confirm learning)
     _solve_current_position(page, "d2", "d4", "white")   # Pos 1 (2nd time)
     _solve_current_position(page, "g1", "f3", "white")   # Pos 2 (2nd time)
     _solve_current_position(page, "d7", "d5", "black")   # Pos 3 (2nd time)
+    _solve_current_position(page, "h5", "f7", "white")   # Pos 4 (2nd time)
 
-    # Summary modal should appear — all 6 answers correct
+    # Summary modal should appear — all 8 answers correct
     expect(page.locator("#summary-modal")).to_be_visible()
-    expect(page.locator("#summary-stats")).to_contain_text("6 / 6")
+    expect(page.locator("#summary-stats")).to_contain_text("8 / 8")
 
 
 def test_intra_session_repetition_on_correct(page, pwa_url):
@@ -276,3 +279,64 @@ def test_see_moves_works_after_reload(page, pwa_url):
     expect(page.locator("#feedback-text")).to_contain_text("Correct")
     expect(page.locator("#see-moves")).to_be_visible()
     expect(page.locator("#see-moves")).to_contain_text("See moves")
+
+
+# --- Eval summary ---
+
+
+def test_eval_summary_visible_after_correct(page, pwa_url):
+    """Eval summary appears after a correct answer with both eval lines."""
+    _wait_for_board(page, pwa_url)
+
+    # Position 1: score_before="+0.30", score_after="-0.20"
+    make_move(page, "d2", "d4", "white")
+    page.wait_for_timeout(300)
+
+    eval_el = page.locator("#eval-summary")
+    expect(eval_el).to_be_visible()
+    expect(eval_el).to_contain_text("Your move:")
+    expect(eval_el).to_contain_text("Best move:")
+
+
+def test_eval_summary_shows_mate_as_text(page, pwa_url, console_errors):
+    """Mate scores display as 'You win'/'Opponent wins', not +100.00."""
+    _wait_for_board(page, pwa_url)
+
+    # Navigate to position 4 by solving 1, 2, 3 first
+    _solve_current_position(page, "d2", "d4", "white")   # Pos 1
+    _solve_current_position(page, "g1", "f3", "white")   # Pos 2
+    _solve_current_position(page, "d7", "d5", "black")   # Pos 3
+
+    # Position 4: White, score_before="+100.00" → "You win"
+    page.wait_for_selector("cg-board piece", timeout=5000)
+    make_move(page, "h5", "f7", "white")
+    page.wait_for_timeout(300)
+
+    eval_el = page.locator("#eval-summary")
+    expect(eval_el).to_be_visible()
+    expect(eval_el).to_contain_text("You win")
+    # Must NOT contain raw +100.00
+    text = eval_el.text_content()
+    assert "+100.00" not in text, f"Raw mate score should not appear: {text}"
+
+    # Verify via console logs
+    log_text = "\n".join(console_errors["messages"])
+    assert "[showFeedback] evals:" in log_text
+
+
+# --- Dismiss button ---
+
+
+def test_dismiss_button_visible_after_wrong_attempt(page, pwa_url):
+    """The 'Give up on this lesson' button appears after the first wrong move."""
+    _wait_for_board(page, pwa_url)
+
+    # Dismiss should NOT be visible initially
+    expect(page.locator("#dismiss-btn")).not_to_be_visible()
+
+    # Play a wrong move
+    make_move(page, "a2", "a3", "white")
+    page.wait_for_timeout(300)
+
+    expect(page.locator("#feedback-text")).to_contain_text("Try again")
+    expect(page.locator("#dismiss-btn")).to_be_visible()
