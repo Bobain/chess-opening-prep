@@ -1118,6 +1118,11 @@ def serve_pwa() -> None:
         if f.is_file() and f.name != "training_data.json":
             shutil.copy2(f, serve_dir / f.name)
 
+    # Copy Stockfish WASM directory if present
+    stockfish_src = pwa_src / "stockfish"
+    if stockfish_src.exists():
+        shutil.copytree(stockfish_src, serve_dir / "stockfish")
+
     # Inject version + timestamp into service worker (invalidates cache on each serve)
     sw_path = serve_dir / "sw.js"
     sw_text = sw_path.read_text()

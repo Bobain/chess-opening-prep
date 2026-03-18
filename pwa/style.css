@@ -260,6 +260,7 @@ cg-container {
   border-color: var(--accent);
 }
 
+#retry-btn,
 #next-btn,
 #new-session {
   background: var(--primary);
@@ -272,6 +273,7 @@ cg-container {
   transition: background 0.15s;
 }
 
+#retry-btn:hover,
 #next-btn:hover,
 #new-session:hover {
   background: var(--primary-hover);

@@ -44,6 +44,11 @@ def _copy_pwa_files(tmp_dir, training_data_path):
         if f.is_file() and f.name != "training_data.json":
             shutil.copy2(f, tmp_dir / f.name)
 
+    # Copy Stockfish WASM directory if present
+    stockfish_src = PWA_DIR / "stockfish"
+    if stockfish_src.exists():
+        shutil.copytree(stockfish_src, tmp_dir / "stockfish")
+
     # Inject unique version into service worker
     sw_path = tmp_dir / "sw.js"
     sw_text = sw_path.read_text()

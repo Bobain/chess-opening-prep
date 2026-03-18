@@ -16,6 +16,49 @@
 let Chessground;
 /** @type {Function} Chess constructor (loaded from CDN) */
 let Chess;
+
+// --- Stockfish WASM engine (lazy-loaded for punishment moves) ---
+/** @type {?Worker} Stockfish Web Worker */
+let sfWorker = null;
+/** @type {?Function} Resolve callback for current bestmove promise */
+let sfResolve = null;
+
+/**
+ * Initialize Stockfish WASM engine (lazy, first call only).
+ * Uses the lite single-threaded variant for GitHub Pages compatibility.
+ */
+async function initStockfish() {
+  if (sfWorker) return;
+  console.log('[initStockfish] Loading Stockfish WASM...');
+  sfWorker = new Worker('stockfish/stockfish-18-lite-single.js');
+  sfWorker.onmessage = (e) => {
+    const line = e.data;
+    if (line.startsWith('bestmove') && sfResolve) {
+      const match = line.match(/^bestmove\s(\S+)/);
+      console.log('[Stockfish] bestmove:', match ? match[1] : 'none');
+      sfResolve(match ? match[1] : null);
+      sfResolve = null;
+    }
+  };
+  sfWorker.postMessage('uci');
+  sfWorker.postMessage('isready');
+  console.log('[initStockfish] Engine ready');
+}
+
+/**
+ * Get Stockfish's best move for a given position.
+ * @param {string} fen - Position in FEN notation.
+ * @param {number} [depth=12] - Search depth.
+ * @returns {Promise<string|null>} Best move in UCI notation (e.g. "e2e4") or null.
+ */
+async function getBestMove(fen, depth = 12) {
+  await initStockfish();
+  return new Promise(resolve => {
+    sfResolve = resolve;
+    sfWorker.postMessage('position fen ' + fen);
+    sfWorker.postMessage('go depth ' + depth);
+  });
+}
 /** @type {?Object} Parsed training_data.json */
 let trainingData = null;
 /** @type {Object.<string, SRSState>} SRS state keyed by position ID */
@@ -313,7 +356,7 @@ function setupBoard(position) {
  * @param {string} orig - Source square (e.g. "e2").
  * @param {string} dest - Destination square (e.g. "e4").
  */
-function handleMove(orig, dest) {
+async function handleMove(orig, dest) {
   const position = session[currentIndex];
   const chess = new Chess(position.fen);
 
@@ -339,10 +382,30 @@ function handleMove(orig, dest) {
     showFeedback(false, position, true);
     recordResult(false);
   } else {
-    // Wrong, try again
+    // Wrong — show punishment move, then let the player retry
     console.log('[handleMove] → WRONG, try again');
     showTryAgain();
-    setTimeout(() => setupBoard(position), 400);
+    try {
+      const chessAfter = new Chess(position.fen);
+      chessAfter.move(san);
+      const bestUci = await getBestMove(chessAfter.fen(), 12);
+      if (bestUci) {
+        const from = bestUci.slice(0, 2);
+        const to = bestUci.slice(2, 4);
+        console.log(`[handleMove] Punishment: ${from}→${to}`);
+        // Show the player's wrong move, then animate the punishment response
+        cg.set({ fen: chessAfter.fen(), lastMove: [orig, dest], movable: { dests: new Map() } });
+        setTimeout(() => {
+          cg.move(from, to);
+          setTimeout(() => showRetryButton(position), 1000);
+        }, 800);
+      } else {
+        setTimeout(() => setupBoard(position), 400);
+      }
+    } catch (err) {
+      console.log('[handleMove] Stockfish WASM unavailable, fallback:', err.message);
+      setTimeout(() => setupBoard(position), 400);
+    }
   }
 }
 
@@ -556,6 +619,21 @@ function showTryAgain() {
     const position = session[currentIndex];
     _showSeeMovesLink(position);
   }
+}
+
+/**
+ * Show the Retry button after a punishment move. Clicking resets the board.
+ * @param {Object} position - The current training position.
+ */
+function showRetryButton(position) {
+  console.log('[showRetryButton] Showing retry');
+  const retryBtn = document.getElementById('retry-btn');
+  retryBtn.classList.remove('hidden');
+  retryBtn.onclick = () => {
+    console.log('[showRetryButton] Retry clicked');
+    retryBtn.classList.add('hidden');
+    setupBoard(position);
+  };
 }
 
 /**
