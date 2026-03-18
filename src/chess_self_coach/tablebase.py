@@ -141,25 +141,29 @@ def tablebase_cp_loss(
     return _TRANSITION_CP_LOSS.get((tier_before, tier_after), 0)
 
 
-def tablebase_context(before: TablebaseResult, piece_count: int) -> str:
+def tablebase_context(
+    before: TablebaseResult, piece_count: int, player_color: str = "white"
+) -> str:
     """Generate context string for a tablebase-resolved position.
 
     Args:
         before: Tablebase result for the position before the move.
         piece_count: Number of pieces on the board.
+        player_color: "white" or "black".
 
     Returns:
         Context string shown before the player answers.
     """
     verdict = before.format_verdict()
     tier = before.tier
+    color_label = f"playing as {player_color.capitalize()}"
     if tier == "WIN":
         advantage = "you had a winning position"
     elif tier == "LOSS":
         advantage = "you were in a difficult position"
     else:
         advantage = "the position was equal"
-    return f"Endgame ({piece_count} pieces), {advantage}. Tablebase: theoretical {verdict}."
+    return f"Endgame ({piece_count} pieces), {color_label}, {advantage}. Tablebase: theoretical {verdict}."
 
 
 def tablebase_explanation(

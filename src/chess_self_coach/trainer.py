@@ -285,8 +285,14 @@ def _generate_context(
     score_after_is_mate = score_after_cp is not None and abs(score_after_cp) >= _MATE_CP
 
     phase = _detect_game_phase(fen) if fen else ""
+    color_label = f"playing as {player_color.capitalize()}"
     advantage = _describe_advantage(score_before_cp, player_color) if score_before_cp is not None else ""
-    prefix = f"{phase}, {advantage}." if phase and advantage else (phase + "." if phase else "")
+    if phase and advantage:
+        prefix = f"{phase}, {color_label}, {advantage}."
+    elif phase:
+        prefix = f"{phase}, {color_label}."
+    else:
+        prefix = f"{color_label.capitalize()}."
 
     if was_mate and score_after_cp is not None and abs(score_after_cp) < 50:
         return f"{prefix} Your move threw away a winning position and led to a draw."
@@ -534,7 +540,8 @@ def extract_mistakes(
                 continue
 
             piece_count = len(chess.Board(pos["fen"]).piece_map())
-            context = tablebase_context(tb_before, piece_count)
+            p_color = "white" if player_color == chess.WHITE else "black"
+            context = tablebase_context(tb_before, piece_count, p_color)
             explanation = tablebase_explanation(
                 tb_before, tb_after, pos["actual_san"], pos["best_san"],
             )

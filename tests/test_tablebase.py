@@ -94,15 +94,17 @@ def test_format_verdict_loss_with_dtz():
 
 
 def test_context_text_win():
-    ctx = tablebase_context(_tb("win", dtm=23), 5)
+    ctx = tablebase_context(_tb("win", dtm=23), 5, "white")
     assert "Tablebase" in ctx
     assert "theoretical win" in ctx
     assert "5 pieces" in ctx
+    assert "playing as White" in ctx
 
 
 def test_context_text_draw():
-    ctx = tablebase_context(_tb("draw"), 4)
+    ctx = tablebase_context(_tb("draw"), 4, "black")
     assert "theoretical draw" in ctx
+    assert "playing as Black" in ctx
 
 
 # --- tablebase_explanation ---
