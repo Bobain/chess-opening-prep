@@ -26,28 +26,29 @@ See [`.claude/CLAUDE.md`](.claude/CLAUDE.md) for detailed guidelines:
 
 ## Architecture
 
-### Static Demo vs Application
+### Demo vs Application
 
-| | Static Demo | Application |
+The PWA has **identical features** everywhere (Stockfish WASM runs in the browser for interactive analysis). The only difference is the data source.
+
+| | Demo | Application |
 |---|---|---|
 | **Distribution** | GitHub Pages | `pipx install` (one-liner) |
-| **Backend** | None — static files only | Python + Stockfish local |
-| **Training** | Show position, accept correct move | + punishment response (Stockfish plays the refutation), retry button |
-| **Data** | Bundled `training_data.json` | Generated from your own games |
+| **PWA features** | All (same JS, same WASM) | All (same JS, same WASM) |
+| **Data** | Sample `training_data.json` | Generated from your own games |
+| **CLI tools** | None | fetch, analyze, repertoire management |
 
-The **static demo** is a read-only preview hosted at GitHub Pages. It shows the training interface with sample data but cannot respond to moves with Stockfish analysis.
+The **demo** showcases the training interface with sample data. Install the app to train on your own games.
 
-The **application** runs a local backend (`chess-self-coach train --serve`) with Stockfish available. First exclusive feature: when the learner plays the wrong move, the application shows how the opponent punishes it (Stockfish's refutation move, animated with an arrow), then a Retry button lets the learner try again.
+The **application** CLI (`chess-self-coach`) fetches your games from Lichess/chess.com, runs batch Stockfish analysis (native, depth 18, multi-core), and generates your personal `training_data.json`. This pipeline cannot run in the browser (API auth, deep analysis, parallel processing).
+
+**Critical constraint**: never break the `[demo]`. All JS must work without a backend.
 
 ### Feature Development Protocol
 
 When developing a new feature:
 1. **Tag the scope**: use `[demo]`, `[app]`, or `[both]` in discussions and commit messages
-2. **App-first**: implement in the application first
-3. **Demo fallback**: for each app-only feature, add a minimal representation in the demo:
-   - Disabled button/UI element with tooltip "Available in the full app"
-   - Or informational display (show data without interactivity)
-   - NEVER silently omit — the user must see what they're missing
+2. PWA features are `[both]` by default — they run in the browser, no backend needed
+3. CLI/pipeline features are `[app]` only
 4. **Feature table**: keep the Architecture table updated with each new feature
 
 ---

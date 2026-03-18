@@ -72,16 +72,14 @@ For multi-step tasks, state a brief plan:
 
 ---
 
-## Architecture: Static Demo vs Application
+## Architecture: Demo vs Application
 
-Two distribution modes — always specify which one when discussing features:
+The PWA has identical features everywhere (Stockfish WASM runs in the browser). The only difference is the data source:
 
-- **Static demo** (`[demo]`): GitHub Pages, no backend, static files only. Shows positions, accepts correct move. Cannot run Stockfish.
-- **Application** (`[app]`): Installed via one-liner, local Python backend + Stockfish. Can respond to moves, show punishment, etc.
+- **Demo** (`[demo]`): GitHub Pages, sample `training_data.json`. Shows what the app can do.
+- **Application** (`[app]`): Installed via one-liner. Python CLI generates `training_data.json` from YOUR games (fetch + native Stockfish batch analysis).
 
-When adding a feature to the application, decide the **demo fallback**:
-- If the feature can work without backend → implement in both
-- If it requires backend → show a disabled state or message in the demo (never silently skip)
+**Critical constraint**: never break the `[demo]`. All JS must work without a backend.
 
 Full architecture table: see CONTRIBUTING.md § Architecture.
 
