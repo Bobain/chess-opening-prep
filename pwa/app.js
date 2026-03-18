@@ -437,16 +437,19 @@ function showFeedback(correct, position, gaveUp = false) {
 
   // Show eval summary
   const evalSummaryEl = document.getElementById('eval-summary');
-  if (evalSummaryEl && position.score_before != null) {
-    const before = position.score_before;
-    const after = position.score_after;
-    console.log(`[showFeedback] evals: before=${before}, after=${after}, cp_loss=${position.cp_loss}`);
-    let summary = `Before: ${before}  →  After your move: ${after}`;
-    summary += `  →  After best move: ${before}`;
-    if ((position.pv || []).length > 1) {
-      summary += `  →  End of line: ≈ ${before}`;
-    }
-    evalSummaryEl.textContent = summary;
+  if (evalSummaryEl && position.score_after != null) {
+    const formatEval = (s) => {
+      if (s === '+100.00') return 'Mate';
+      if (s === '-100.00') return 'Mated';
+      if (s === 'TB:win') return 'Win (tablebase)';
+      if (s === 'TB:loss') return 'Loss (tablebase)';
+      if (s === 'TB:draw') return 'Draw (tablebase)';
+      return s;
+    };
+    const yourMove = formatEval(position.score_after);
+    const bestMove = formatEval(position.score_before);
+    console.log(`[showFeedback] evals: your_move=${yourMove}, best_move=${bestMove}`);
+    evalSummaryEl.textContent = `Your move: ${yourMove}  |  Best move: ${bestMove}`;
     evalSummaryEl.classList.remove('hidden');
   } else if (evalSummaryEl) {
     evalSummaryEl.classList.add('hidden');

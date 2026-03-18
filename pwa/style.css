@@ -191,8 +191,9 @@ cg-container {
 
 #eval-summary {
   margin-top: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--text-dim);
+  font-size: 0.95rem;
+  color: var(--success);
+  font-weight: 600;
   font-family: monospace;
 }
 
