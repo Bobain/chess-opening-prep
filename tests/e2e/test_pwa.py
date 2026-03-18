@@ -222,17 +222,20 @@ def test_see_moves_visible_after_correct(page, pwa_url):
     expect(page.locator("#see-moves")).to_contain_text("See moves")
 
 
-def test_see_moves_visible_after_failure(page, pwa_url):
-    """The 'See moves' link appears after exhausting all attempts."""
+def test_see_moves_visible_after_two_wrong(page, pwa_url):
+    """The 'See moves' link appears after 2 wrong attempts (not 3)."""
     _wait_for_board(page, pwa_url)
 
-    for _ in range(3):
-        page.wait_for_selector("cg-board piece", timeout=5000)
-        page.wait_for_timeout(200)
-        make_move(page, "a2", "a3", "white")
-        page.wait_for_timeout(700)
+    # First wrong attempt — link should NOT appear
+    make_move(page, "a2", "a3", "white")
+    page.wait_for_timeout(500)
+    expect(page.locator("#see-moves")).not_to_be_visible()
 
-    expect(page.locator("#feedback-text")).to_contain_text("answer was")
+    # Second wrong attempt — link SHOULD appear
+    page.wait_for_selector("cg-board piece", timeout=5000)
+    page.wait_for_timeout(200)
+    make_move(page, "a2", "a3", "white")
+    page.wait_for_timeout(500)
     expect(page.locator("#see-moves")).to_be_visible()
 
 

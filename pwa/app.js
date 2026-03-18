@@ -140,6 +140,7 @@ function saveSRSState() {
 function selectPositions(positions, count) {
   const today = new Date().toISOString().split('T')[0];
   const settings = loadSettings();
+  console.log(`[selectPositions] ${positions.length} available, selecting up to ${count}, difficulty=${settings.difficulty}`);
 
   // Filter by difficulty
   let filtered = positions;
@@ -186,7 +187,7 @@ function selectPositions(positions, count) {
  * @param {string} fen - FEN of the position (contains fullmove number and side to move).
  * @returns {string} URL with move anchor/parameter, or original URL if format unknown.
  */
-function getMoveLink(gameId, fen) {
+function getMoveLink(gameId, fen, playerColor) {
   const parts = fen.split(' ');
   const turn = parts[1];
   const fullmove = parseInt(parts[5]);
@@ -194,7 +195,8 @@ function getMoveLink(gameId, fen) {
   const ply = (fullmove - 1) * 2 + (turn === 'b' ? 1 : 0);
 
   if (gameId.includes('lichess.org')) {
-    return gameId + '#' + ply;
+    const orientation = playerColor === 'black' ? '/black' : '';
+    return gameId + orientation + '#' + ply;
   }
   if (gameId.includes('chess.com')) {
     return gameId + '?move=' + ply;
@@ -279,6 +281,7 @@ function updateMaterialBalance(fen, orientation) {
  * @param {Object} position - Training position from training_data.json.
  */
 function setupBoard(position) {
+  console.log(`[setupBoard] id=${position.id}, color=${position.player_color}, fen=${position.fen.substring(0, 30)}...`);
   const boardEl = document.getElementById('board');
   const color = position.player_color;
   const fen = position.fen;
@@ -316,27 +319,63 @@ function handleMove(orig, dest) {
 
   // Try the move (auto-promote to queen)
   const move = chess.move({ from: orig, to: dest, promotion: 'q' });
-  if (!move) return;
+  if (!move) {
+    console.log('[handleMove] Invalid move:', orig, dest);
+    return;
+  }
 
   const san = move.san;
   attempts++;
+  console.log(`[handleMove] Played: ${san}, attempt: ${attempts}, best: ${position.best_move}, acceptable: ${position.acceptable_moves}`);
 
   if (position.acceptable_moves.includes(san) || san === position.best_move) {
     // Correct!
+    console.log('[handleMove] → CORRECT, calling showFeedback(true)');
     showFeedback(true, position);
     recordResult(true);
   } else if (attempts >= 3) {
     // Out of attempts
+    console.log('[handleMove] → GAVE UP, calling showFeedback(false, gaveUp=true)');
     showFeedback(false, position, true);
     recordResult(false);
   } else {
     // Wrong, try again
+    console.log('[handleMove] → WRONG, try again');
     showTryAgain();
     setTimeout(() => setupBoard(position), 400);
   }
 }
 
 // --- Feedback ---
+
+/**
+ * Show the "See moves" deep link for a position.
+ * @param {Object} position - Training position with game.id and fen.
+ */
+function _showSeeMovesLink(position) {
+  const gameId = position.game.id || '';
+  const playerColor = position.player_color || 'white';
+  const seeLinkEl = document.getElementById('see-moves');
+  console.log(`[_showSeeMovesLink] gameId="${gameId}", color=${playerColor}, seeLinkEl=${seeLinkEl ? 'found' : 'NULL'}`);
+  if (seeLinkEl) {
+    if (gameId.startsWith('http')) {
+      const moveLink = getMoveLink(gameId, position.fen, playerColor);
+      console.log(`[_showSeeMovesLink] href=${moveLink}, removing hidden`);
+      seeLinkEl.href = moveLink;
+      seeLinkEl.classList.remove('hidden');
+      // Chess.com doesn't support board flip in URL — add tooltip for Black
+      if (gameId.includes('chess.com') && playerColor === 'black') {
+        seeLinkEl.title = 'Click the flip button on chess.com to see the board from your perspective';
+      } else {
+        seeLinkEl.title = '';
+      }
+    } else {
+      seeLinkEl.classList.add('hidden');
+    }
+  } else {
+    console.error('[_showSeeMovesLink] ERROR: #see-moves element not found in DOM!');
+  }
+}
 
 /**
  * Display feedback after an answer (correct, wrong, or gave up).
@@ -346,6 +385,8 @@ function handleMove(orig, dest) {
  * @param {boolean} [gaveUp=false] - True if the player exhausted all attempts.
  */
 function showFeedback(correct, position, gaveUp = false) {
+  console.log(`[showFeedback] correct=${correct}, gaveUp=${gaveUp}, position.id=${position.id}`);
+
   const feedbackEl = document.getElementById('feedback');
   const feedbackText = document.getElementById('feedback-text');
   const explanationEl = document.getElementById('explanation');
@@ -394,17 +435,8 @@ function showFeedback(correct, position, gaveUp = false) {
 
   explanationEl.textContent = position.explanation;
 
-  // Show "See moves" deep link to the game position
-  const gameId = position.game.id || '';
-  const seeLinkEl = document.getElementById('see-moves');
-  if (seeLinkEl) {
-    if (gameId.startsWith('http')) {
-      seeLinkEl.href = getMoveLink(gameId, position.fen);
-      seeLinkEl.classList.remove('hidden');
-    } else {
-      seeLinkEl.classList.add('hidden');
-    }
-  }
+  // Show "See moves" deep link
+  _showSeeMovesLink(position);
 
   // Show PV line if available
   const pvLineEl = document.getElementById('pv-line');
@@ -492,6 +524,12 @@ function showTryAgain() {
   feedbackText.textContent = `Not quite. Try again. (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`;
   feedbackText.className = 'try-again';
   document.getElementById('explanation').textContent = '';
+
+  // Show "See moves" after 2 wrong attempts (helps understand the position)
+  if (attempts >= 2) {
+    const position = session[currentIndex];
+    _showSeeMovesLink(position);
+  }
 }
 
 /**
@@ -499,6 +537,7 @@ function showTryAgain() {
  * @param {boolean} correct - Whether the answer was correct.
  */
 function recordResult(correct) {
+  console.log(`[recordResult] correct=${correct}, position=${session[currentIndex].id}`);
   const position = session[currentIndex];
   const state = srsState[position.id] || {
     interval: 0,
@@ -537,6 +576,7 @@ function recordResult(correct) {
  * Sets an extremely long SRS interval so it's never selected.
  */
 function dismissPosition() {
+  console.log(`[dismissPosition] id=${session[currentIndex].id}`);
   const position = session[currentIndex];
   srsState[position.id] = {
     interval: 99999,
@@ -573,6 +613,7 @@ function showPosition(index) {
   currentIndex = index;
   attempts = 0;
   const position = session[index];
+  console.log(`[showPosition] index=${index}, id=${position.id}, color=${position.player_color}, best=${position.best_move}`);
 
   // Track appearances
   const count = (sessionAppearances.get(position.id) || 0) + 1;
@@ -630,8 +671,10 @@ function showSummary() {
  * resets session state, and shows the first position.
  */
 function startSession() {
+  console.log('[startSession] Starting new session');
   const settings = loadSettings();
   session = selectPositions(trainingData.positions, settings.sessionSize);
+  console.log(`[startSession] Selected ${session.length} position(s)`);
   sessionResults = [];
   sessionAppearances = new Map();
   completedCount = 0;
@@ -657,6 +700,7 @@ function startSession() {
  * @async
  */
 async function init() {
+  console.log('[init] Chess Self-Coach PWA starting...');
   // Load dependencies from CDN
   try {
     const [cgMod, chessMod] = await Promise.all([
@@ -677,6 +721,7 @@ async function init() {
     const resp = await fetch('training_data.json');
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     trainingData = await resp.json();
+    console.log(`[init] Loaded ${trainingData.positions.length} position(s)`);
   } catch (err) {
     document.getElementById('prompt').textContent =
       'Could not load training data. Run: chess-self-coach train --prepare';
@@ -686,6 +731,7 @@ async function init() {
 
   // Load SRS state
   srsState = loadSRSState();
+  console.log(`[init] SRS state: ${Object.keys(srsState).length} position(s) tracked`);
 
   // Wire up controls
   document.getElementById('next-btn').addEventListener('click', () => {

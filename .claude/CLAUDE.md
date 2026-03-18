@@ -218,14 +218,19 @@ Rules learned from debugging the "See moves" link (hours lost to silent failures
 
 ### Playwright Tests: Always Capture Console
 
-- **Always** attach console and error listeners when running Playwright tests:
-  ```python
-  console_msgs = []
-  page.on('console', lambda msg: console_msgs.append(f'[{msg.type}] {msg.text}'))
-  page.on('pageerror', lambda exc: console_msgs.append(f'[ERROR] {exc}'))
-  ```
-- After each test action, check for errors: `assert not [m for m in console_msgs if 'error' in m.lower()]`
-- This catches JS errors that would otherwise be invisible in headless mode.
+- The `console_errors` fixture in `tests/e2e/conftest.py` is `autouse=True` — it automatically captures all browser console messages and JS errors for every test.
+- Tests fail automatically if any JS error is detected.
+- All console output is printed in pytest `-v` output for debugging.
+- NEVER run Playwright tests without console capture. If writing a standalone debug script, always attach `page.on('console')` and `page.on('pageerror')` listeners.
+- Use `console_errors["messages"]` in assertions to verify that specific JS code paths were executed (e.g., `assert "[showFeedback]" in log_text`).
+
+### JavaScript: Always Add Console Logs in Key Functions
+
+- Every user-facing function (`showFeedback`, `handleMove`, `showPosition`, etc.) MUST have `console.log` at entry with its key parameters.
+- Every branch (correct/wrong/error) MUST log which path was taken.
+- Every DOM lookup that could fail MUST log whether the element was found or null.
+- These logs are essential for debugging in the browser console — without them, failures are invisible.
+- This is NOT optional debug code to remove later. It stays permanently.
 
 ### Service Worker: Network-First for Local Assets
 
