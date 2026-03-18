@@ -452,7 +452,7 @@ function showFeedback(correct, position, gaveUp = false) {
       return s;
     };
     const yourMove = formatEval(position.score_after);
-    const bestMove = formatEval(position.score_before);
+    const bestMove = formatEval(position.score_after_best || position.score_before);
     console.log(`[showFeedback] evals: your_move=${yourMove}, best_move=${bestMove}`);
     evalSummaryEl.textContent = `Your move: ${yourMove}\nBest move: ${bestMove}`;
     evalSummaryEl.classList.remove('hidden');

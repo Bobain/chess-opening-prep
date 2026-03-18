@@ -269,6 +269,39 @@ def _describe_advantage(score_before_cp: int | None, player_color: str) -> str:
     return "you were in a difficult position"
 
 
+def _time_pressure_context(
+    player_clock: float | None, opponent_clock: float | None,
+) -> str:
+    """Generate time pressure context string, or empty if not relevant.
+
+    Args:
+        player_clock: Player's remaining time in seconds, or None.
+        opponent_clock: Opponent's remaining time in seconds, or None.
+    """
+    if player_clock is None:
+        return ""
+
+    p_min = player_clock / 60
+
+    if p_min < 2:
+        if opponent_clock and opponent_clock / 60 > p_min * 2:
+            o_min = opponent_clock / 60
+            return (
+                f"You were under severe time pressure "
+                f"({p_min:.0f}min left vs {o_min:.0f}min for your opponent)."
+            )
+        return f"You were under time pressure ({p_min:.0f}min remaining)."
+
+    if opponent_clock and player_clock > opponent_clock * 1.5:
+        o_min = opponent_clock / 60
+        return (
+            f"You had more time ({p_min:.0f}min vs {o_min:.0f}min) "
+            f"and could have taken longer on this move."
+        )
+
+    return ""
+
+
 def _generate_context(
     category: str,
     cp_loss: int,
@@ -395,6 +428,12 @@ def extract_mistakes(
         actual_move = next_node.move
         piece_count = len(board.piece_map())
 
+        # Extract clock data (seconds remaining after this move)
+        player_clock = next_node.clock()
+        opponent_clock = None
+        if next_node.variations:
+            opponent_clock = next_node.variations[0].clock()
+
         # Priority: tablebase for endgame positions (<= 7 pieces)
         tb_result = None
         if piece_count <= MAX_PIECES:
@@ -416,6 +455,9 @@ def extract_mistakes(
                 "actual_san": board.san(actual_move),
                 "pv": [tb_result.best_move] if tb_result.best_move else [],
                 "tb": tb_result,
+                "score_after_best_cp": None,
+                "player_clock": player_clock,
+                "opponent_clock": opponent_clock,
             })
         else:
             # Stockfish: adaptive depth
@@ -429,6 +471,27 @@ def extract_mistakes(
 
             score_cp, is_mate = _score_to_cp(score)
             best_move = pv[0] if pv else None
+
+            # Analyze position after best move (for accurate eval display)
+            # Uses adaptive depth + tablebase probe if ≤7 pieces
+            score_after_best_cp = None
+            if best_move:
+                board_after_best = board.copy()
+                board_after_best.push(best_move)
+                pc_after = len(board_after_best.piece_map())
+                tb_after_best = probe_position(board_after_best.fen()) if pc_after <= MAX_PIECES else None
+                if tb_after_best:
+                    tier = tb_after_best.tier
+                    score_after_best_cp = _MATE_CP if tier == "WIN" else (-_MATE_CP if tier == "LOSS" else 0)
+                    if board_after_best.turn == chess.BLACK:
+                        score_after_best_cp = -score_after_best_cp
+                else:
+                    info_after_best = engine.analyse(
+                        board_after_best, _analysis_limit(board_after_best, depth),
+                    )
+                    score_ab = info_after_best.get("score")
+                    if score_ab:
+                        score_after_best_cp, _ = _score_to_cp(score_ab)
 
             # Convert PV to SAN (up to 5 moves)
             pv_san = []
@@ -449,6 +512,9 @@ def extract_mistakes(
                 "actual_san": board.san(actual_move),
                 "pv": pv_san,
                 "tb": None,
+                "score_after_best_cp": score_after_best_cp,
+                "player_clock": player_clock,
+                "opponent_clock": opponent_clock,
             })
         node = next_node
 
@@ -547,6 +613,7 @@ def extract_mistakes(
             )
             score_before = f"TB:{tb_before.tier.lower()}"
             score_after = f"TB:{tb_after.tier.lower()}"
+            score_after_best = score_before  # Best move preserves TB verdict
             tb_data = {
                 "before": {"category": tb_before.category, "dtm": tb_before.dtm, "dtz": tb_before.dtz},
                 "after": {"category": tb_after.category, "dtm": tb_after.dtm, "dtz": tb_after.dtz},
@@ -565,6 +632,12 @@ def extract_mistakes(
             if pos["actual_san"] == pos["best_san"]:
                 continue
 
+            # Pedagogical filter: skip positions already lost (no learning value)
+            player_cp = pos["score_cp"] if player_color == chess.WHITE else -pos["score_cp"]
+            player_cp_after = next_pos["score_cp"] if player_color == chess.WHITE else -next_pos["score_cp"]
+            if player_cp < -500 and player_cp_after < -500 and not pos.get("is_mate", False):
+                continue
+
             was_mate = pos.get("is_mate", False)
             score_after_cp = next_pos["score_cp"]
             board = chess.Board(pos["fen"])
@@ -580,7 +653,18 @@ def extract_mistakes(
             )
             score_before = _format_score_cp(pos["score_cp"])
             score_after = _format_score_cp(next_pos["score_cp"])
+            score_after_best = _format_score_cp(pos.get("score_after_best_cp"))
             tb_data = None
+
+        # Append time pressure context if relevant
+        time_ctx = _time_pressure_context(
+            pos.get("player_clock"), pos.get("opponent_clock"),
+        )
+        if time_ctx:
+            context = f"{context} {time_ctx}"
+
+        player_clk = pos.get("player_clock")
+        opponent_clk = pos.get("opponent_clock")
 
         mistake = {
             "id": _make_position_id(pos["fen"], pos["actual_san"]),
@@ -591,12 +675,14 @@ def extract_mistakes(
             "context": context,
             "score_before": score_before,
             "score_after": score_after,
+            "score_after_best": score_after_best,
             "cp_loss": cp_loss,
             "category": category,
             "explanation": explanation,
             "acceptable_moves": [pos["best_san"]],
             "pv": pos.get("pv", []),
             "game": game_info,
+            "clock": {"player": player_clk, "opponent": opponent_clk} if player_clk is not None else None,
         }
         if tb_data:
             mistake["tablebase"] = tb_data
