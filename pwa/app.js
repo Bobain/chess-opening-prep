@@ -540,6 +540,7 @@ function showTryAgain() {
   feedbackEl.classList.remove('hidden');
   feedbackText.textContent = `Not quite. Try again. (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`;
   feedbackText.className = 'try-again';
+  document.getElementById('dismiss-btn').classList.remove('hidden');
   document.getElementById('explanation').textContent = '';
 
   // Show "See moves" after 2 wrong attempts (helps understand the position)
