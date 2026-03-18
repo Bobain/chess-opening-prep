@@ -51,32 +51,42 @@ Endgame positions (≤ 7 pieces) are resolved by the [Lichess tablebase API](htt
 
 ## Installation
 
+### One-liner (recommended)
+
 ```bash
-# Recommended: install as isolated CLI tool
+curl -fsSL https://raw.githubusercontent.com/Bobain/chess-self-coach/main/install.sh | bash
+```
+
+Installs Stockfish, Python, pipx, and chess-self-coach. Then run the setup wizard:
+
+```bash
+chess-self-coach setup
+```
+
+**Supported platforms**: macOS (Homebrew), Ubuntu/Debian (apt).
+
+### Manual installation
+
+```bash
+# 1. Install Stockfish
+sudo apt install stockfish  # or: brew install stockfish
+
+# 2. Install chess-self-coach
 pipx install chess-self-coach
 
-# Or with pip
-pip install chess-self-coach
-
-# From source (development)
-git clone https://github.com/Bobain/chess-self-coach.git
-cd chess-self-coach
-uv venv && uv sync
+# 3. Run the interactive setup wizard
+chess-self-coach setup
 ```
 
-### Prerequisites
-
-- **Python >= 3.12**
-- **Stockfish** — `sudo apt install stockfish` (or provide path via `--engine`)
-- **Lichess API token** (optional but recommended) — for syncing with Lichess Studies, Chessdriller drills, and more. The setup wizard guides you through creating one.
-
-### Configuration
+### Update
 
 ```bash
-chess-self-coach setup    # interactive: finds Stockfish, guides Lichess token creation, finds studies
+chess-self-coach update
 ```
 
-The setup wizard will:
+### Setup wizard
+
+The `setup` command will:
 1. Find Stockfish on your system
 2. Guide you through **Lichess token creation** (bilingual FR/EN, step by step)
 3. Ask for your **chess.com username** (for importing games)

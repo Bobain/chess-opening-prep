@@ -64,6 +64,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Interactive setup: verify auth, find studies, configure config.json",
     )
 
+    # --- update ---
+    subparsers.add_parser(
+        "update",
+        help="Update chess-self-coach to the latest version",
+    )
+
     # --- push ---
     p_push = subparsers.add_parser(
         "push",
@@ -205,6 +211,11 @@ def main(argv: list[str] | None = None) -> None:
         from chess_self_coach.lichess import setup
 
         setup()
+
+    elif args.command == "update":
+        from chess_self_coach.updater import update
+
+        update()
 
     elif args.command == "push":
         from chess_self_coach.config import load_lichess_token
