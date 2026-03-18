@@ -612,8 +612,15 @@ def extract_mistakes(
             explanation = tablebase_explanation(
                 tb_before, tb_after, pos["actual_san"], pos["best_san"],
             )
-            score_before = f"TB:{tb_before.tier.lower()}"
-            score_after = f"TB:{tb_after.tier.lower()}"
+            # Convert from side-to-move perspective to player perspective
+            tier_before = tb_before.tier
+            tier_after = tb_after.tier
+            if player_color == chess.BLACK:
+                _flip = {"WIN": "LOSS", "LOSS": "WIN", "DRAW": "DRAW"}
+                tier_before = _flip[tier_before]
+                tier_after = _flip[tier_after]
+            score_before = f"TB:{tier_before.lower()}"
+            score_after = f"TB:{tier_after.lower()}"
             score_after_best = score_before  # Best move preserves TB verdict
             tb_data = {
                 "before": {"category": tb_before.category, "dtm": tb_before.dtm, "dtz": tb_before.dtz},
@@ -987,6 +994,21 @@ def refresh_explanations() -> None:
     if removed_decisive:
         data["positions"] = positions
         print(f"  Removed {removed_decisive} position(s) already decisive (both win or both lose)")
+
+    # Fix tablebase scores for Black: convert from side-to-move to player perspective
+    _tb_flip = {"TB:win": "TB:loss", "TB:loss": "TB:win"}
+    tb_fixed = 0
+    for pos in positions:
+        if "tablebase" not in pos or pos.get("player_color") != "black":
+            continue
+        for key in ("score_before", "score_after", "score_after_best"):
+            val = pos.get(key)
+            if val in _tb_flip:
+                pos[key] = _tb_flip[val]
+                tb_fixed += 1
+    if tb_fixed:
+        data["positions"] = positions
+        print(f"  Fixed {tb_fixed} tablebase score(s) (side-to-move → player perspective)")
 
     updated = 0
     for pos in positions:

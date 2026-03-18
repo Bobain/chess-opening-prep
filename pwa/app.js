@@ -503,8 +503,8 @@ function showFeedback(correct, position, gaveUp = false) {
   if (evalSummaryEl && position.score_after != null) {
     const isWhite = position.player_color === 'white';
     const formatEval = (s) => {
-      if (s === 'TB:win') return isWhite ? 'You win (tablebase)' : 'Opponent wins (tablebase)';
-      if (s === 'TB:loss') return isWhite ? 'Opponent wins (tablebase)' : 'You win (tablebase)';
+      if (s === 'TB:win') return 'You win (tablebase)';
+      if (s === 'TB:loss') return 'Opponent wins (tablebase)';
       if (s === 'TB:draw') return 'Draw (tablebase)';
       const val = parseFloat(s);
       if (isNaN(val)) return s;
