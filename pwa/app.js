@@ -1426,7 +1426,8 @@ async function init() {
     dismissPosition();
   });
 
-  document.getElementById('settings-btn').addEventListener('click', () => {
+  document.getElementById('nav-settings').addEventListener('click', () => {
+    closeMenu();
     const modal = document.getElementById('settings-modal');
     const settings = loadSettings();
     document.getElementById('session-size').value = settings.sessionSize;

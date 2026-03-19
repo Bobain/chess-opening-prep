@@ -65,15 +65,6 @@ header h1 {
   padding: 0.25rem;
 }
 
-#settings-btn {
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 1.3rem;
-  cursor: pointer;
-  padding: 0.25rem;
-}
-
 /* Slide-out navigation menu */
 #nav-overlay {
   position: fixed;

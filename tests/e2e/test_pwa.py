@@ -218,10 +218,12 @@ def test_failed_position_returns_in_session(page, pwa_url):
 
 
 def test_settings_modal_opens_and_closes(page, pwa_url):
-    """Settings modal can be opened and closed."""
+    """Settings modal can be opened via hamburger menu and closed."""
     _wait_for_board(page, pwa_url)
 
-    page.locator("#settings-btn").click()
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+    page.locator("#nav-settings").click()
     expect(page.locator("#settings-modal")).to_be_visible()
 
     page.locator("#close-settings").click()
