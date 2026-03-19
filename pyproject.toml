@@ -10,6 +10,8 @@ dependencies = [
     "berserk>=0.14.0,<1",
     "python-dotenv>=1.0.0,<2",
     "chess.com>=3.0.0,<4",
+    "fastapi>=0.115.0,<1",
+    "uvicorn[standard]>=0.34.0,<1",
 ]
 
 [project.scripts]

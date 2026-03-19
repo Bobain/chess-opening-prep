@@ -4,4 +4,4 @@ Automates Stockfish analysis of PGN files and synchronization
 with Lichess Studies for spaced-repetition drilling via Chessdriller.
 """
 
-__version__ = "0.2.2"
+__version__ = "0.3.0"
