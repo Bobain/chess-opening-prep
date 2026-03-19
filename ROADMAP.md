@@ -15,6 +15,7 @@ An item is [x] when ALL applicable criteria are met:
 - **Refactor** (extract function, etc.): existing tests still pass, CLI behavior unchanged
 - **Infrastructure** (wiring pattern, SSE runner): reusable, tested in isolation, documented by first usage
 - **UX design phase**: written decision document (GitHub issue or CONTRIBUTING.md section)
+- **Long-running ops**: POST returns 202 + job_id, GET streams SSE, job errors return detail
 
 ## 1. Backend Foundation — DONE
 - [x] FastAPI server (dynamic serving, no temp dir)
@@ -49,21 +50,16 @@ An item is [x] when ALL applicable criteria are met:
 - [x] POST /api/pgn/cleanup — trigger from menu
 
 ### 3b. SSE job runner + long-running endpoints
-- [ ] ⚠️ UX DESIGN PHASE: before implementing individual endpoints, design a unified
-      user workflow. The CLI has many separate commands (import → analyze → push → pull
-      → validate → cleanup) but the PWA user should NOT have to click 4 buttons to get
-      their prep ready in ChessDriller. Design a simplified workflow together first.
+- [x] ⚠️ UX DESIGN PHASE: "Refresh training" button runs `train --prepare` in background.
+      Individual commands (import, analyze, push, pull) deferred to future design phase.
 - [ ] Generic SSE job runner (POST starts job → 202, GET streams progress via SSE)
 - [c] train --prepare (CLI: prepare_training_data with --games, --depth, --engine, --fresh)
-- [ ] POST /api/train/prepare + GET /api/jobs/{id}/progress (SSE)
-- [c] import (CLI: import_games with --chesscom, --max)
-- [ ] POST /api/games/import + SSE progress
-- [c] analyze (CLI: analyze_pgn with --depth, --threshold, --engine, --in-place)
-- [ ] POST /api/pgn/analyze + SSE progress
-- [c] push (CLI: push_pgn with --no-replace)
-- [ ] POST /api/pgn/push + SSE progress
-- [c] pull (CLI: pull_pgn with --in-place)
-- [ ] POST /api/pgn/pull + SSE progress
+- [ ] POST /api/train/prepare + GET /api/jobs/{id}/events (SSE)
+- Deferred to future design phase:
+  - import/analyze/push/pull → individual PWA buttons (needs own design phase)
+  - `--games N` → future PWA setting (default 20)
+  - `--fresh` → future "Force re-analysis" option
+  - `--engine /path` → future config setting
 
 ## 4. Chess Prep — New features
 - [ ] Coaching journal viewer (browse coaching/topics/)
@@ -78,9 +74,10 @@ An item is [x] when ALL applicable criteria are met:
 - [ ] Display Stockfish version in About/menu header
 
 ### 5b. Backend config (needs API endpoints)
-- [ ] GET /api/config/status — token configured? SF version?
 - [ ] Settings sync API — localStorage ↔ backend config.json
 - [ ] Edit config from PWA (usernames, token, SF path)
+Note: GET /api/config/status removed — already covered by GET /api/pgn/status
+(has_token, stockfish.available/version).
 
 ## Dependency diagram
 
@@ -90,7 +87,7 @@ Section 1 (Backend) ← DONE
      ▼
 Section 2 (Menu + Mode detection) ← DONE
      │
-     ├──► Section 3a (instant endpoints) ← wiring pattern
+     ├──► Section 3a (instant endpoints) ← DONE
      │         │
      │         ▼ (pattern established)
      │    Section 3b (SSE job runner + long ops)
