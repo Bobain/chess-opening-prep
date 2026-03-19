@@ -1025,6 +1025,62 @@ async function showStats() {
   }
 }
 
+// --- Cleanup modal ---
+
+/**
+ * Trigger study cleanup via the API and display results in a modal.
+ * Only available in [App] mode.
+ * @async
+ */
+async function showCleanup() {
+  console.log('[showCleanup] Triggering study cleanup...');
+  const modal = document.getElementById('cleanup-modal');
+  const content = document.getElementById('cleanup-content');
+  if (!modal || !content) {
+    console.error('[showCleanup] Modal or content element not found');
+    return;
+  }
+
+  content.textContent = 'Cleaning up...';
+  modal.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/pgn/cleanup', { method: 'POST' });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
+      console.log('[showCleanup] API error:', resp.status, err.detail);
+      content.textContent = err.detail || 'Failed to cleanup.';
+      return;
+    }
+    const data = await resp.json();
+    console.log('[showCleanup] Results:', data.total_deleted, 'deleted');
+
+    content.textContent = '';
+
+    if (data.total_deleted === 0) {
+      content.textContent = 'No empty default chapters found.';
+      return;
+    }
+
+    const summary = document.createElement('p');
+    summary.className = 'stats-value';
+    summary.textContent = 'Cleaned up ' + data.total_deleted + ' empty chapter(s).';
+    content.appendChild(summary);
+
+    for (const r of data.results) {
+      if (r.deleted > 0) {
+        const p = document.createElement('p');
+        p.style.paddingLeft = '1rem';
+        p.textContent = r.study + ': ' + r.deleted + ' removed';
+        content.appendChild(p);
+      }
+    }
+  } catch (err) {
+    console.error('[showCleanup] Fetch failed:', err);
+    content.textContent = 'Failed to connect to server.';
+  }
+}
+
 // --- Status modal ---
 
 /**
@@ -1237,6 +1293,8 @@ async function init() {
       if (validateItem) validateItem.classList.remove('disabled');
       const statusItem = document.getElementById('nav-status');
       if (statusItem) statusItem.classList.remove('disabled');
+      const cleanupItem = document.getElementById('nav-cleanup');
+      if (cleanupItem) cleanupItem.classList.remove('disabled');
 
       // Set version in menu
       document.getElementById('nav-version').textContent = 'v' + appVersion;
@@ -1391,6 +1449,23 @@ async function init() {
 
   document.getElementById('close-status').addEventListener('click', () => {
     document.getElementById('status-modal').classList.add('hidden');
+  });
+
+  // Wire up nav-cleanup (app-only)
+  const navCleanup = document.getElementById('nav-cleanup');
+  if (navCleanup) {
+    navCleanup.addEventListener('click', () => {
+      if (navCleanup.classList.contains('disabled')) return;
+      console.log('[init] nav-cleanup clicked');
+      closeMenu();
+      showCleanup();
+    });
+  } else {
+    console.error('[init] nav-cleanup element not found');
+  }
+
+  document.getElementById('close-cleanup').addEventListener('click', () => {
+    document.getElementById('cleanup-modal').classList.add('hidden');
   });
 
   // Set version in menu header (populated later by mode detection)
