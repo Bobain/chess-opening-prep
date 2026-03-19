@@ -9,19 +9,19 @@ Priority: items are ordered top-to-bottom within each section.
 "Next feature" = first `[ ]` item scanning top-to-bottom, across sections.
 
 ## 1. Backend Foundation
-- [>] FastAPI server with static file serving (no temp dir — serve dynamically)
-- [>] `GET /api/status` — mode detection
-- [>] `POST /api/stockfish/bestmove` — native Stockfish (with engine crash recovery)
-- [>] Stockfish version check at startup
-- [>] Port conflict handling (scan 8000-8010)
+- [x] FastAPI server with static file serving (no temp dir — serve dynamically)
+- [x] `GET /api/status` — mode detection
+- [x] `POST /api/stockfish/bestmove` — native Stockfish (with engine crash recovery)
+- [x] Stockfish version check at startup
+- [x] Port conflict handling (scan 8000-8010)
 
 ## 2. PWA Menu & Mode Detection
-- [>] Hamburger menu skeleton (top-left)
-- [>] Mode detection via /api/status
-- [>] Hide demo banner in [app] mode
-- [>] "Stockfish is thinking" indicator (both modes)
-- [>] Native Stockfish API for opponent response in [app] mode (with WASM fallback)
-- [>] Analysis depth setting: default 18 [app], 12 [demo] — configurable in Settings
+- [x] Hamburger menu skeleton (top-left)
+- [x] Mode detection via /api/status
+- [x] Hide demo banner in [app] mode
+- [x] "Stockfish is thinking" indicator (both modes)
+- [x] Native Stockfish API for opponent response in [app] mode (with WASM fallback)
+- [x] Analysis depth setting: default 18 [app], 12 [demo] — configurable in Settings
 
 ## 3. Training Pipeline (CLI → PWA)
 - [ ] `POST /api/train/prepare` — trigger training data generation from menu
