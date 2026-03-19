@@ -192,6 +192,34 @@ def test_pgn_validate_no_files(tmp_path):
     assert resp.status_code == 404
 
 
+# --- /api/pgn/status ---
+
+
+def test_pgn_status_with_config(tmp_path):
+    """GET /api/pgn/status returns project status when config exists."""
+    config = {"studies": {"test.pgn": {"study_id": "abc123"}}}
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    (tmp_path / "pgn").mkdir()
+    with patch.object(server, "_project_root", tmp_path):
+        resp = client.get("/api/pgn/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["config_ok"] is True
+    assert len(body["files"]) == 1
+    assert body["files"][0]["file"] == "test.pgn"
+    assert body["files"][0]["study_configured"] is True
+
+
+def test_pgn_status_no_config(tmp_path):
+    """GET /api/pgn/status returns config_ok=false when no config."""
+    with patch.object(server, "_project_root", tmp_path):
+        resp = client.get("/api/pgn/status")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["config_ok"] is False
+    assert body["files"] == []
+
+
 # --- Port scanner ---
 
 

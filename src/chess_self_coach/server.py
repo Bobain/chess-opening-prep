@@ -133,6 +133,32 @@ class ValidateResponse(BaseModel):
     files: list[FileValidation]
 
 
+class PgnFileStatus(BaseModel):
+    """Status of one PGN file."""
+
+    file: str
+    modified: str
+    chapters: int
+    study_configured: bool
+
+
+class StockfishInfo(BaseModel):
+    """Stockfish availability info."""
+
+    available: bool
+    version: str
+
+
+class ProjectStatusResponse(BaseModel):
+    """Response body for /api/pgn/status."""
+
+    config_ok: bool
+    stockfish: StockfishInfo
+    has_token: bool
+    files: list[PgnFileStatus]
+    suggestions: list[str]
+
+
 # --- API routes ---
 
 
@@ -207,6 +233,15 @@ async def pgn_validate() -> ValidateResponse:
             chapters=[ChapterResult(**ch) for ch in chapters],
         ))
     return ValidateResponse(files=results)
+
+
+@app.get("/api/pgn/status")
+async def pgn_status() -> ProjectStatusResponse:
+    """Return project status: config, files, suggestions."""
+    from chess_self_coach.status import get_status_data
+
+    data = get_status_data(_project_root)
+    return ProjectStatusResponse(**data)
 
 
 # --- Dynamic file routes (before StaticFiles mount) ---
