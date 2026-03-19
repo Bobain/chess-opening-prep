@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import time
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import chess
@@ -384,4 +385,66 @@ def test_job_events_not_found():
     """GET /api/jobs/{id}/events returns 404 for unknown job."""
     _reset_job()
     resp = client.get("/api/jobs/nonexistent/events")
+    assert resp.status_code == 404
+
+
+# --- /api/coaching/topics ---
+
+
+def test_coaching_topics_lists_files(tmp_path):
+    """GET /api/coaching/topics returns topic summaries from coaching/topics/."""
+    topics_dir = tmp_path / "coaching" / "topics"
+    topics_dir.mkdir(parents=True)
+    (topics_dir / "2026-03-15-test-topic.md").write_text(
+        "---\ndate: 2026-03-15\ntopic: Test topic\nstatus: resolved\n---\n\nBody text."
+    )
+
+    original = server._project_root
+    server._project_root = tmp_path
+    try:
+        resp = client.get("/api/coaching/topics")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["topics"]) == 1
+        assert data["topics"][0]["slug"] == "2026-03-15-test-topic"
+        assert data["topics"][0]["topic"] == "Test topic"
+        assert data["topics"][0]["status"] == "resolved"
+    finally:
+        server._project_root = original
+
+
+def test_coaching_topics_empty():
+    """GET /api/coaching/topics returns empty list when no coaching dir."""
+    original = server._project_root
+    server._project_root = Path("/nonexistent")
+    try:
+        resp = client.get("/api/coaching/topics")
+        assert resp.status_code == 200
+        assert resp.json()["topics"] == []
+    finally:
+        server._project_root = original
+
+
+def test_coaching_topic_detail(tmp_path):
+    """GET /api/coaching/topics/{slug} returns the topic content."""
+    topics_dir = tmp_path / "coaching" / "topics"
+    topics_dir.mkdir(parents=True)
+    content = "---\ndate: 2026-03-15\ntopic: Test\nstatus: active\n---\n\n## Body"
+    (topics_dir / "2026-03-15-test.md").write_text(content)
+
+    original = server._project_root
+    server._project_root = tmp_path
+    try:
+        resp = client.get("/api/coaching/topics/2026-03-15-test")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["slug"] == "2026-03-15-test"
+        assert "## Body" in data["content"]
+    finally:
+        server._project_root = original
+
+
+def test_coaching_topic_not_found():
+    """GET /api/coaching/topics/{slug} returns 404 for unknown slug."""
+    resp = client.get("/api/coaching/topics/nonexistent")
     assert resp.status_code == 404

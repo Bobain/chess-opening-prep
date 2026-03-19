@@ -298,6 +298,77 @@ async def pgn_cleanup() -> CleanupResponse:
     return CleanupResponse(results=results, total_deleted=total)
 
 
+# --- Coaching journal ---
+
+
+class TopicSummary(BaseModel):
+    """Summary of one coaching topic."""
+
+    slug: str
+    date: str
+    topic: str
+    status: str
+
+
+class TopicsResponse(BaseModel):
+    """Response body for GET /api/coaching/topics."""
+
+    topics: list[TopicSummary]
+
+
+class TopicDetailResponse(BaseModel):
+    """Response body for GET /api/coaching/topics/{slug}."""
+
+    slug: str
+    content: str
+
+
+def _parse_frontmatter(text: str) -> tuple[dict, str]:
+    """Parse YAML front matter from a markdown file.
+
+    Returns (metadata_dict, body_text). If no front matter, returns ({}, full_text).
+    """
+    if not text.startswith("---"):
+        return {}, text
+    end = text.find("---", 3)
+    if end == -1:
+        return {}, text
+    import yaml
+
+    meta = yaml.safe_load(text[3:end]) or {}
+    body = text[end + 3:].lstrip("\n")
+    return meta, body
+
+
+@app.get("/api/coaching/topics")
+async def coaching_topics() -> TopicsResponse:
+    """List all coaching journal topics."""
+    topics_dir = _project_root / "coaching" / "topics"
+    if not topics_dir.exists():
+        return TopicsResponse(topics=[])
+
+    topics = []
+    for path in sorted(topics_dir.glob("*.md"), reverse=True):
+        meta, _ = _parse_frontmatter(path.read_text())
+        topics.append(TopicSummary(
+            slug=path.stem,
+            date=str(meta.get("date", "")),
+            topic=meta.get("topic", path.stem),
+            status=meta.get("status", ""),
+        ))
+    return TopicsResponse(topics=topics)
+
+
+@app.get("/api/coaching/topics/{slug}")
+async def coaching_topic_detail(slug: str) -> TopicDetailResponse:
+    """Read one coaching topic by slug."""
+    topics_dir = _project_root / "coaching" / "topics"
+    path = topics_dir / f"{slug}.md"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Topic not found: {slug}")
+    return TopicDetailResponse(slug=slug, content=path.read_text())
+
+
 # --- Job runner ---
 
 _current_job: dict | None = None
