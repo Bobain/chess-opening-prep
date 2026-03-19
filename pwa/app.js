@@ -12,6 +12,11 @@
  */
 
 // --- State ---
+/** @type {string} App mode: 'demo' (GitHub Pages) or 'app' (FastAPI backend) */
+let appMode = 'demo';
+/** @type {string} App version (populated from /api/status in app mode) */
+let appVersion = '';
+
 /** @type {Function} Chessground constructor (loaded from CDN) */
 let Chessground;
 /** @type {Function} Chess constructor (loaded from CDN) */
@@ -975,6 +980,31 @@ async function init() {
     document.getElementById('summary-modal').classList.add('hidden');
     startSession();
   });
+
+  // Wire up navigation menu
+  const menuBtn = document.getElementById('menu-btn');
+  const navMenu = document.getElementById('nav-menu');
+  const navOverlay = document.getElementById('nav-overlay');
+
+  function openMenu() {
+    navMenu.classList.add('nav-open');
+    navMenu.classList.remove('nav-closed');
+    navOverlay.classList.remove('hidden');
+  }
+
+  function closeMenu() {
+    navMenu.classList.remove('nav-open');
+    navMenu.classList.add('nav-closed');
+    navOverlay.classList.add('hidden');
+  }
+
+  menuBtn.addEventListener('click', openMenu);
+  navOverlay.addEventListener('click', closeMenu);
+
+  // Set version in menu header (populated later by mode detection)
+  if (appVersion) {
+    document.getElementById('nav-version').textContent = 'v' + appVersion;
+  }
 
   // Register service worker
   if ('serviceWorker' in navigator) {

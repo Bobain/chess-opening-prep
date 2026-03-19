@@ -16,12 +16,28 @@
     Sample data — <a href="https://github.com/Bobain/chess-self-coach#installation">Install the app</a> to train on your own games
   </div>
   <header>
+    <button id="menu-btn" title="Menu">&#9776;</button>
     <h1>Find a Better Move</h1>
     <div id="session-info">
       <span id="progress"></span>
       <button id="settings-btn" title="Settings">&#9881;</button>
     </div>
   </header>
+
+  <!-- Slide-out navigation menu -->
+  <div id="nav-overlay" class="hidden"></div>
+  <nav id="nav-menu" class="nav-closed">
+    <div id="nav-header">
+      <span>Chess Self-Coach</span>
+      <span id="nav-version"></span>
+    </div>
+    <ul id="nav-items">
+      <li id="nav-prepare" class="nav-item nav-app-only hidden" title="Coming soon">Prepare training</li>
+      <li id="nav-import" class="nav-item nav-app-only hidden" title="Coming soon">Import games</li>
+      <li class="nav-separator"></li>
+      <li id="nav-about" class="nav-item">About</li>
+    </ul>
+  </nav>
 
   <main>
     <div id="board-wrapper">
