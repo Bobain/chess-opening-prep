@@ -43,7 +43,7 @@ The PWA detects its mode automatically via `/api/status`. If a FastAPI backend r
 | **Analysis depth default** | 12 | 18 |
 | **Data** | Sample `training_data.json` | Generated from your own games |
 | **CLI tools** | None | fetch, analyze, repertoire management |
-| **Menu** | About only | Stats, Validate, Status, Cleanup |
+| **Menu** | About only | Stats, Validate, Status, Cleanup, Refresh training |
 
 The **demo** showcases the training interface with sample data. Install the app to train on your own games.
 
@@ -58,6 +58,21 @@ When developing a new feature:
 2. PWA features are `[both]` by default — they run in the browser, no backend needed
 3. CLI/pipeline features are `[app]` only
 4. **Feature table**: keep the Architecture table updated with each new feature
+
+### PWA Workflow Design
+
+The CLI has many separate commands (`import → analyze → push → pull → validate → cleanup`),
+but the PWA simplifies this into a single action:
+
+- **"Refresh training"** button in the hamburger menu (replaces the disabled "Prepare training" placeholder)
+- Runs `train --prepare` in the background via `POST /api/train/prepare`
+- Progress displayed via **SSE** (Server-Sent Events) in a modal with a native `<progress>` bar
+- On completion, reloads `training_data.json` and refreshes the PWA session
+
+Future phases (deferred):
+- Individual commands (import, analyze, push, pull) as separate menu items
+- Configurable parameters (`--games N`, `--fresh`, `--engine /path`) as PWA settings
+- Advanced workflow orchestration
 
 ---
 
