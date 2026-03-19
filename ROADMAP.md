@@ -64,10 +64,10 @@ An item is [x] when ALL applicable criteria are met:
 
 ## 4. Chess Prep — New features
 
-### 4a. About modal (quick win)
-- [ ] About modal: app name, version, GitHub link, SF version (in [app] mode)
-- [ ] Click handler for `#nav-about` (currently no-op)
-- [ ] Works in [demo] (static info) and [app] (version from /api/status)
+### 4a. About modal (quick win) — DONE
+- [x] About modal: app name, version, GitHub link, SF version (in [app] mode)
+- [x] Click handler for `#nav-about`
+- [x] Works in [demo] (static info) and [app] (version from /api/status)
 
 ### 4b. Coaching journal viewer
 - [ ] GET /api/coaching/topics — list topic files from coaching/topics/
