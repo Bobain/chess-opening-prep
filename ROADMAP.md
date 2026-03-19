@@ -42,11 +42,11 @@ An item is [x] when ALL applicable criteria are met:
 - [x] Unit + E2E tests for /api/train/stats
 - [x] validate (CLI: validate_pgn) ← instant, no SSE needed
 - [x] POST /api/pgn/validate — trigger from menu
-- [c] status (CLI: show_status) ← instant
-- [ ] Extract get_status_data() from show_status (returns dict, CLI unchanged)
-- [ ] GET /api/pgn/status — trigger from menu
-- [c] cleanup (CLI: cleanup_study) ← fast
-- [ ] POST /api/pgn/cleanup — trigger from menu
+- [x] status (CLI: show_status) ← instant
+- [x] Extract get_status_data() from show_status (returns dict, CLI unchanged)
+- [x] GET /api/pgn/status — trigger from menu
+- [x] cleanup (CLI: cleanup_study) ← fast
+- [x] POST /api/pgn/cleanup — trigger from menu
 
 ### 3b. SSE job runner + long-running endpoints
 - [ ] ⚠️ UX DESIGN PHASE: before implementing individual endpoints, design a unified
