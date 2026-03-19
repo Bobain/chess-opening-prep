@@ -104,6 +104,11 @@ def app_url(tmp_path_factory):
         shutil.copy2(pgn, tmp_dir / pgn.name)
     (tmp_dir / "pwa").symlink_to(PWA_DIR)
 
+    # Copy coaching journal fixtures
+    coaching_src = PROJECT_ROOT / "coaching"
+    if coaching_src.exists():
+        shutil.copytree(coaching_src, tmp_dir / "coaching")
+
     # Find a free port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))

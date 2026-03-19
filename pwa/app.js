@@ -1337,6 +1337,122 @@ async function refreshTraining() {
   }
 }
 
+// --- Journal modal ---
+
+/**
+ * Strip YAML front matter from markdown content.
+ * @param {string} text - Full file content with optional --- front matter ---.
+ * @returns {string} Body text without front matter.
+ */
+function stripFrontmatter(text) {
+  if (!text.startsWith('---')) return text;
+  const end = text.indexOf('---', 3);
+  if (end === -1) return text;
+  return text.slice(end + 3).trim();
+}
+
+/**
+ * Fetch and display the coaching journal topic list in a modal.
+ * @async
+ */
+async function showJournal() {
+  console.log('[showJournal] Fetching coaching topics...');
+  const modal = document.getElementById('journal-modal');
+  const content = document.getElementById('journal-content');
+  const title = document.getElementById('journal-title');
+  const backBtn = document.getElementById('journal-back');
+  if (!modal || !content) {
+    console.error('[showJournal] Modal elements not found');
+    return;
+  }
+
+  title.textContent = 'Coaching Journal';
+  backBtn.classList.add('hidden');
+  content.textContent = 'Loading...';
+  modal.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/coaching/topics');
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
+      console.log('[showJournal] API error:', resp.status, err.detail);
+      content.textContent = err.detail || 'Failed to load journal.';
+      return;
+    }
+    const data = await resp.json();
+    console.log('[showJournal] Topics received:', data.topics.length);
+
+    content.textContent = '';
+
+    if (data.topics.length === 0) {
+      content.textContent = 'No coaching topics yet.';
+      return;
+    }
+
+    for (const topic of data.topics) {
+      const div = document.createElement('div');
+      div.className = 'journal-topic';
+      div.addEventListener('click', () => showJournalTopic(topic.slug));
+
+      const titleLine = document.createElement('div');
+      titleLine.textContent = topic.topic;
+      if (topic.status) {
+        const badge = document.createElement('span');
+        badge.className = 'journal-topic-status ' + topic.status;
+        badge.textContent = topic.status;
+        titleLine.appendChild(badge);
+      }
+      div.appendChild(titleLine);
+
+      const dateLine = document.createElement('div');
+      dateLine.className = 'journal-topic-date';
+      dateLine.textContent = topic.date;
+      div.appendChild(dateLine);
+
+      content.appendChild(div);
+    }
+  } catch (err) {
+    console.error('[showJournal] Fetch failed:', err);
+    content.textContent = 'Failed to connect to server.';
+  }
+}
+
+/**
+ * Fetch and display one coaching topic in the journal modal.
+ * @param {string} slug - Topic slug (filename without .md).
+ * @async
+ */
+async function showJournalTopic(slug) {
+  console.log('[showJournalTopic] Fetching:', slug);
+  const content = document.getElementById('journal-content');
+  const title = document.getElementById('journal-title');
+  const backBtn = document.getElementById('journal-back');
+
+  content.textContent = 'Loading...';
+  backBtn.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/coaching/topics/' + slug);
+    if (!resp.ok) {
+      content.textContent = 'Failed to load topic.';
+      return;
+    }
+    const data = await resp.json();
+    console.log('[showJournalTopic] Content loaded:', slug);
+
+    const body = stripFrontmatter(data.content);
+    title.textContent = slug.replace(/^\d{4}-\d{2}-\d{2}-/, '').replace(/-/g, ' ');
+    content.textContent = '';
+    const pre = document.createElement('div');
+    pre.className = 'journal-detail';
+    pre.textContent = body;
+    content.appendChild(pre);
+  } catch (err) {
+    console.error('[showJournalTopic] Fetch failed:', err);
+    content.textContent = 'Failed to connect to server.';
+  }
+}
+
 // --- Init ---
 
 /**
@@ -1379,6 +1495,8 @@ async function init() {
       if (cleanupItem) cleanupItem.classList.remove('disabled');
       const refreshItem = document.getElementById('nav-refresh');
       if (refreshItem) refreshItem.classList.remove('disabled');
+      const journalItem = document.getElementById('nav-journal');
+      if (journalItem) journalItem.classList.remove('disabled');
 
       // Set version in menu
       const versionText = stockfishVersion
@@ -1571,6 +1689,27 @@ async function init() {
 
   document.getElementById('close-refresh').addEventListener('click', () => {
     document.getElementById('refresh-modal').classList.add('hidden');
+  });
+
+  // Wire up nav-journal (app-only)
+  const navJournal = document.getElementById('nav-journal');
+  if (navJournal) {
+    navJournal.addEventListener('click', () => {
+      if (navJournal.classList.contains('disabled')) return;
+      console.log('[init] nav-journal clicked');
+      closeMenu();
+      showJournal();
+    });
+  } else {
+    console.error('[init] nav-journal element not found');
+  }
+
+  document.getElementById('close-journal').addEventListener('click', () => {
+    document.getElementById('journal-modal').classList.add('hidden');
+  });
+
+  document.getElementById('journal-back').addEventListener('click', () => {
+    showJournal();
   });
 
   // Wire up nav-about (both modes)

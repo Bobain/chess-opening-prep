@@ -699,6 +699,52 @@ def test_app_mode_refresh_modal(page, app_url, console_errors):
     assert "[refreshTraining]" in log_text
 
 
+def test_app_mode_journal_modal(page, app_url, console_errors):
+    """[App] mode: Coaching journal menu item opens modal with topic list."""
+    page.goto(app_url)
+    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+
+    # Open menu
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+
+    # Journal item should be visible and enabled
+    journal_item = page.locator("#nav-journal")
+    expect(journal_item).to_be_visible()
+    expect(journal_item).not_to_have_class("disabled")
+
+    # Click journal
+    journal_item.click()
+    page.wait_for_timeout(500)
+
+    # Modal should appear with topic list
+    expect(page.locator("#journal-modal")).to_be_visible()
+    expect(page.locator("#journal-content")).to_contain_text("Budapest Gambit")
+
+    # Click a topic to see detail
+    page.locator(".journal-topic").first.click()
+    page.wait_for_timeout(500)
+
+    # Back button should appear, detail content should load
+    expect(page.locator("#journal-back")).to_be_visible()
+    expect(page.locator("#journal-content")).not_to_be_empty()
+
+    # Click back to return to list
+    page.locator("#journal-back").click()
+    page.wait_for_timeout(500)
+    expect(page.locator("#journal-back")).not_to_be_visible()
+    expect(page.locator("#journal-content")).to_contain_text("Budapest Gambit")
+
+    # Close modal
+    page.locator("#close-journal").click()
+    expect(page.locator("#journal-modal")).not_to_be_visible()
+
+    # Verify console logs
+    log_text = "\n".join(console_errors["messages"])
+    assert "[showJournal]" in log_text
+    assert "[showJournalTopic]" in log_text
+
+
 def test_about_modal_opens_and_closes(page, pwa_url):
     """About modal opens via hamburger menu and shows static info in demo mode."""
     _wait_for_board(page, pwa_url)
@@ -749,6 +795,7 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     expect(page.locator("#nav-status")).not_to_be_visible()
     expect(page.locator("#nav-cleanup")).not_to_be_visible()
     expect(page.locator("#nav-refresh")).not_to_be_visible()
+    expect(page.locator("#nav-journal")).not_to_be_visible()
 
     # Settings is visible in demo mode (not app-only)
     expect(page.locator("#nav-settings")).to_be_visible()
