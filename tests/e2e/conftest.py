@@ -100,6 +100,8 @@ def app_url(tmp_path_factory):
     # Create temp dir mimicking project root
     tmp_dir = tmp_path_factory.mktemp("app_e2e")
     shutil.copy2(FIXTURES_DIR / "training_data.json", tmp_dir / "training_data.json")
+    for pgn in FIXTURES_DIR.glob("*.pgn"):
+        shutil.copy2(pgn, tmp_dir / pgn.name)
     (tmp_dir / "pwa").symlink_to(PWA_DIR)
 
     # Find a free port

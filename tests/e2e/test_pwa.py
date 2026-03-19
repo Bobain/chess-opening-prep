@@ -564,8 +564,40 @@ def test_app_mode_stats_modal(page, app_url, console_errors):
     assert "[showStats]" in log_text
 
 
-def test_app_mode_stats_hidden_in_demo(page, pwa_url):
-    """[Demo] mode: Training stats menu item is hidden."""
+def test_app_mode_validate_modal(page, app_url, console_errors):
+    """[App] mode: Validate PGN menu item opens modal with results."""
+    page.goto(app_url)
+    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+
+    # Open menu
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+
+    # Validate item should be visible and enabled
+    validate_item = page.locator("#nav-validate")
+    expect(validate_item).to_be_visible()
+    expect(validate_item).not_to_have_class("disabled")
+
+    # Click validate
+    validate_item.click()
+    page.wait_for_timeout(500)
+
+    # Modal should appear with results from fixture PGN
+    expect(page.locator("#validate-modal")).to_be_visible()
+    expect(page.locator("#validate-content")).to_contain_text("test.pgn")
+    expect(page.locator("#validate-content")).to_contain_text("Test Chapter")
+
+    # Close modal
+    page.locator("#close-validate").click()
+    expect(page.locator("#validate-modal")).not_to_be_visible()
+
+    # Verify console logs
+    log_text = "\n".join(console_errors["messages"])
+    assert "[showValidate]" in log_text
+
+
+def test_app_mode_menu_hidden_in_demo(page, pwa_url):
+    """[Demo] mode: App-only menu items are hidden."""
     page.goto(pwa_url)
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
@@ -573,3 +605,4 @@ def test_app_mode_stats_hidden_in_demo(page, pwa_url):
     page.wait_for_timeout(300)
 
     expect(page.locator("#nav-stats")).not_to_be_visible()
+    expect(page.locator("#nav-validate")).not_to_be_visible()
