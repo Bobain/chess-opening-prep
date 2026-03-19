@@ -473,6 +473,39 @@ cg-container {
   color: white;
 }
 
+#validate-content {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.validate-file {
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.validate-chapter {
+  padding-left: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.validate-ok { color: var(--correct); }
+.validate-warn { color: #f0ad4e; }
+.validate-error { color: var(--accent); }
+
+.validate-detail {
+  padding-left: 2rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+#close-validate {
+  background: var(--primary);
+  color: white;
+}
+
 /* Desktop: side-by-side layout */
 @media (min-width: 768px) {
   main {

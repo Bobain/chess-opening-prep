@@ -1025,6 +1025,75 @@ async function showStats() {
   }
 }
 
+// --- Validate modal ---
+
+/**
+ * Fetch PGN validation results from the API and display in a modal.
+ * Only available in [App] mode.
+ * @async
+ */
+async function showValidate() {
+  console.log('[showValidate] Fetching PGN validation...');
+  const modal = document.getElementById('validate-modal');
+  const content = document.getElementById('validate-content');
+  if (!modal || !content) {
+    console.error('[showValidate] Modal or content element not found');
+    return;
+  }
+
+  content.textContent = 'Validating...';
+  modal.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/pgn/validate', { method: 'POST' });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
+      console.log('[showValidate] API error:', resp.status, err.detail);
+      content.textContent = err.detail || 'Failed to validate.';
+      return;
+    }
+    const data = await resp.json();
+    console.log('[showValidate] Results received:', data.files.length, 'file(s)');
+
+    content.textContent = '';
+
+    for (const file of data.files) {
+      const fileEl = document.createElement('p');
+      fileEl.className = 'validate-file';
+      fileEl.textContent = file.file;
+      content.appendChild(fileEl);
+
+      for (const ch of file.chapters) {
+        const hasErrors = ch.errors.length > 0;
+        const hasWarnings = ch.warnings.length > 0;
+        const status = hasErrors ? 'ERROR' : hasWarnings ? 'WARN' : 'OK';
+        const cls = hasErrors ? 'validate-error' : hasWarnings ? 'validate-warn' : 'validate-ok';
+
+        const chEl = document.createElement('p');
+        chEl.className = 'validate-chapter ' + cls;
+        chEl.textContent = '[' + status + '] ' + ch.name;
+        content.appendChild(chEl);
+
+        for (const e of ch.errors) {
+          const d = document.createElement('p');
+          d.className = 'validate-detail validate-error';
+          d.textContent = e;
+          content.appendChild(d);
+        }
+        for (const w of ch.warnings) {
+          const d = document.createElement('p');
+          d.className = 'validate-detail validate-warn';
+          d.textContent = w;
+          content.appendChild(d);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[showValidate] Fetch failed:', err);
+    content.textContent = 'Failed to connect to server.';
+  }
+}
+
 // --- Init ---
 
 /**
@@ -1058,6 +1127,8 @@ async function init() {
       // Enable ready endpoints
       const statsItem = document.getElementById('nav-stats');
       if (statsItem) statsItem.classList.remove('disabled');
+      const validateItem = document.getElementById('nav-validate');
+      if (validateItem) validateItem.classList.remove('disabled');
 
       // Set version in menu
       document.getElementById('nav-version').textContent = 'v' + appVersion;
@@ -1178,6 +1249,23 @@ async function init() {
 
   document.getElementById('close-stats').addEventListener('click', () => {
     document.getElementById('stats-modal').classList.add('hidden');
+  });
+
+  // Wire up nav-validate (app-only)
+  const navValidate = document.getElementById('nav-validate');
+  if (navValidate) {
+    navValidate.addEventListener('click', () => {
+      if (navValidate.classList.contains('disabled')) return;
+      console.log('[init] nav-validate clicked');
+      closeMenu();
+      showValidate();
+    });
+  } else {
+    console.error('[init] nav-validate element not found');
+  }
+
+  document.getElementById('close-validate').addEventListener('click', () => {
+    document.getElementById('validate-modal').classList.add('hidden');
   });
 
   // Set version in menu header (populated later by mode detection)
