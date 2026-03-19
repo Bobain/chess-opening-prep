@@ -332,6 +332,15 @@ def _launch_server() -> None:
             print("  Please re-run: chess-self-coach")
             sys.exit(0)
 
+    from chess_self_coach.updater import check_stockfish_update
+
+    sf_available, sf_installed, sf_latest = check_stockfish_update()
+    if sf_available:
+        print(
+            f"  Stockfish update: {sf_latest} available (current: {sf_installed}).\n"
+            "  Update with: sudo apt install stockfish  (Linux) or  brew upgrade stockfish  (macOS)\n"
+        )
+
     from chess_self_coach.server import run_server
 
     run_server()

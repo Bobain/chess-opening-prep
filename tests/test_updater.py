@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
-from chess_self_coach.updater import check_update
+from chess_self_coach.updater import check_stockfish_update, check_update
 
 
 def test_check_update_newer_available(monkeypatch):
@@ -82,4 +82,75 @@ def test_check_update_network_error():
         available, latest = check_update()
 
     assert available is False
+    assert latest is None
+
+
+# --- Stockfish update check ---
+
+
+def test_check_stockfish_update_newer():
+    """Detects newer Stockfish version from GitHub releases."""
+    fake_github = json.dumps({"tag_name": "sf_99"}).encode()
+
+    class FakeResp:
+        def read(self):
+            return fake_github
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    with (
+        patch("chess_self_coach.config.find_stockfish", return_value="/usr/games/stockfish"),
+        patch("chess_self_coach.config.check_stockfish_version", return_value="Stockfish 18"),
+        patch("chess_self_coach.updater.urllib.request.urlopen", return_value=FakeResp()),
+    ):
+        available, installed, latest = check_stockfish_update()
+
+    assert available is True
+    assert installed == "Stockfish 18"
+    assert latest == "Stockfish 99"
+
+
+def test_check_stockfish_update_current():
+    """Returns False when installed version matches latest."""
+    fake_github = json.dumps({"tag_name": "sf_18"}).encode()
+
+    class FakeResp:
+        def read(self):
+            return fake_github
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    with (
+        patch("chess_self_coach.config.find_stockfish", return_value="/usr/games/stockfish"),
+        patch("chess_self_coach.config.check_stockfish_version", return_value="Stockfish 18"),
+        patch("chess_self_coach.updater.urllib.request.urlopen", return_value=FakeResp()),
+    ):
+        available, installed, latest = check_stockfish_update()
+
+    assert available is False
+    assert installed == "Stockfish 18"
+
+
+def test_check_stockfish_update_network_error():
+    """Returns (False, None, None) on network failure — never crashes."""
+    with (
+        patch("chess_self_coach.config.find_stockfish", return_value="/usr/games/stockfish"),
+        patch("chess_self_coach.config.check_stockfish_version", return_value="Stockfish 18"),
+        patch(
+            "chess_self_coach.updater.urllib.request.urlopen",
+            side_effect=OSError("Network unreachable"),
+        ),
+    ):
+        available, installed, latest = check_stockfish_update()
+
+    assert available is False
+    assert installed == "Stockfish 18"
     assert latest is None
