@@ -220,6 +220,46 @@ def test_pgn_status_no_config(tmp_path):
     assert body["files"] == []
 
 
+# --- /api/pgn/cleanup ---
+
+
+def test_pgn_cleanup_success(tmp_path):
+    """POST /api/pgn/cleanup returns cleanup results."""
+    config = {"studies": {"test.pgn": {"study_id": "abc123", "study_name": "Test"}}}
+    (tmp_path / "config.json").write_text(json.dumps(config))
+    with (
+        patch.object(server, "_project_root", tmp_path),
+        patch("chess_self_coach.config.load_lichess_token", return_value="lip_test"),
+        patch("chess_self_coach.lichess.cleanup_study", return_value=2),
+    ):
+        resp = client.post("/api/pgn/cleanup")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_deleted"] == 2
+    assert len(body["results"]) == 1
+    assert body["results"][0]["study"] == "test.pgn"
+
+
+def test_pgn_cleanup_no_token(tmp_path):
+    """POST /api/pgn/cleanup returns 401 when no token."""
+    with (
+        patch.object(server, "_project_root", tmp_path),
+        patch("chess_self_coach.config.load_lichess_token", return_value=None),
+    ):
+        resp = client.post("/api/pgn/cleanup")
+    assert resp.status_code == 401
+
+
+def test_pgn_cleanup_no_config(tmp_path):
+    """POST /api/pgn/cleanup returns 404 when no config."""
+    with (
+        patch.object(server, "_project_root", tmp_path),
+        patch("chess_self_coach.config.load_lichess_token", return_value="lip_test"),
+    ):
+        resp = client.post("/api/pgn/cleanup")
+    assert resp.status_code == 404
+
+
 # --- Port scanner ---
 
 

@@ -159,6 +159,20 @@ class ProjectStatusResponse(BaseModel):
     suggestions: list[str]
 
 
+class StudyCleanup(BaseModel):
+    """Cleanup result for one study."""
+
+    study: str
+    deleted: int
+
+
+class CleanupResponse(BaseModel):
+    """Response body for /api/pgn/cleanup."""
+
+    results: list[StudyCleanup]
+    total_deleted: int
+
+
 # --- API routes ---
 
 
@@ -242,6 +256,42 @@ async def pgn_status() -> ProjectStatusResponse:
 
     data = get_status_data(_project_root)
     return ProjectStatusResponse(**data)
+
+
+@app.post("/api/pgn/cleanup")
+async def pgn_cleanup() -> CleanupResponse:
+    """Clean up empty default chapters from all configured Lichess studies."""
+    import json
+
+    from chess_self_coach.config import load_lichess_token
+    from chess_self_coach.lichess import cleanup_study
+
+    # Check token
+    token = load_lichess_token(required=False)
+    if not token:
+        raise HTTPException(status_code=401, detail="Lichess token not configured")
+
+    # Load config
+    config_path = _project_root / "config.json"
+    if not config_path.exists():
+        raise HTTPException(status_code=404, detail="config.json not found")
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    studies = config.get("studies", {})
+    results = []
+    total = 0
+
+    for pgn_file, info in studies.items():
+        study_id = info.get("study_id", "")
+        if study_id.startswith("STUDY_ID"):
+            continue
+        deleted = cleanup_study(study_id, info.get("study_name", pgn_file))
+        results.append(StudyCleanup(study=pgn_file, deleted=deleted))
+        total += deleted
+
+    return CleanupResponse(results=results, total_deleted=total)
 
 
 # --- Dynamic file routes (before StaticFiles mount) ---
