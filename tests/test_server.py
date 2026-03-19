@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import json
+from unittest.mock import MagicMock, patch
+
 import chess
+import chess.engine
 from fastapi.testclient import TestClient
 
+from chess_self_coach import server
 from chess_self_coach.server import app
 
 
@@ -104,3 +109,69 @@ def test_api_not_cached_by_sw():
     resp = client.get("/sw.js")
     assert resp.status_code == 200
     assert "/api/" in resp.text
+
+
+# --- /training_data.json ---
+
+
+def test_training_data_served():
+    """GET /training_data.json returns 200 + valid JSON when file exists."""
+    resp = client.get("/training_data.json")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, (dict, list))
+
+
+def test_training_data_missing(tmp_path):
+    """GET /training_data.json returns 404 when file is absent."""
+    with patch.object(server, "_project_root", tmp_path):
+        resp = client.get("/training_data.json")
+    assert resp.status_code == 404
+
+
+# --- Port scanner ---
+
+
+def test_port_scanner_finds_available():
+    """_find_available_port() returns an int in the expected range."""
+    port = server._find_available_port()
+    assert isinstance(port, int)
+    assert 8000 <= port <= 8010
+
+
+# --- Crash recovery ---
+
+
+def test_bestmove_crash_recovery():
+    """Engine restart after EngineTerminatedError returns 200."""
+    # Mock result from the restarted engine
+    mock_result = MagicMock()
+    mock_result.move = chess.Move.from_uci("e2e4")
+
+    # First call raises EngineTerminatedError, second succeeds
+    crashed_engine = MagicMock()
+    crashed_engine.play.side_effect = chess.engine.EngineTerminatedError()
+
+    restarted_engine = MagicMock()
+    restarted_engine.play.return_value = mock_result
+
+    original_engine = server._engine
+    original_sf_path = server._sf_path
+    try:
+        server._engine = crashed_engine
+        server._sf_path = "/usr/bin/stockfish"  # just needs to be truthy
+
+        with patch(
+            "chess.engine.SimpleEngine.popen_uci",
+            return_value=restarted_engine,
+        ):
+            resp = client.post(
+                "/api/stockfish/bestmove",
+                json={"fen": chess.STARTING_FEN, "depth": 5},
+            )
+
+        assert resp.status_code == 200
+        assert resp.json()["bestmove"] == "e2e4"
+    finally:
+        server._engine = original_engine
+        server._sf_path = original_sf_path
