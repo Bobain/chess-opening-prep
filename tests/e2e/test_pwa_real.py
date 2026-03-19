@@ -51,7 +51,7 @@ def test_real_board_loads(page, pwa_real_url, console_errors):
     _wait_for_board(page, pwa_real_url)
     _wait_for_animation(page)
 
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
     expect(page.locator("#progress")).to_contain_text("1 /")
 
 

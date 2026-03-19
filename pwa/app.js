@@ -405,7 +405,9 @@ function animateWrongMove(position) {
         drawable: { autoShapes: [] },
         movable: { color: position.player_color, dests: getLegalDests(position.fen) },
       });
-      document.getElementById('prompt').textContent = 'Can you find a better move?';
+      const ctx = position.context || '';
+      document.getElementById('prompt').textContent =
+        `${ctx} You played ${position.player_move}. Can you find a better move?`;
       animationTimer = null;
     }, 1500);
   }, 500);

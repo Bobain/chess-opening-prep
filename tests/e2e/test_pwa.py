@@ -43,7 +43,7 @@ def test_page_loads_with_board(page, pwa_url):
     _wait_for_board(page, pwa_url)
     _wait_for_animation(page)
 
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
     expect(page.locator("#progress")).to_contain_text("1 /")
 
 
@@ -132,7 +132,7 @@ def test_next_button_advances_position(page, pwa_url):
 
     # Progress stays at 1/4 (position not yet acquired — needs 2nd success)
     expect(page.locator("#progress")).to_contain_text("1 / 4")
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
 
 
 def _solve_current_position(page, from_sq, to_sq, orientation):
@@ -184,7 +184,7 @@ def test_intra_session_repetition_on_correct(page, pwa_url):
     _wait_for_animation(page)
 
     # We should see position 2 next (not position 1 again immediately)
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
 
 
 def test_failed_position_returns_in_session(page, pwa_url):
@@ -211,7 +211,7 @@ def test_failed_position_returns_in_session(page, pwa_url):
     # Position 1 was reinserted — it will appear again later in the session
     # For now, we should be on position 2
     page.wait_for_selector("cg-board piece", timeout=5000)
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
 
 
 # --- Settings ---
@@ -460,7 +460,7 @@ def test_wrong_move_animation_plays(page, pwa_url, console_errors):
     _wait_for_animation(page)
 
     # After animation, prompt should invite the player to find a better move
-    expect(page.locator("#prompt")).to_contain_text("better move")
+    expect(page.locator("#prompt")).to_contain_text("You played")
 
     # Board should accept moves now (make a correct move to verify)
     make_move(page, "d2", "d4", "white")
