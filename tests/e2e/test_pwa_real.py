@@ -28,6 +28,11 @@ def _wait_for_board(page, url):
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
 
+def _wait_for_animation(page):
+    """Wait for the wrong-move animation to complete (500ms + 1500ms + margin)."""
+    page.wait_for_timeout(2500)
+
+
 def _get_first_position():
     """Load the first position from real training data."""
     data_path = PROJECT_ROOT / "training_data.json"
@@ -44,8 +49,9 @@ def _get_first_position():
 def test_real_board_loads(page, pwa_real_url, console_errors):
     """The PWA loads with real training data and shows a position."""
     _wait_for_board(page, pwa_real_url)
+    _wait_for_animation(page)
 
-    expect(page.locator("#prompt")).to_contain_text("You played")
+    expect(page.locator("#prompt")).to_contain_text("better move")
     expect(page.locator("#progress")).to_contain_text("1 /")
 
 
@@ -64,6 +70,7 @@ def test_real_see_moves_after_correct(page, pwa_real_url, console_errors):
     to_sq = chess.square_name(move.to_square)
 
     _wait_for_board(page, pwa_real_url)
+    _wait_for_animation(page)
 
     make_move(page, from_sq, to_sq, pos["player_color"])
     page.wait_for_timeout(500)
@@ -85,6 +92,7 @@ def test_real_see_moves_after_correct(page, pwa_real_url, console_errors):
 def test_real_see_moves_after_failure(page, pwa_real_url, console_errors):
     """The 'See moves' link appears after 3 wrong attempts on real data."""
     _wait_for_board(page, pwa_real_url)
+    _wait_for_animation(page)
 
     # Play 3 wrong moves (a-pawn push is almost never the best move)
     # We need to find a legal but wrong move for the first position

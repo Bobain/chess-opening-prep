@@ -30,14 +30,20 @@ def _wait_for_board(page, pwa_url):
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
 
+def _wait_for_animation(page):
+    """Wait for the wrong-move animation to complete (500ms + 1500ms + margin)."""
+    page.wait_for_timeout(2500)
+
+
 # --- Page loading ---
 
 
 def test_page_loads_with_board(page, pwa_url):
-    """Board renders and first position prompt appears."""
+    """Board renders and first position prompt appears after animation."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
-    expect(page.locator("#prompt")).to_contain_text("You played")
+    expect(page.locator("#prompt")).to_contain_text("better move")
     expect(page.locator("#progress")).to_contain_text("1 /")
 
 
@@ -47,6 +53,7 @@ def test_page_loads_with_board(page, pwa_url):
 def test_correct_move_shows_feedback(page, pwa_url):
     """Playing the best move shows 'Correct!' feedback."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Position 1: white, best_move="d4" → d2 to d4
     make_move(page, "d2", "d4", "white")
@@ -59,6 +66,7 @@ def test_correct_move_shows_feedback(page, pwa_url):
 def test_acceptable_move_also_correct(page, pwa_url):
     """An alternative acceptable move (e4) is also marked correct."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Position 1: acceptable_moves includes "e4"
     make_move(page, "e2", "e4", "white")
@@ -73,6 +81,7 @@ def test_acceptable_move_also_correct(page, pwa_url):
 def test_wrong_move_shows_try_again(page, pwa_url):
     """Playing a wrong move shows 'Try again' with remaining attempts."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Play a wrong move: a2→a3
     make_move(page, "a2", "a3", "white")
@@ -86,6 +95,7 @@ def test_wrong_move_shows_try_again(page, pwa_url):
 def test_three_wrong_attempts_reveals_answer(page, pwa_url):
     """After 3 wrong attempts, the correct answer is revealed."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     for i in range(3):
         page.wait_for_selector("cg-board piece", timeout=5000)
@@ -111,22 +121,24 @@ def test_three_wrong_attempts_reveals_answer(page, pwa_url):
 def test_next_button_advances_position(page, pwa_url):
     """Clicking Next loads the next position."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Solve position 1 correctly (1st appearance → reinserted, not yet completed)
     make_move(page, "d2", "d4", "white")
     page.wait_for_timeout(300)
 
     page.locator("#next-btn").click()
-    page.wait_for_timeout(500)
+    _wait_for_animation(page)
 
     # Progress stays at 1/4 (position not yet acquired — needs 2nd success)
     expect(page.locator("#progress")).to_contain_text("1 / 4")
-    expect(page.locator("#prompt")).to_contain_text("You played")
+    expect(page.locator("#prompt")).to_contain_text("better move")
 
 
 def _solve_current_position(page, from_sq, to_sq, orientation):
-    """Solve one position: make the correct move, wait, click Next."""
+    """Solve one position: wait for animation, make the correct move, click Next."""
     page.wait_for_selector("cg-board piece", timeout=5000)
+    _wait_for_animation(page)
     make_move(page, from_sq, to_sq, orientation)
     page.wait_for_timeout(300)
     page.locator("#next-btn").click()
@@ -161,6 +173,7 @@ def test_session_completion_shows_summary(page, pwa_url):
 def test_intra_session_repetition_on_correct(page, pwa_url):
     """A correct answer on first appearance reinserts the position later."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Solve position 1 correctly
     make_move(page, "d2", "d4", "white")
@@ -168,15 +181,16 @@ def test_intra_session_repetition_on_correct(page, pwa_url):
 
     expect(page.locator("#feedback-text")).to_contain_text("Correct")
     page.locator("#next-btn").click()
-    page.wait_for_timeout(500)
+    _wait_for_animation(page)
 
     # We should see position 2 next (not position 1 again immediately)
-    expect(page.locator("#prompt")).to_contain_text("You played")
+    expect(page.locator("#prompt")).to_contain_text("better move")
 
 
 def test_failed_position_returns_in_session(page, pwa_url):
     """A failed position is reinserted closer in the session queue."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Fail position 1 three times to exhaust attempts
     for i in range(3):
@@ -192,12 +206,12 @@ def test_failed_position_returns_in_session(page, pwa_url):
 
     expect(page.locator("#feedback-text")).to_contain_text("answer was")
     page.locator("#next-btn").click()
-    page.wait_for_timeout(500)
+    _wait_for_animation(page)
 
     # Position 1 was reinserted — it will appear again later in the session
     # For now, we should be on position 2
     page.wait_for_selector("cg-board piece", timeout=5000)
-    expect(page.locator("#prompt")).to_contain_text("You played")
+    expect(page.locator("#prompt")).to_contain_text("better move")
 
 
 # --- Settings ---
@@ -227,6 +241,7 @@ def test_see_moves_hidden_before_answer(page, pwa_url):
 def test_see_moves_visible_after_correct(page, pwa_url):
     """The 'See moves' link appears after a correct answer."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Position 1: best_move="d4"
     make_move(page, "d2", "d4", "white")
@@ -240,6 +255,7 @@ def test_see_moves_visible_after_correct(page, pwa_url):
 def test_see_moves_visible_after_two_wrong(page, pwa_url):
     """The 'See moves' link appears after 2 wrong attempts (not 3)."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # First wrong attempt — link should NOT appear
     make_move(page, "a2", "a3", "white")
@@ -262,6 +278,7 @@ def test_see_moves_visible_after_two_wrong(page, pwa_url):
 def test_see_moves_link_has_move_parameter(page, pwa_url):
     """The 'See moves' link includes the move number for deep linking."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Position 1: FEN "...w KQkq - 0 1" → ply = 0, game.id = lichess
     # Expected: https://lichess.org/testgame1#0
@@ -288,6 +305,7 @@ def test_see_moves_works_after_reload(page, pwa_url):
     # Reload — SW serves from cache (network-first should still fetch fresh)
     page.reload()
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    _wait_for_animation(page)
 
     # Play correct move
     make_move(page, "d2", "d4", "white")
@@ -304,6 +322,7 @@ def test_see_moves_works_after_reload(page, pwa_url):
 def test_eval_summary_visible_after_correct(page, pwa_url):
     """Eval summary appears after a correct answer with both eval lines."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Position 1: score_before="+0.30", score_after="-0.20"
     make_move(page, "d2", "d4", "white")
@@ -326,6 +345,7 @@ def test_eval_summary_shows_mate_as_text(page, pwa_url, console_errors):
 
     # Position 4: White, score_before="+100.00" → "You win"
     page.wait_for_selector("cg-board piece", timeout=5000)
+    _wait_for_animation(page)
     make_move(page, "h5", "f7", "white")
     page.wait_for_timeout(300)
 
@@ -347,6 +367,7 @@ def test_eval_summary_shows_mate_as_text(page, pwa_url, console_errors):
 def test_dismiss_button_visible_after_wrong_attempt(page, pwa_url):
     """The 'Give up on this lesson' button appears after the first wrong move."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     # Dismiss should NOT be visible initially
     expect(page.locator("#dismiss-btn")).not_to_be_visible()
@@ -365,6 +386,7 @@ def test_dismiss_button_visible_after_wrong_attempt(page, pwa_url):
 def test_wrong_move_shows_punishment(page, pwa_url, console_errors):
     """Wrong move triggers Stockfish WASM punishment and Retry button."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     make_move(page, "a2", "a3", "white")
 
@@ -378,6 +400,7 @@ def test_wrong_move_shows_punishment(page, pwa_url, console_errors):
 def test_retry_resets_position(page, pwa_url, console_errors):
     """After punishment, clicking Retry resets the board."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     make_move(page, "a2", "a3", "white")
     page.locator("#retry-btn").wait_for(state="visible", timeout=15000)
@@ -393,6 +416,7 @@ def test_retry_resets_position(page, pwa_url, console_errors):
 def test_correct_move_no_punishment(page, pwa_url):
     """Correct move has no punishment or retry — behavior unchanged."""
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     make_move(page, "d2", "d4", "white")
     page.wait_for_timeout(300)
@@ -416,6 +440,7 @@ def test_wrong_move_fallback_without_wasm(page, pwa_url, console_errors):
     """)
 
     _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
 
     make_move(page, "a2", "a3", "white")
     page.wait_for_timeout(3000)
@@ -424,3 +449,72 @@ def test_wrong_move_fallback_without_wasm(page, pwa_url, console_errors):
     expect(page.locator("#retry-btn")).not_to_be_visible()
     log_text = "\n".join(console_errors["messages"])
     assert "[handleMove] Stockfish WASM unavailable" in log_text
+
+
+# --- Wrong move animation ---
+
+
+def test_wrong_move_animation_plays(page, pwa_url, console_errors):
+    """Animation plays the wrong move and resets, then the player can interact."""
+    _wait_for_board(page, pwa_url)
+    _wait_for_animation(page)
+
+    # After animation, prompt should invite the player to find a better move
+    expect(page.locator("#prompt")).to_contain_text("better move")
+
+    # Board should accept moves now (make a correct move to verify)
+    make_move(page, "d2", "d4", "white")
+    page.wait_for_timeout(300)
+    expect(page.locator("#feedback-text")).to_contain_text("Correct")
+
+    # Verify animation logs
+    log_text = "\n".join(console_errors["messages"])
+    assert "[animateWrongMove]" in log_text
+
+
+def test_annotation_visible_during_animation(page, pwa_url, console_errors):
+    """Annotation (??) is rendered via autoShapes during the animation."""
+    _wait_for_board(page, pwa_url)
+
+    # Wait for the annotation to appear (after 500ms delay)
+    # Position 1 is a blunder → annotation "??"
+    page.wait_for_timeout(800)
+
+    # Check that autoShapes SVG is rendered on the board
+    # Chessground renders autoShapes as <svg> elements inside cg-wrap
+    svg_count = page.locator("cg-container svg").count()
+    assert svg_count > 0, "Expected SVG autoShapes on the board during animation"
+
+    # Verify via console
+    log_text = "\n".join(console_errors["messages"])
+    assert "[animateWrongMove]" in log_text
+    assert "category=blunder" in log_text
+
+
+def test_clock_displayed_when_present(page, pwa_url):
+    """Clocks are visible with correct values when position has clock data."""
+    _wait_for_board(page, pwa_url)
+
+    # Position 1 has clock: player=540s (09:00), opponent=480s (08:00)
+    clock_bottom = page.locator("#clock-bottom")
+    clock_top = page.locator("#clock-top")
+
+    expect(clock_bottom).to_be_visible()
+    expect(clock_top).to_be_visible()
+    expect(clock_bottom).to_have_text("09:00")
+    expect(clock_top).to_have_text("08:00")
+
+
+def test_clock_hidden_when_absent(page, pwa_url):
+    """Clocks are hidden when position has no clock data."""
+    _wait_for_board(page, pwa_url)
+
+    # Navigate to position 2 (no clock)
+    _solve_current_position(page, "d2", "d4", "white")
+
+    _wait_for_animation(page)
+
+    clock_bottom = page.locator("#clock-bottom")
+    clock_top = page.locator("#clock-top")
+    expect(clock_bottom).not_to_be_visible()
+    expect(clock_top).not_to_be_visible()

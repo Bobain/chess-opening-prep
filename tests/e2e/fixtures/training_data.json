@@ -10,6 +10,7 @@
       "id": "test_pos_001",
       "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
       "player_color": "white",
+      "context": "Move 1 as White. Test Opening.",
       "player_move": "a3",
       "best_move": "d4",
       "score_before": "+0.30",
@@ -27,6 +28,7 @@
         "result": "0-1",
         "opening": "Test Opening"
       },
+      "clock": {"player": 540.0, "opponent": 480.0},
       "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
     },
     {
@@ -56,6 +58,7 @@
       "id": "test_pos_003",
       "fen": "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
       "player_color": "black",
+      "context": "Move 1 as Black. Queen's Pawn.",
       "player_move": "a6",
       "best_move": "d5",
       "score_before": "+0.30",
@@ -73,6 +76,7 @@
         "result": "0-1",
         "opening": "Queen's Pawn"
       },
+      "clock": {"player": 540.0, "opponent": 480.0},
       "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
     },
     {
