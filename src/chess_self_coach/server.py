@@ -298,6 +298,64 @@ async def pgn_cleanup() -> CleanupResponse:
     return CleanupResponse(results=results, total_deleted=total)
 
 
+# --- Config API ---
+
+
+class ConfigResponse(BaseModel):
+    """Response body for GET /api/config."""
+
+    players: dict[str, str]
+    analysis: dict[str, float | int]
+
+
+class ConfigUpdateRequest(BaseModel):
+    """Request body for POST /api/config."""
+
+    players: dict[str, str] | None = None
+    analysis: dict[str, float | int] | None = None
+
+
+@app.get("/api/config")
+async def get_config() -> ConfigResponse:
+    """Return editable config fields (players, analysis)."""
+    config_path = _project_root / "config.json"
+    if not config_path.exists():
+        raise HTTPException(status_code=404, detail="config.json not found")
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    return ConfigResponse(
+        players=config.get("players", {}),
+        analysis=config.get("analysis", {}),
+    )
+
+
+@app.post("/api/config")
+async def update_config(req: ConfigUpdateRequest) -> ConfigResponse:
+    """Update editable config fields (players, analysis). Preserves other fields."""
+    config_path = _project_root / "config.json"
+    if not config_path.exists():
+        raise HTTPException(status_code=404, detail="config.json not found")
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    if req.players is not None:
+        config["players"] = req.players
+    if req.analysis is not None:
+        config["analysis"] = req.analysis
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    return ConfigResponse(
+        players=config.get("players", {}),
+        analysis=config.get("analysis", {}),
+    )
+
+
 # --- Coaching journal ---
 
 

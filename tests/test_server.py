@@ -448,3 +448,98 @@ def test_coaching_topic_not_found():
     """GET /api/coaching/topics/{slug} returns 404 for unknown slug."""
     resp = client.get("/api/coaching/topics/nonexistent")
     assert resp.status_code == 404
+
+
+# --- /api/config ---
+
+
+def test_get_config(tmp_path):
+    """GET /api/config returns players and analysis sections."""
+    config = {
+        "stockfish": {"path": "/usr/bin/stockfish"},
+        "players": {"lichess": "testuser", "chesscom": "testcom"},
+        "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
+        "studies": {},
+    }
+    (tmp_path / "config.json").write_text(json.dumps(config))
+
+    original = server._project_root
+    server._project_root = tmp_path
+    try:
+        resp = client.get("/api/config")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["players"]["lichess"] == "testuser"
+        assert data["analysis"]["default_depth"] == 18
+        # stockfish and studies should NOT be exposed
+        assert "stockfish" not in data
+        assert "studies" not in data
+    finally:
+        server._project_root = original
+
+
+def test_get_config_no_file():
+    """GET /api/config returns 404 when config.json is missing."""
+    original = server._project_root
+    server._project_root = Path("/nonexistent")
+    try:
+        resp = client.get("/api/config")
+        assert resp.status_code == 404
+    finally:
+        server._project_root = original
+
+
+def test_update_config(tmp_path):
+    """POST /api/config updates players and analysis, preserves other fields."""
+    config = {
+        "stockfish": {"path": "/usr/bin/stockfish"},
+        "players": {"lichess": "old", "chesscom": "old"},
+        "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
+        "studies": {"test.pgn": {"study_id": "abc"}},
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config))
+
+    original = server._project_root
+    server._project_root = tmp_path
+    try:
+        resp = client.post("/api/config", json={
+            "players": {"lichess": "newuser", "chesscom": "newcom"},
+            "analysis": {"default_depth": 12, "blunder_threshold": 0.5},
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["players"]["lichess"] == "newuser"
+        assert data["analysis"]["default_depth"] == 12
+
+        # Verify file was written and other fields preserved
+        saved = json.loads(config_path.read_text())
+        assert saved["stockfish"]["path"] == "/usr/bin/stockfish"
+        assert saved["studies"]["test.pgn"]["study_id"] == "abc"
+        assert saved["players"]["lichess"] == "newuser"
+    finally:
+        server._project_root = original
+
+
+def test_update_config_partial(tmp_path):
+    """POST /api/config with only players keeps analysis unchanged."""
+    config = {
+        "players": {"lichess": "old", "chesscom": "old"},
+        "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
+    }
+    config_path = tmp_path / "config.json"
+    config_path.write_text(json.dumps(config))
+
+    original = server._project_root
+    server._project_root = tmp_path
+    try:
+        resp = client.post("/api/config", json={
+            "players": {"lichess": "newuser", "chesscom": "old"},
+        })
+        assert resp.status_code == 200
+
+        saved = json.loads(config_path.read_text())
+        assert saved["players"]["lichess"] == "newuser"
+        assert saved["analysis"]["default_depth"] == 18  # unchanged
+    finally:
+        server._project_root = original
