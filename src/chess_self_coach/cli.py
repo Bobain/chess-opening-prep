@@ -199,13 +199,17 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "analyze":
         from chess_self_coach.analyze import analyze_pgn
 
-        analyze_pgn(
-            args.pgn_file,
-            depth=args.depth,
-            threshold=args.threshold,
-            engine_path=args.engine,
-            in_place=args.in_place,
-        )
+        try:
+            analyze_pgn(
+                args.pgn_file,
+                depth=args.depth,
+                threshold=args.threshold,
+                engine_path=args.engine,
+                in_place=args.in_place,
+            )
+        except FileNotFoundError as e:
+            print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.command == "setup":
         from chess_self_coach.lichess import setup
@@ -225,7 +229,11 @@ def main(argv: list[str] | None = None) -> None:
             sys.exit(1)
         from chess_self_coach.lichess import push_pgn
 
-        push_pgn(args.pgn_file, replace=not args.no_replace)
+        try:
+            push_pgn(args.pgn_file, replace=not args.no_replace)
+        except FileNotFoundError as e:
+            print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.command == "pull":
         from chess_self_coach.config import load_lichess_token

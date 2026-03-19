@@ -481,8 +481,7 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = True) -> None:
     """
     pgn_path = Path(pgn_path)
     if not pgn_path.exists():
-        print(f"❌ File not found: {pgn_path}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(f"❌ File not found: {pgn_path}")
 
     config = load_config()
     from chess_self_coach.config import get_study_mapping

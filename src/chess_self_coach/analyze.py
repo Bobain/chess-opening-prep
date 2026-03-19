@@ -169,15 +169,13 @@ def analyze_pgn(
     """
     pgn_path = Path(pgn_path)
     if not pgn_path.exists():
-        print(f"❌ File not found: {pgn_path}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(f"❌ File not found: {pgn_path}")
 
     # Find Stockfish
     if engine_path:
         sf_path = Path(engine_path)
         if not sf_path.exists():
-            print(f"❌ Engine not found: {sf_path}", file=sys.stderr)
-            sys.exit(1)
+            raise FileNotFoundError(f"❌ Engine not found: {sf_path}")
     else:
         config = load_config()
         sf_path = find_stockfish(config)
