@@ -1573,6 +1573,43 @@ async function init() {
     document.getElementById('refresh-modal').classList.add('hidden');
   });
 
+  // Wire up nav-about (both modes)
+  document.getElementById('nav-about').addEventListener('click', () => {
+    console.log('[init] nav-about clicked');
+    closeMenu();
+    const content = document.getElementById('about-content');
+    content.textContent = '';
+
+    const addLine = (text) => {
+      const p = document.createElement('p');
+      p.textContent = text;
+      content.appendChild(p);
+    };
+
+    const addLink = (text, href) => {
+      const p = document.createElement('p');
+      const a = document.createElement('a');
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = text;
+      p.appendChild(a);
+      content.appendChild(p);
+    };
+
+    addLine('Learn from your own mistakes.');
+    if (appVersion) addLine('Version: ' + appVersion);
+    if (stockfishVersion) addLine('Stockfish: ' + stockfishVersion);
+    if (!appVersion) addLine('Mode: demo');
+    addLink('GitHub', 'https://github.com/Bobain/chess-self-coach');
+
+    document.getElementById('about-modal').classList.remove('hidden');
+  });
+
+  document.getElementById('close-about').addEventListener('click', () => {
+    document.getElementById('about-modal').classList.add('hidden');
+  });
+
   // Set version in menu header (populated earlier by mode detection)
   if (appVersion) {
     const versionText = stockfishVersion

@@ -699,6 +699,43 @@ def test_app_mode_refresh_modal(page, app_url, console_errors):
     assert "[refreshTraining]" in log_text
 
 
+def test_about_modal_opens_and_closes(page, pwa_url):
+    """About modal opens via hamburger menu and shows static info in demo mode."""
+    _wait_for_board(page, pwa_url)
+
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+    page.locator("#nav-about").click()
+
+    expect(page.locator("#about-modal")).to_be_visible()
+    expect(page.locator("#about-content")).to_contain_text("Learn from your own mistakes")
+    expect(page.locator("#about-content")).to_contain_text("demo")
+    expect(page.locator("#about-content a")).to_have_attribute("href", "https://github.com/Bobain/chess-self-coach")
+
+    page.locator("#close-about").click()
+    expect(page.locator("#about-modal")).not_to_be_visible()
+
+
+def test_about_modal_shows_version_in_app_mode(page, app_url, console_errors):
+    """[App] mode: About modal shows version and Stockfish version."""
+    page.goto(app_url)
+    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+    page.locator("#nav-about").click()
+
+    expect(page.locator("#about-modal")).to_be_visible()
+    expect(page.locator("#about-content")).to_contain_text("Version:")
+    expect(page.locator("#about-content")).to_contain_text("Stockfish:")
+
+    page.locator("#close-about").click()
+    expect(page.locator("#about-modal")).not_to_be_visible()
+
+    log_text = "\n".join(console_errors["messages"])
+    assert "[init] nav-about clicked" in log_text
+
+
 def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     """[Demo] mode: App-only menu items are hidden, shared items are visible."""
     page.goto(pwa_url)

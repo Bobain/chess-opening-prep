@@ -574,6 +574,22 @@ cg-container {
   color: white;
 }
 
+#about-content {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.8;
+}
+
+#about-content a {
+  color: var(--success);
+  text-decoration: underline;
+}
+
+#close-about {
+  background: var(--primary);
+  color: white;
+}
+
 /* Desktop: side-by-side layout */
 @media (min-width: 768px) {
   main {
