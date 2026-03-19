@@ -14,8 +14,11 @@ Key design decisions:
 from __future__ import annotations
 
 import asyncio
+import json
 import socket
+import threading
 import time
+import uuid
 import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -26,6 +29,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from sse_starlette.sse import EventSourceResponse
 
 from chess_self_coach import __version__
 from chess_self_coach.config import _find_project_root, find_stockfish
@@ -292,6 +296,89 @@ async def pgn_cleanup() -> CleanupResponse:
         total += deleted
 
     return CleanupResponse(results=results, total_deleted=total)
+
+
+# --- Job runner ---
+
+_current_job: dict | None = None
+_job_lock = threading.Lock()
+
+
+def _run_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
+    """Run prepare_training_data in a background thread.
+
+    Pushes progress events to the job's asyncio.Queue via the event loop.
+
+    Args:
+        job_id: ID of the current job.
+        loop: The main asyncio event loop (for call_soon_threadsafe).
+    """
+    global _current_job
+
+    from chess_self_coach.trainer import prepare_training_data
+
+    queue = _current_job["queue"]
+
+    def on_progress(event: dict) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, event)
+
+    try:
+        prepare_training_data(on_progress=on_progress)
+        _current_job["status"] = "done"
+    except Exception as exc:
+        error_event = {"phase": "error", "message": str(exc), "percent": 0}
+        loop.call_soon_threadsafe(queue.put_nowait, error_event)
+        _current_job["status"] = "error"
+    finally:
+        # Sentinel to signal end of stream
+        loop.call_soon_threadsafe(queue.put_nowait, None)
+
+
+class JobStartResponse(BaseModel):
+    """Response body for POST /api/train/prepare."""
+
+    job_id: str
+
+
+@app.post("/api/train/prepare", status_code=202)
+async def train_prepare() -> JobStartResponse:
+    """Start a background training preparation job."""
+    global _current_job
+
+    with _job_lock:
+        if _current_job and _current_job["status"] == "running":
+            raise HTTPException(status_code=409, detail="A job is already running")
+
+        job_id = str(uuid.uuid4())[:8]
+        _current_job = {
+            "id": job_id,
+            "status": "running",
+            "queue": asyncio.Queue(),
+        }
+
+    loop = asyncio.get_event_loop()
+    thread = threading.Thread(target=_run_job, args=(job_id, loop), daemon=True)
+    thread.start()
+
+    return JobStartResponse(job_id=job_id)
+
+
+@app.get("/api/jobs/{job_id}/events")
+async def job_events(job_id: str):
+    """Stream job progress events via SSE."""
+    if not _current_job or _current_job["id"] != job_id:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    queue = _current_job["queue"]
+
+    async def event_generator():
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield {"data": json.dumps(event)}
+
+    return EventSourceResponse(event_generator())
 
 
 # --- Dynamic file routes (before StaticFiles mount) ---

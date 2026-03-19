@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from unittest.mock import MagicMock, patch
 
 import chess
@@ -306,3 +307,81 @@ def test_bestmove_crash_recovery():
     finally:
         server._engine = original_engine
         server._sf_path = original_sf_path
+
+
+# --- /api/train/prepare ---
+
+
+def _reset_job():
+    """Reset the global job state for test isolation."""
+    server._current_job = None
+
+
+def test_train_prepare_starts_job():
+    """POST /api/train/prepare returns 202 + job_id."""
+    _reset_job()
+
+    def fake_prepare(**kwargs):
+        on_progress = kwargs.get("on_progress")
+        if on_progress:
+            on_progress({"phase": "done", "message": "Done!", "percent": 100})
+
+    with patch("chess_self_coach.trainer.prepare_training_data", fake_prepare):
+        resp = client.post("/api/train/prepare")
+
+    assert resp.status_code == 202
+    data = resp.json()
+    assert "job_id" in data
+    assert len(data["job_id"]) == 8
+
+    # Wait for job to finish
+    time.sleep(0.2)
+    _reset_job()
+
+
+def test_train_prepare_rejects_concurrent():
+    """Second POST returns 409 while a job is running."""
+    _reset_job()
+    import asyncio
+
+    # Set up a fake running job
+    server._current_job = {
+        "id": "fakejob1",
+        "status": "running",
+        "queue": asyncio.Queue(),
+    }
+
+    resp = client.post("/api/train/prepare")
+    assert resp.status_code == 409
+
+    _reset_job()
+
+
+def test_job_events_stream():
+    """GET /api/jobs/{id}/events returns SSE content-type."""
+    _reset_job()
+    import asyncio
+
+    queue = asyncio.Queue()
+    queue.put_nowait({"phase": "init", "message": "Starting"})
+    queue.put_nowait(None)  # End sentinel
+
+    server._current_job = {
+        "id": "testjob1",
+        "status": "running",
+        "queue": queue,
+    }
+
+    resp = client.get("/api/jobs/testjob1/events")
+    assert resp.status_code == 200
+    assert "text/event-stream" in resp.headers["content-type"]
+    assert "Starting" in resp.text
+
+    _reset_job()
+
+
+def test_job_events_not_found():
+    """GET /api/jobs/{id}/events returns 404 for unknown job."""
+    _reset_job()
+    resp = client.get("/api/jobs/nonexistent/events")
+    assert resp.status_code == 404

@@ -12,6 +12,7 @@ dependencies = [
     "chess.com>=3.0.0,<4",
     "fastapi>=0.115.0,<1",
     "uvicorn[standard]>=0.34.0,<1",
+    "sse-starlette>=3.3.3",
 ]
 
 [project.scripts]
