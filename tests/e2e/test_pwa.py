@@ -700,7 +700,7 @@ def test_app_mode_refresh_modal(page, app_url, console_errors):
 
 
 def test_app_mode_menu_hidden_in_demo(page, pwa_url):
-    """[Demo] mode: App-only menu items are hidden."""
+    """[Demo] mode: App-only menu items are hidden, shared items are visible."""
     page.goto(pwa_url)
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
@@ -712,3 +712,9 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     expect(page.locator("#nav-status")).not_to_be_visible()
     expect(page.locator("#nav-cleanup")).not_to_be_visible()
     expect(page.locator("#nav-refresh")).not_to_be_visible()
+
+    # Settings is visible in demo mode (not app-only)
+    expect(page.locator("#nav-settings")).to_be_visible()
+
+    # Version is empty in demo mode (no backend)
+    expect(page.locator("#nav-version")).to_have_text("")
