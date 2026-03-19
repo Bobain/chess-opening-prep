@@ -658,6 +658,39 @@ def test_app_mode_cleanup_modal(page, app_url, console_errors):
     assert "[showCleanup]" in log_text
 
 
+def test_app_mode_refresh_modal(page, app_url, console_errors):
+    """[App] mode: Refresh training menu item opens modal with progress bar."""
+    page.goto(app_url)
+    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+
+    # Open menu
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+
+    # Refresh item should be visible and enabled
+    refresh_item = page.locator("#nav-refresh")
+    expect(refresh_item).to_be_visible()
+    expect(refresh_item).not_to_have_class("disabled")
+
+    # Click refresh (will likely error — no config in test env, but modal should open)
+    refresh_item.click()
+    page.wait_for_timeout(500)
+
+    # Modal should appear with progress bar
+    expect(page.locator("#refresh-modal")).to_be_visible()
+    expect(page.locator("#refresh-progress")).to_be_visible()
+    expect(page.locator("#refresh-message")).not_to_be_empty()
+
+    # Wait for close button to appear (job finishes or errors quickly)
+    page.locator("#close-refresh").wait_for(state="visible", timeout=10000)
+    page.locator("#close-refresh").click()
+    expect(page.locator("#refresh-modal")).not_to_be_visible()
+
+    # Verify console logs
+    log_text = "\n".join(console_errors["messages"])
+    assert "[refreshTraining]" in log_text
+
+
 def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     """[Demo] mode: App-only menu items are hidden."""
     page.goto(pwa_url)
@@ -670,3 +703,4 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     expect(page.locator("#nav-validate")).not_to_be_visible()
     expect(page.locator("#nav-status")).not_to_be_visible()
     expect(page.locator("#nav-cleanup")).not_to_be_visible()
+    expect(page.locator("#nav-refresh")).not_to_be_visible()

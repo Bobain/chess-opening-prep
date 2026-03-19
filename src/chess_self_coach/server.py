@@ -325,7 +325,7 @@ def _run_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
     try:
         prepare_training_data(on_progress=on_progress)
         _current_job["status"] = "done"
-    except Exception as exc:
+    except (Exception, SystemExit) as exc:
         error_event = {"phase": "error", "message": str(exc), "percent": 0}
         loop.call_soon_threadsafe(queue.put_nowait, error_event)
         _current_job["status"] = "error"
