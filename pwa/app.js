@@ -949,6 +949,82 @@ function startSession() {
   showPosition(0);
 }
 
+// --- Stats modal ---
+
+/**
+ * Fetch training stats from the API and display in a modal.
+ * Only available in [App] mode.
+ * @async
+ */
+async function showStats() {
+  console.log('[showStats] Fetching training stats...');
+  const modal = document.getElementById('stats-modal');
+  const content = document.getElementById('stats-content');
+  if (!modal || !content) {
+    console.error('[showStats] Modal or content element not found');
+    return;
+  }
+
+  content.textContent = 'Loading...';
+  modal.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/train/stats');
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
+      console.log('[showStats] API error:', resp.status, err.detail);
+      content.textContent = err.detail || 'Failed to load stats.';
+      return;
+    }
+    const stats = await resp.json();
+    console.log('[showStats] Stats received:', JSON.stringify(stats));
+
+    content.textContent = '';
+
+    const addLine = (labelText, valueText) => {
+      const p = document.createElement('p');
+      const label = document.createElement('span');
+      label.className = 'stats-label';
+      label.textContent = labelText;
+      const value = document.createElement('span');
+      value.className = 'stats-value';
+      value.textContent = valueText;
+      p.appendChild(label);
+      p.appendChild(value);
+      content.appendChild(p);
+      return p;
+    };
+
+    addLine('Total positions: ', stats.total);
+    addLine('Generated: ', stats.generated);
+
+    const catHeader = document.createElement('p');
+    catHeader.className = 'stats-label';
+    catHeader.style.marginTop = '0.75rem';
+    catHeader.textContent = 'By category:';
+    content.appendChild(catHeader);
+
+    for (const cat of ['blunder', 'mistake', 'inaccuracy']) {
+      const p = addLine(cat.charAt(0).toUpperCase() + cat.slice(1) + ': ', stats.by_category[cat] || 0);
+      p.style.paddingLeft = '1rem';
+    }
+
+    const srcHeader = document.createElement('p');
+    srcHeader.className = 'stats-label';
+    srcHeader.style.marginTop = '0.75rem';
+    srcHeader.textContent = 'By source:';
+    content.appendChild(srcHeader);
+
+    for (const [src, count] of Object.entries(stats.by_source).sort()) {
+      const p = addLine(src + ': ', count);
+      p.style.paddingLeft = '1rem';
+    }
+  } catch (err) {
+    console.error('[showStats] Fetch failed:', err);
+    content.textContent = 'Failed to connect to server.';
+  }
+}
+
 // --- Init ---
 
 /**
@@ -978,6 +1054,10 @@ async function init() {
         el.classList.remove('hidden');
         el.classList.add('disabled');
       });
+
+      // Enable ready endpoints
+      const statsItem = document.getElementById('nav-stats');
+      if (statsItem) statsItem.classList.remove('disabled');
 
       // Set version in menu
       document.getElementById('nav-version').textContent = 'v' + appVersion;
@@ -1082,6 +1162,23 @@ async function init() {
 
   menuBtn.addEventListener('click', openMenu);
   navOverlay.addEventListener('click', closeMenu);
+
+  // Wire up nav-stats (app-only)
+  const navStats = document.getElementById('nav-stats');
+  if (navStats) {
+    navStats.addEventListener('click', () => {
+      if (navStats.classList.contains('disabled')) return;
+      console.log('[init] nav-stats clicked');
+      closeMenu();
+      showStats();
+    });
+  } else {
+    console.error('[init] nav-stats element not found');
+  }
+
+  document.getElementById('close-stats').addEventListener('click', () => {
+    document.getElementById('stats-modal').classList.add('hidden');
+  });
 
   // Set version in menu header (populated later by mode detection)
   if (appVersion) {
