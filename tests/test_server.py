@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -350,6 +351,7 @@ def test_train_prepare_rejects_concurrent():
         "id": "fakejob1",
         "status": "running",
         "queue": asyncio.Queue(),
+        "cancel": threading.Event(),
     }
 
     resp = client.post("/api/train/prepare")
@@ -371,6 +373,7 @@ def test_job_events_stream():
         "id": "testjob1",
         "status": "running",
         "queue": queue,
+        "cancel": threading.Event(),
     }
 
     resp = client.get("/api/jobs/testjob1/events")
@@ -386,6 +389,51 @@ def test_job_events_not_found():
     _reset_job()
     resp = client.get("/api/jobs/nonexistent/events")
     assert resp.status_code == 404
+
+
+def test_job_cancel_sets_event():
+    """POST /api/jobs/{id}/cancel sets the cancel event."""
+    _reset_job()
+    import asyncio
+
+    cancel = threading.Event()
+    server._current_job = {
+        "id": "canceljob1",
+        "status": "running",
+        "queue": asyncio.Queue(),
+        "cancel": cancel,
+    }
+
+    resp = client.post("/api/jobs/canceljob1/cancel")
+    assert resp.status_code == 202
+    assert cancel.is_set()
+
+    _reset_job()
+
+
+def test_job_cancel_not_found():
+    """POST /api/jobs/{id}/cancel returns 404 for unknown job."""
+    _reset_job()
+    resp = client.post("/api/jobs/nonexistent/cancel")
+    assert resp.status_code == 404
+
+
+def test_job_cancel_not_running():
+    """POST /api/jobs/{id}/cancel returns 409 if job is not running."""
+    _reset_job()
+    import asyncio
+
+    server._current_job = {
+        "id": "donejob1",
+        "status": "done",
+        "queue": asyncio.Queue(),
+        "cancel": threading.Event(),
+    }
+
+    resp = client.post("/api/jobs/donejob1/cancel")
+    assert resp.status_code == 409
+
+    _reset_job()
 
 
 # --- /api/coaching/topics ---

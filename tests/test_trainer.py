@@ -12,7 +12,9 @@ from chess_self_coach.trainer import (
     BLUNDER_THRESHOLD,
     INACCURACY_THRESHOLD,
     MISTAKE_THRESHOLD,
+    TrainingInterrupted,
     _analysis_limit,
+    _atomic_write_json,
     _classify_mistake,
     _detect_source,
     _determine_player_color,
@@ -318,3 +320,45 @@ def test_time_neutral():
     """Similar clocks, no time pressure."""
     result = _time_pressure_context(600, 500)  # 10min vs 8min
     assert result == ""
+
+
+# --- Atomic write ---
+
+
+def test_atomic_write_json(tmp_path):
+    """_atomic_write_json writes valid JSON and leaves no .tmp file."""
+    target = tmp_path / "data.json"
+    data = {"key": "value", "list": [1, 2, 3]}
+    _atomic_write_json(target, data)
+
+    import json
+    from pathlib import Path
+
+    assert target.exists()
+    assert not Path(str(target) + ".tmp").exists()
+    assert not target.with_suffix(".tmp").exists()
+    loaded = json.loads(target.read_text())
+    assert loaded == data
+
+
+def test_atomic_write_preserves_old_on_target_exists(tmp_path):
+    """_atomic_write_json replaces existing file atomically."""
+    target = tmp_path / "data.json"
+    target.write_text('{"old": true}\n')
+
+    _atomic_write_json(target, {"new": True})
+
+    import json
+
+    loaded = json.loads(target.read_text())
+    assert loaded == {"new": True}
+
+
+# --- TrainingInterrupted ---
+
+
+def test_training_interrupted_is_exception():
+    """TrainingInterrupted carries the message."""
+    exc = TrainingInterrupted("Stopped at 3/5 games")
+    assert str(exc) == "Stopped at 3/5 games"
+    assert isinstance(exc, Exception)
