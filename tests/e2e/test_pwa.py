@@ -684,10 +684,10 @@ def test_app_mode_refresh_modal(page, app_url, console_errors):
     refresh_item.click()
     page.wait_for_timeout(500)
 
-    # Modal should appear with progress bar
+    # Modal should appear with step checklist
     expect(page.locator("#refresh-modal")).to_be_visible()
-    expect(page.locator("#refresh-progress")).to_be_visible()
-    expect(page.locator("#refresh-message")).not_to_be_empty()
+    expect(page.locator("#refresh-steps")).to_be_visible()
+    expect(page.locator("#refresh-steps .refresh-step")).to_have_count(4)
 
     # Wait for close button to appear (job finishes or errors quickly)
     page.locator("#close-refresh").wait_for(state="visible", timeout=10000)

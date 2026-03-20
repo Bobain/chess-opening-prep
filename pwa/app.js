@@ -1215,15 +1215,81 @@ async function showValidate() {
 async function refreshTraining() {
   console.log('[refreshTraining] Starting refresh...');
   const modal = document.getElementById('refresh-modal');
-  const message = document.getElementById('refresh-message');
-  const progress = document.getElementById('refresh-progress');
-  if (!modal || !message || !progress) {
+  const stepsContainer = document.getElementById('refresh-steps');
+  if (!modal || !stepsContainer) {
     console.error('[refreshTraining] Modal elements not found');
     return;
   }
 
-  message.textContent = 'Starting...';
-  progress.value = 0;
+  // Step definitions: id, default text
+  const STEPS = [
+    { id: 'init', text: 'Detecting Stockfish...' },
+    { id: 'fetch', text: 'Fetching games...' },
+    { id: 'analyze', text: 'Analyzing games...' },
+    { id: 'finalize', text: 'Generating training data' },
+  ];
+
+  // Render initial step list (all pending) using safe DOM methods
+  while (stepsContainer.firstChild) stepsContainer.firstChild.remove();
+  const stepEls = {};
+  for (const step of STEPS) {
+    const div = document.createElement('div');
+    div.className = 'refresh-step step-pending';
+    const icon = document.createElement('span');
+    icon.className = 'step-icon';
+    icon.textContent = '\u25CB';
+    const text = document.createElement('span');
+    text.className = 'step-text';
+    text.textContent = step.text;
+    div.appendChild(icon);
+    div.appendChild(text);
+    stepsContainer.appendChild(div);
+    stepEls[step.id] = div;
+  }
+
+  let sawAnalyze = false;
+
+  /**
+   * Update a step's visual state and text.
+   * @param {string} id - Step id
+   * @param {'done'|'active'|'pending'|'error'} state
+   * @param {string} [text] - Optional new text
+   * @param {number|null} [progressValue] - If set, add/update progress bar
+   */
+  function setStep(id, state, text, progressValue) {
+    const el = stepEls[id];
+    if (!el) return;
+    const icons = { done: '\u2713', active: '\u27F3', pending: '\u25CB', error: '\u2717' };
+    el.className = 'refresh-step step-' + state;
+    el.querySelector('.step-icon').textContent = icons[state];
+    if (text) el.querySelector('.step-text').textContent = text;
+
+    // Progress bar for active analyze step
+    let bar = el.querySelector('.step-progress');
+    if (progressValue != null && state === 'active') {
+      if (!bar) {
+        bar = document.createElement('progress');
+        bar.className = 'step-progress';
+        bar.max = 100;
+        el.appendChild(bar);
+      }
+      bar.value = progressValue;
+    } else if (bar) {
+      bar.remove();
+    }
+  }
+
+  /** Mark all steps up to (but not including) targetId as done. */
+  function markPriorDone(targetId) {
+    for (const step of STEPS) {
+      if (step.id === targetId) break;
+      const el = stepEls[step.id];
+      if (el && !el.classList.contains('step-done')) {
+        setStep(step.id, 'done');
+      }
+    }
+  }
+
   modal.classList.remove('hidden');
 
   try {
@@ -1231,7 +1297,7 @@ async function refreshTraining() {
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
       console.log('[refreshTraining] API error:', resp.status, err.detail);
-      message.textContent = err.detail || 'Failed to start refresh.';
+      setStep('init', 'error', err.detail || 'Failed to start refresh.');
       return;
     }
     const data = await resp.json();
@@ -1241,39 +1307,74 @@ async function refreshTraining() {
     const eventSource = new EventSource('/api/jobs/' + jobId + '/events');
     eventSource.onmessage = async (e) => {
       const event = JSON.parse(e.data);
-      console.log('[refreshTraining] Event:', event.phase, event.percent);
-      message.textContent = event.message || '';
-      if (event.percent != null) {
-        progress.value = event.percent;
-      }
+      console.log('[refreshTraining] Event:', event.phase, event.percent, event.current, event.total);
 
-      if (event.phase === 'done' || event.phase === 'error') {
+      if (event.phase === 'init') {
+        setStep('init', 'active', event.message);
+      } else if (event.phase === 'fetch') {
+        markPriorDone('fetch');
+        if (event.percent <= 5) {
+          setStep('fetch', 'active', 'Fetching games...');
+        } else {
+          setStep('fetch', 'active', event.message);
+        }
+      } else if (event.phase === 'analyze') {
+        sawAnalyze = true;
+        markPriorDone('analyze');
+        const label = event.current + '/' + event.total;
+        setStep('analyze', 'active', 'Analyzing games  ' + label, event.percent);
+      } else if (event.phase === 'done') {
         eventSource.close();
+        // If no analyze events were received, remove the analyze step
+        if (!sawAnalyze) {
+          stepEls.analyze.remove();
+        } else {
+          setStep('analyze', 'done', 'Analysis complete');
+        }
+        markPriorDone('finalize');
+        setStep('finalize', 'done', event.message);
 
-        if (event.phase === 'done') {
-          // Reload training data and restart session
-          try {
-            const tdResp = await fetch('training_data.json');
-            if (tdResp.ok) {
-              trainingData = await tdResp.json();
-              console.log('[refreshTraining] Reloaded training data:', trainingData.positions.length, 'positions');
-              srsState = loadSRSState();
-              startSession();
-            }
-          } catch (err) {
-            console.error('[refreshTraining] Failed to reload training data:', err);
+        // Reload training data and restart session
+        try {
+          const tdResp = await fetch('training_data.json');
+          if (tdResp.ok) {
+            trainingData = await tdResp.json();
+            console.log('[refreshTraining] Reloaded training data:', trainingData.positions.length, 'positions');
+            srsState = loadSRSState();
+            startSession();
+          }
+        } catch (err) {
+          console.error('[refreshTraining] Failed to reload training data:', err);
+        }
+      } else if (event.phase === 'error') {
+        eventSource.close();
+        // Mark current active step as error, or init if none active
+        let marked = false;
+        for (const step of STEPS) {
+          if (stepEls[step.id] && stepEls[step.id].classList.contains('step-active')) {
+            setStep(step.id, 'error', event.message);
+            marked = true;
+            break;
           }
         }
+        if (!marked) setStep('init', 'error', event.message);
       }
     };
     eventSource.onerror = () => {
       console.log('[refreshTraining] EventSource error');
       eventSource.close();
-      message.textContent = 'Connection lost. Check server logs.';
+      // Mark active step as error
+      for (const step of STEPS) {
+        if (stepEls[step.id] && stepEls[step.id].classList.contains('step-active')) {
+          setStep(step.id, 'error', 'Connection lost. Check server logs.');
+          return;
+        }
+      }
+      setStep('init', 'error', 'Connection lost. Check server logs.');
     };
   } catch (err) {
     console.error('[refreshTraining] Fetch failed:', err);
-    message.textContent = 'Failed to connect to server.';
+    setStep('init', 'error', 'Failed to connect to server.');
   }
 }
 
@@ -1543,10 +1644,11 @@ async function init() {
     trainingData = await resp.json();
     console.log(`[init] Loaded ${trainingData.positions.length} position(s)`);
   } catch (err) {
-    document.getElementById('prompt').textContent =
-      'Could not load training data. Run: chess-self-coach train --prepare';
-    console.error('Training data load failed:', err);
-    return;
+    const hint = appMode === 'app'
+      ? 'No training data yet. Use menu ☰ → Refresh Training to generate it.'
+      : 'Could not load training data.';
+    document.getElementById('prompt').textContent = hint;
+    console.error('[init] Training data load failed:', err);
   }
 
   // Load SRS state
@@ -1710,8 +1812,8 @@ async function init() {
     );
   }
 
-  // Start first session
-  startSession();
+  // Start first session (skip if no training data loaded)
+  if (trainingData) startSession();
 }
 
 init();
