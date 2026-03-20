@@ -10,7 +10,9 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import sys
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -740,6 +742,40 @@ def _load_existing_training_data(path: Path) -> dict | None:
         return None
 
 
+class TrainingInterrupted(Exception):
+    """Raised when training is cancelled via the interrupt signal."""
+
+
+def _atomic_write_json(path: Path, data: dict) -> None:
+    """Write JSON atomically: temp file, fsync, os.replace."""
+    tmp_path = path.with_suffix(".tmp")
+    with open(tmp_path, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, path)
+
+
+_SEVERITY = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
+
+
+def _build_output(
+    positions: dict[str, dict], lichess_user: str, chesscom_user: str,
+) -> dict:
+    """Build the training_data.json dict from positions map."""
+    sorted_pos = sorted(
+        positions.values(),
+        key=lambda m: (_SEVERITY.get(m["category"], 3), -m["cp_loss"]),
+    )
+    return {
+        "version": "1.0",
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "player": {"lichess": lichess_user, "chesscom": chesscom_user or ""},
+        "positions": sorted_pos,
+    }
+
+
 def prepare_training_data(
     *,
     max_games: int = 20,
@@ -747,6 +783,7 @@ def prepare_training_data(
     engine_path: str | None = None,
     fresh: bool = False,
     on_progress: Callable[[dict], None] | None = None,
+    cancel: threading.Event | None = None,
 ) -> None:
     """Fetch games, analyze with Stockfish, extract mistakes, export training JSON.
 
@@ -847,7 +884,6 @@ def prepare_training_data(
     workers = min(workers, len(new_games))
     print(f"\n  Analyzing {len(new_games)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
     print("  This may take several minutes...\n")
-    all_mistakes: list[dict] = []
 
     tasks = []
     for i, game in enumerate(new_games):
@@ -860,15 +896,36 @@ def prepare_training_data(
         pgn_str = game.accept(exporter)
         tasks.append((pgn_str, str(sf_path), depth, player_color, i + 1, len(new_games), f"{white} vs {black}"))
 
-    with ProcessPoolExecutor(max_workers=workers) as pool:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    new_count = 0
+    done_count = 0
+    total_tasks = len(tasks)
+
+    pool = ProcessPoolExecutor(max_workers=workers)
+    try:
         futures = {pool.submit(_analyze_game_worker, *t): t for t in tasks}
-        done_count = 0
-        total_tasks = len(tasks)
         wall_start = time.time()
         for future in as_completed(futures):
             idx, total, label, mistakes, elapsed = future.result()
             done_count += 1
-            all_mistakes.extend(mistakes)
+
+            # Merge this game's positions immediately (preserve SRS)
+            for m in mistakes:
+                if m["id"] not in existing_positions:
+                    m["srs"] = {
+                        "interval": 0,
+                        "ease": 2.5,
+                        "next_review": today,
+                        "history": [],
+                    }
+                    existing_positions[m["id"]] = m
+                    new_count += 1
+
+            # Atomic incremental write — crash-safe
+            _atomic_write_json(
+                output_path,
+                _build_output(existing_positions, lichess_user, chesscom_user),
+            )
 
             wall_elapsed = time.time() - wall_start
             avg_per_game = wall_elapsed / done_count
@@ -891,43 +948,18 @@ def prepare_training_data(
                 "total": total_tasks,
             })
 
-    # Merge new positions with existing (preserve SRS data)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    new_count = 0
-    for m in all_mistakes:
-        if m["id"] in existing_positions:
-            continue  # already exists, keep the one with SRS progress
-        m["srs"] = {
-            "interval": 0,
-            "ease": 2.5,
-            "next_review": today,
-            "history": [],
-        }
-        existing_positions[m["id"]] = m
-        new_count += 1
+            # Check cancel signal after each game
+            if cancel and cancel.is_set():
+                pool.shutdown(wait=False, cancel_futures=True)
+                raise TrainingInterrupted(
+                    f"Interrupted. Saved {len(existing_positions)} positions "
+                    f"({done_count}/{total_tasks} games analyzed)."
+                )
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
-    # Sort: blunders first, then by cp_loss descending
-    severity = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
-    all_positions = sorted(
-        existing_positions.values(),
-        key=lambda m: (severity.get(m["category"], 3), -m["cp_loss"]),
-    )
-
-    # Build and write output
-    training_data = {
-        "version": "1.0",
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "player": {
-            "lichess": lichess_user,
-            "chesscom": chesscom_user or "",
-        },
-        "positions": all_positions,
-    }
-    with open(output_path, "w") as f:
-        json.dump(training_data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-
-    total = len(all_positions)
+    total = len(existing_positions)
+    all_positions = _build_output(existing_positions, lichess_user, chesscom_user)["positions"]
     print(f"\n  Training data exported: {output_path}")
     print(f"  Total positions: {total} ({new_count} new)")
     blunders = sum(1 for m in all_positions if m["category"] == "blunder")
@@ -1061,9 +1093,7 @@ def refresh_explanations() -> None:
             pos["context"] = new_context
             updated += 1
 
-    with open(data_path, "w") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    _atomic_write_json(data_path, data)
 
     print(f"  Refreshed {updated}/{len(positions)} explanation(s) in {data_path}")
     if updated:
