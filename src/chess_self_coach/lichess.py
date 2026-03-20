@@ -16,6 +16,7 @@ import berserk
 import requests
 
 from chess_self_coach.config import (
+    CONFIG_FILE,
     error_exit,
     load_config,
     load_lichess_token,
@@ -235,15 +236,25 @@ def setup() -> None:
     Guides the user through connecting their Lichess account and mapping
     PGN files to Lichess Studies.
     """
+    try:
+        _setup_interactive()
+    except KeyboardInterrupt:
+        print("\n\n  Setup cancelled.")
+        sys.exit(130)
+
+
+def _setup_interactive() -> None:
+    """Run the interactive setup flow (called by setup())."""
     print("\n🔧 chess-self-coach setup\n")
 
     # Step 1: Check Stockfish
     print("Step 1: Checking Stockfish...")
     from chess_self_coach.config import find_stockfish, check_stockfish_version
 
-    try:
+    config_path = _find_project_root() / CONFIG_FILE
+    if config_path.exists():
         config = load_config()
-    except SystemExit:
+    else:
         config = {
             "stockfish": {
                 "path": str(
@@ -278,6 +289,11 @@ def setup() -> None:
             username = account["username"]
             players["lichess"] = username
             print(f"    ✓ Token verified: {username}")
+        except (requests.exceptions.ConnectionError, OSError):
+            print("    ⚠ Cannot reach lichess.org — skipping token verification.")
+            print("      Token found in .env; will be used when network is available.")
+            players.pop("lichess", None)
+            client = None
         except Exception as e:
             print(f"    ✗ Token invalid: {e}")
             players.pop("lichess", None)
@@ -299,6 +315,11 @@ def setup() -> None:
                     username = account["username"]
                     players["lichess"] = username
                     print(f"\n    ✓ Token verified: {username}")
+                except (requests.exceptions.ConnectionError, OSError):
+                    print("\n    ⚠ Cannot reach lichess.org — skipping token verification.")
+                    print("      Token saved in .env; will be used when network is available.")
+                    players.pop("lichess", None)
+                    client = None
                 except Exception as e:
                     print(f"\n    ✗ Token invalid: {e}")
                     players.pop("lichess", None)
