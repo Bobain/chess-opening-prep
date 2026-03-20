@@ -1217,15 +1217,13 @@ async function refreshTraining() {
   const modal = document.getElementById('refresh-modal');
   const message = document.getElementById('refresh-message');
   const progress = document.getElementById('refresh-progress');
-  const closeBtn = document.getElementById('close-refresh');
-  if (!modal || !message || !progress || !closeBtn) {
+  if (!modal || !message || !progress) {
     console.error('[refreshTraining] Modal elements not found');
     return;
   }
 
   message.textContent = 'Starting...';
   progress.value = 0;
-  closeBtn.classList.add('hidden');
   modal.classList.remove('hidden');
 
   try {
@@ -1234,7 +1232,6 @@ async function refreshTraining() {
       const err = await resp.json().catch(() => ({ detail: 'Unknown error' }));
       console.log('[refreshTraining] API error:', resp.status, err.detail);
       message.textContent = err.detail || 'Failed to start refresh.';
-      closeBtn.classList.remove('hidden');
       return;
     }
     const data = await resp.json();
@@ -1252,7 +1249,6 @@ async function refreshTraining() {
 
       if (event.phase === 'done' || event.phase === 'error') {
         eventSource.close();
-        closeBtn.classList.remove('hidden');
 
         if (event.phase === 'done') {
           // Reload training data and restart session
@@ -1274,12 +1270,10 @@ async function refreshTraining() {
       console.log('[refreshTraining] EventSource error');
       eventSource.close();
       message.textContent = 'Connection lost. Check server logs.';
-      closeBtn.classList.remove('hidden');
     };
   } catch (err) {
     console.error('[refreshTraining] Fetch failed:', err);
     message.textContent = 'Failed to connect to server.';
-    closeBtn.classList.remove('hidden');
   }
 }
 

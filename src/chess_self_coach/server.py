@@ -450,19 +450,25 @@ def _run_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
 
     queue = _current_job["queue"]
 
+    def _push(item: dict | None) -> None:
+        try:
+            loop.call_soon_threadsafe(queue.put_nowait, item)
+        except RuntimeError:
+            pass  # Event loop closed (server shutdown / test teardown)
+
     def on_progress(event: dict) -> None:
-        loop.call_soon_threadsafe(queue.put_nowait, event)
+        _push(event)
 
     try:
         prepare_training_data(on_progress=on_progress)
         _current_job["status"] = "done"
     except (Exception, SystemExit) as exc:
         error_event = {"phase": "error", "message": str(exc), "percent": 0}
-        loop.call_soon_threadsafe(queue.put_nowait, error_event)
+        _push(error_event)
         _current_job["status"] = "error"
     finally:
         # Sentinel to signal end of stream
-        loop.call_soon_threadsafe(queue.put_nowait, None)
+        _push(None)
 
 
 class JobStartResponse(BaseModel):
