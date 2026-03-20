@@ -66,7 +66,7 @@ but the PWA simplifies this into a single action:
 
 - **"Refresh training"** button in the hamburger menu (replaces the disabled "Prepare training" placeholder)
 - Runs `train --prepare` in the background via `POST /api/train/prepare`
-- Progress displayed via **SSE** (Server-Sent Events) in a modal with a native `<progress>` bar
+- Progress displayed via **SSE** (Server-Sent Events) in a modal with a step checklist (init → fetch → analyze → finalize)
 - On completion, reloads `training_data.json` and refreshes the PWA session
 
 Future phases (deferred):
