@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import io
 import json
-import os
 import sys
 import time
 from collections.abc import Callable
@@ -22,6 +21,7 @@ import chess
 import chess.engine
 import chess.pgn
 
+from chess_self_coach import worker_count
 from chess_self_coach.config import (
     _find_project_root,
     check_stockfish_version,
@@ -703,28 +703,6 @@ def extract_mistakes(
     return mistakes
 
 
-def _physical_core_count() -> int:
-    """Return the number of physical CPU cores.
-
-    Reads /proc/cpuinfo on Linux, falls back to os.cpu_count() // 2.
-    """
-    try:
-        cores = set()
-        with open("/proc/cpuinfo") as f:
-            physical_id = core_id = None
-            for line in f:
-                if line.startswith("physical id"):
-                    physical_id = line.split(":")[1].strip()
-                elif line.startswith("core id"):
-                    core_id = line.split(":")[1].strip()
-                    if physical_id is not None:
-                        cores.add((physical_id, core_id))
-        if cores:
-            return len(cores)
-    except OSError:
-        pass
-    return os.cpu_count() // 2 or 1
-
 
 def _analyze_game_worker(
     pgn_str: str,
@@ -865,7 +843,7 @@ def prepare_training_data(
         return
 
     # Analyze new games
-    workers = _physical_core_count()
+    workers = worker_count()
     workers = min(workers, len(new_games))
     print(f"\n  Analyzing {len(new_games)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
     print("  This may take several minutes...\n")

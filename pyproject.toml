@@ -1,6 +1,6 @@
 [project]
 name = "chess-self-coach"
-version = "0.3.1"
+version = "0.3.2"
 description = "Learn from your own chess mistakes: Stockfish analysis + spaced repetition training"
 readme = "README.md"
 license = "MIT"
@@ -20,8 +20,11 @@ dependencies = [
 chess-self-coach = "chess_self_coach.cli:main"
 
 [dependency-groups]
-test = ["pytest", "pytest-mock", "pytest-playwright", "httpx"]
+test = ["pytest", "pytest-mock", "pytest-playwright", "pytest-xdist", "httpx"]
 docs = ["mkdocs-material", "mkdocstrings[python]"]
+
+[tool.pytest.ini_options]
+addopts = "-n auto"
 
 [build-system]
 requires = ["hatchling"]
