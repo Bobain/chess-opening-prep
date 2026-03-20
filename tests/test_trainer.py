@@ -15,6 +15,7 @@ from chess_self_coach.trainer import (
     TrainingInterrupted,
     _analysis_limit,
     _atomic_write_json,
+    _build_output,
     _classify_mistake,
     _detect_source,
     _determine_player_color,
@@ -362,3 +363,31 @@ def test_training_interrupted_is_exception():
     exc = TrainingInterrupted("Stopped at 3/5 games")
     assert str(exc) == "Stopped at 3/5 games"
     assert isinstance(exc, Exception)
+
+
+# --- _build_output ---
+
+
+def test_build_output_includes_analyzed_game_ids():
+    """_build_output includes sorted analyzed_game_ids in output."""
+    pos = {
+        "pos1": {
+            "id": "pos1", "category": "blunder", "cp_loss": 300,
+            "fen": "x", "player_move": "e4", "best_move": "d4",
+        },
+    }
+    result = _build_output(pos, "user", "", analyzed_game_ids={"b_id", "a_id"})
+    assert result["analyzed_game_ids"] == ["a_id", "b_id"]
+    assert len(result["positions"]) == 1
+
+
+def test_build_output_no_game_ids():
+    """_build_output defaults to empty analyzed_game_ids."""
+    pos = {
+        "pos1": {
+            "id": "pos1", "category": "mistake", "cp_loss": 150,
+            "fen": "x", "player_move": "e4", "best_move": "d4",
+        },
+    }
+    result = _build_output(pos, "user", "")
+    assert result["analyzed_game_ids"] == []

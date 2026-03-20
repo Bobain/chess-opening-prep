@@ -761,7 +761,10 @@ _SEVERITY = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
 
 
 def _build_output(
-    positions: dict[str, dict], lichess_user: str, chesscom_user: str,
+    positions: dict[str, dict],
+    lichess_user: str,
+    chesscom_user: str,
+    analyzed_game_ids: set[str] | None = None,
 ) -> dict:
     """Build the training_data.json dict from positions map."""
     sorted_pos = sorted(
@@ -773,6 +776,7 @@ def _build_output(
         "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "player": {"lichess": lichess_user, "chesscom": chesscom_user or ""},
         "positions": sorted_pos,
+        "analyzed_game_ids": sorted(analyzed_game_ids) if analyzed_game_ids else [],
     }
 
 
@@ -832,6 +836,10 @@ def prepare_training_data(
     existing_game_ids: set[str] = set()
     existing_positions: dict[str, dict] = {}  # id -> position (preserves SRS)
     if existing_data:
+        # Primary source: explicit list (handles 0-mistake games)
+        for gid in existing_data.get("analyzed_game_ids", []):
+            existing_game_ids.add(gid)
+        # Fallback: also extract from positions (backward compat with old files)
         for pos in existing_data.get("positions", []):
             existing_positions[pos["id"]] = pos
             game_id = pos.get("game", {}).get("id", "")
@@ -879,22 +887,44 @@ def prepare_training_data(
         _emit({"phase": "done", "message": f"No new games. {len(existing_positions)} positions unchanged.", "percent": 100})
         return
 
-    # Analyze new games
-    workers = worker_count()
-    workers = min(workers, len(new_games))
-    print(f"\n  Analyzing {len(new_games)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
-    print("  This may take several minutes...\n")
-
+    # Build analysis tasks (filter games where player is identifiable)
     tasks = []
+    skipped_color = 0
     for i, game in enumerate(new_games):
+        game_id = game.headers.get("Link", game.headers.get("Site", ""))
         player_color = _determine_player_color(game, lichess_user, chesscom_user)
         if player_color is None:
+            white = game.headers.get("White", "?")
+            black = game.headers.get("Black", "?")
+            print(f"  Skipped {white} vs {black}: player not found in game headers")
+            skipped_color += 1
+            if game_id:
+                existing_game_ids.add(game_id)
             continue
         white = game.headers.get("White", "?")
         black = game.headers.get("Black", "?")
         exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True)
         pgn_str = game.accept(exporter)
+        if game_id:
+            existing_game_ids.add(game_id)
         tasks.append((pgn_str, str(sf_path), depth, player_color, i + 1, len(new_games), f"{white} vs {black}"))
+
+    if not tasks:
+        if skipped_color:
+            print(f"  No analyzable games ({skipped_color} skipped: player not in headers)")
+        else:
+            print("  No analyzable games.")
+        _atomic_write_json(
+            output_path,
+            _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids),
+        )
+        _emit({"phase": "done", "message": f"No analyzable games. {len(existing_positions)} positions unchanged.", "percent": 100})
+        return
+
+    workers = worker_count()
+    workers = min(workers, len(tasks))
+    print(f"\n  Analyzing {len(tasks)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
+    print("  This may take several minutes...\n")
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     new_count = 0
@@ -924,7 +954,7 @@ def prepare_training_data(
             # Atomic incremental write — crash-safe
             _atomic_write_json(
                 output_path,
-                _build_output(existing_positions, lichess_user, chesscom_user),
+                _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids),
             )
 
             wall_elapsed = time.time() - wall_start
@@ -959,7 +989,7 @@ def prepare_training_data(
         pool.shutdown(wait=False, cancel_futures=True)
 
     total = len(existing_positions)
-    all_positions = _build_output(existing_positions, lichess_user, chesscom_user)["positions"]
+    all_positions = _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids)["positions"]
     print(f"\n  Training data exported: {output_path}")
     print(f"  Total positions: {total} ({new_count} new)")
     blunders = sum(1 for m in all_positions if m["category"] == "blunder")
