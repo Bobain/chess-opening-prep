@@ -867,17 +867,27 @@ def prepare_training_data(
         _emit({"phase": "done", "message": "No games found.", "percent": 100})
         return
 
-    # Filter out already-analyzed games
+    # Filter out already-analyzed games and malformed games
     new_games = []
+    skipped_analyzed = 0
+    skipped_malformed = 0
     for game in all_games:
         game_id = game.headers.get("Link", game.headers.get("Site", ""))
-        if game_id and game_id in existing_game_ids:
+        if game_id and game_id != "?" and game_id in existing_game_ids:
+            skipped_analyzed += 1
+            continue
+        # Skip games with no player info (malformed PGN — can never be analyzed)
+        white = game.headers.get("White", "?")
+        black = game.headers.get("Black", "?")
+        if white == "?" and black == "?":
+            skipped_malformed += 1
             continue
         new_games.append(game)
 
-    skipped = len(all_games) - len(new_games)
-    if skipped:
-        print(f"  Skipped {skipped} already-analyzed game(s)")
+    if skipped_analyzed:
+        print(f"  Skipped {skipped_analyzed} already-analyzed game(s)")
+    if skipped_malformed:
+        print(f"  Skipped {skipped_malformed} game(s) with missing player headers")
 
     _emit({"phase": "fetch", "message": f"Found {len(all_games)} game(s) ({len(new_games)} new)", "percent": 10})
 

@@ -471,3 +471,48 @@ def test_resume_with_existing_data_and_bogus_ids(project_dir):
     pos = [p for p in output["positions"] if p["id"] == "pos_game1"]
     assert len(pos) == 1
     assert pos[0]["srs"]["interval"] == 5
+
+
+def _make_malformed_game() -> chess.pgn.Game:
+    """Create a game with default '?' headers (malformed PGN)."""
+    # Minimal PGN with no player headers — simulates chess.com API returning
+    # games with missing/broken metadata (ongoing daily games, deleted games)
+    pgn = "1. e4 e5 2. Nf3 Nc6 1-0"
+    return chess.pgn.read_game(io.StringIO(pgn))
+
+
+def test_malformed_games_skipped(project_dir, capsys):
+    """Games with White:'?' and Black:'?' are filtered out, not cycled."""
+    games = [
+        _make_pgn_game("https://lichess.org/good1", "testplayer", "opp1"),
+        _make_malformed_game(),
+        _make_malformed_game(),
+    ]
+
+    call_log = []
+
+    def tracking_worker(*args):
+        call_log.append(args[6])
+        return _fake_worker_with_mistakes(*args)
+
+    patches = _common_patches(project_dir, games, tracking_worker)
+
+    # First run: malformed games should be filtered, good1 analyzed
+    with patch.multiple("chess_self_coach.trainer", **patches):
+        prepare_training_data()
+
+    assert len(call_log) == 1
+    assert "opp1" in call_log[0]
+
+    captured = capsys.readouterr()
+    assert "2 game(s) with missing player headers" in captured.out
+
+    output = _read_output(project_dir)
+    assert "https://lichess.org/good1" in output["analyzed_game_ids"]
+
+    # Second run: malformed games still filtered, good1 skipped — no cycling
+    call_log.clear()
+    with patch.multiple("chess_self_coach.trainer", **patches):
+        prepare_training_data()
+
+    assert len(call_log) == 0  # No worker calls — good1 skipped, malformed filtered
