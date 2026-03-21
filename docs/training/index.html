@@ -14,7 +14,7 @@
         <link rel="prev" href="../cli/">
       
       
-        <link rel="next" href="../api/">
+        <link rel="next" href="../flows/">
       
       
         
@@ -463,7 +463,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Flows
   
 
     
@@ -476,6 +476,228 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Flows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/user-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/data-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/system-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/coming-soon-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming soon
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/meta-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -663,7 +885,7 @@
 <h1 id="training-mode-find-the-better-move">Training Mode: Find the Better Move</h1>
 <p>Review your own games, find your mistakes, and drill the correct moves with spaced repetition.</p>
 <h2 id="how-it-works">How it works</h2>
-<pre><code>PREPARATION (your PC, once)              DRILL (browser, daily)
+<div class="highlight"><pre><span></span><code>PREPARATION (your PC, once)              DRILL (browser, daily)
 ┌─────────────────────────────┐         ┌──────────────────────────────┐
 │ chess-self-coach train      │         │ PWA in browser               │
 │           --prepare         │  JSON   │                              │
@@ -676,17 +898,17 @@
 │ 4. Generates explanations   │         │ 7. Progress in localStorage  │
 │ 5. Exports training_data.json         │                              │
 └─────────────────────────────┘         └──────────────────────────────┘
-</code></pre>
+</code></pre></div>
 <h2 id="quick-start">Quick start</h2>
-<pre><code class="language-bash"># 1. Prepare training data
-chess-self-coach train --prepare --games 10
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. Prepare training data</span>
+chess-self-coach<span class="w"> </span>train<span class="w"> </span>--prepare<span class="w"> </span>--games<span class="w"> </span><span class="m">10</span>
 
-# 2. Open the training interface
-chess-self-coach train --serve
+<span class="c1"># 2. Open the training interface</span>
+chess-self-coach<span class="w"> </span>train<span class="w"> </span>--serve
 
-# 3. Check your stats
-chess-self-coach train --stats
-</code></pre>
+<span class="c1"># 3. Check your stats</span>
+chess-self-coach<span class="w"> </span>train<span class="w"> </span>--stats
+</code></pre></div>
 <h2 id="architecture">Architecture</h2>
 <p>The training mode has <strong>no backend</strong>. All drill logic runs in the browser:</p>
 <table>
@@ -824,7 +1046,7 @@ chess-self-coach train --stats
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

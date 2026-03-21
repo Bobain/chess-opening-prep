@@ -491,7 +491,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Flows
   
 
     
@@ -504,6 +504,228 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Flows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/user-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/data-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/system-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/coming-soon-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming soon
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/meta-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -719,8 +941,8 @@
 <h1 id="cli-reference">CLI Reference</h1>
 <h2 id="analyze">analyze</h2>
 <p>Analyze a PGN file with Stockfish and add <code>[%eval]</code> annotations.</p>
-<pre><code class="language-bash">chess-self-coach analyze &lt;file.pgn&gt; [options]
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>analyze<span class="w"> </span>&lt;file.pgn&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+</code></pre></div>
 <h3 id="options">Options</h3>
 <table>
 <thead>
@@ -754,49 +976,49 @@
 </tbody>
 </table>
 <h3 id="examples">Examples</h3>
-<pre><code class="language-bash"># Analyze with default settings (depth 18)
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn
+<div class="highlight"><pre><span></span><code><span class="c1"># Analyze with default settings (depth 18)</span>
+chess-self-coach<span class="w"> </span>analyze<span class="w"> </span>pgn/repertoire_blancs_gambit_dame_annote.pgn
 
-# Quick analysis at depth 12
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --depth 12
+<span class="c1"># Quick analysis at depth 12</span>
+chess-self-coach<span class="w"> </span>analyze<span class="w"> </span>pgn/repertoire_blancs_gambit_dame_annote.pgn<span class="w"> </span>--depth<span class="w"> </span><span class="m">12</span>
 
-# Overwrite original file
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --in-place
+<span class="c1"># Overwrite original file</span>
+chess-self-coach<span class="w"> </span>analyze<span class="w"> </span>pgn/repertoire_blancs_gambit_dame_annote.pgn<span class="w"> </span>--in-place
 
-# Use a specific Stockfish binary
-chess-self-coach analyze pgn/repertoire_blancs_gambit_dame_annote.pgn --engine /usr/games/stockfish
-</code></pre>
+<span class="c1"># Use a specific Stockfish binary</span>
+chess-self-coach<span class="w"> </span>analyze<span class="w"> </span>pgn/repertoire_blancs_gambit_dame_annote.pgn<span class="w"> </span>--engine<span class="w"> </span>/usr/games/stockfish
+</code></pre></div>
 <h2 id="setup">setup</h2>
 <p>Interactive setup wizard.</p>
-<pre><code class="language-bash">chess-self-coach setup
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>setup
+</code></pre></div>
 <p>Verifies Lichess authentication, finds existing studies, and configures <code>config.json</code>.</p>
 <h2 id="push">push</h2>
 <p>Push a local PGN file to its mapped Lichess study.</p>
-<pre><code class="language-bash">chess-self-coach push &lt;file.pgn&gt;
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>push<span class="w"> </span>&lt;file.pgn&gt;
+</code></pre></div>
 <p>!!! warning
     Lichess import <strong>adds</strong> chapters. If chapters already exist, duplicates will be created.</p>
 <h2 id="pull">pull</h2>
 <p>Pull the latest PGN from a Lichess study to a local file.</p>
-<pre><code class="language-bash">chess-self-coach pull &lt;file.pgn&gt; [--in-place]
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>pull<span class="w"> </span>&lt;file.pgn&gt;<span class="w"> </span><span class="o">[</span>--in-place<span class="o">]</span>
+</code></pre></div>
 <p>By default, writes to <code>*_from_lichess.pgn</code>. Use <code>--in-place</code> to overwrite.</p>
 <h2 id="cleanup">cleanup</h2>
 <p>Remove empty default chapters (e.g. "Chapter 1") from Lichess studies.</p>
-<pre><code class="language-bash"># Clean up all configured studies
-chess-self-coach cleanup
+<div class="highlight"><pre><span></span><code><span class="c1"># Clean up all configured studies</span>
+chess-self-coach<span class="w"> </span>cleanup
 
-# Clean up a specific study
-chess-self-coach cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn
-</code></pre>
+<span class="c1"># Clean up a specific study</span>
+chess-self-coach<span class="w"> </span>cleanup<span class="w"> </span>pgn/repertoire_blancs_gambit_dame_annote.pgn
+</code></pre></div>
 <p>Lichess auto-creates an empty "Chapter 1" when a study is created. After importing PGN via <code>push</code>, this leaves a stale empty chapter. The <code>cleanup</code> command removes these.</p>
 <p>!!! note
     <code>push</code> runs cleanup automatically after import — you only need this command for manual cleanup.</p>
 <h2 id="status">status</h2>
 <p>Show sync status of all repertoire files.</p>
-<pre><code class="language-bash">chess-self-coach status
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>status
+</code></pre></div>
 <p>Displays: file modification times, chapter counts, Stockfish availability, Lichess configuration, and suggested next actions.</p>
 
 
@@ -847,7 +1069,7 @@ chess-self-coach cleanup pgn/repertoire_blancs_gambit_dame_annote.pgn
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

@@ -502,7 +502,7 @@
   <span class="md-ellipsis">
     
   
-    API Reference
+    Flows
   
 
     
@@ -515,6 +515,228 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Flows
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/user-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/data-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/system-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/coming-soon-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Coming soon
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../flows/meta-flows/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Meta flows
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -757,8 +979,8 @@
 <li>Click <strong>Submit</strong> — copy the token immediately (shown only once, starts with <code>lip_</code>)</li>
 </ol>
 <h3 id="test-your-token">Test your token</h3>
-<pre><code class="language-bash">curl -H &quot;Authorization: Bearer lip_your_token&quot; https://lichess.org/api/account
-</code></pre>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer lip_your_token&quot;</span><span class="w"> </span>https://lichess.org/api/account
+</code></pre></div>
 <h2 id="3-create-lichess-studies">3. Create Lichess Studies</h2>
 <p>The CLI cannot create studies via the API (Lichess limitation), so you must create them manually. This is a one-time step.</p>
 <ol>
@@ -793,25 +1015,25 @@
 <p>!!! warning
     En-Croissant modifies PGN files while they're open. Always <strong>close files</strong> in En-Croissant before running CLI commands.</p>
 <h2 id="6-install-chess-self-coach">6. Install chess-self-coach</h2>
-<pre><code class="language-bash"># From PyPI
-pip install chess-self-coach
+<div class="highlight"><pre><span></span><code><span class="c1"># From PyPI</span>
+pip<span class="w"> </span>install<span class="w"> </span>chess-self-coach
 
-# From source
-git clone https://github.com/Bobain/chess-self-coach.git
-cd chess-self-coach
-uv venv &amp;&amp; uv sync
-</code></pre>
+<span class="c1"># From source</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Bobain/chess-self-coach.git
+<span class="nb">cd</span><span class="w"> </span>chess-self-coach
+uv<span class="w"> </span>venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>uv<span class="w"> </span>sync
+</code></pre></div>
 <h2 id="7-configure">7. Configure</h2>
-<pre><code class="language-bash"># Create your personal config from the template
-cp config.example.json config.json
+<div class="highlight"><pre><span></span><code><span class="c1"># Create your personal config from the template</span>
+cp<span class="w"> </span>config.example.json<span class="w"> </span>config.json
 
-# Save your Lichess token
-cp .env.example .env
-# Edit .env and replace lip_your_token_here with your actual token
+<span class="c1"># Save your Lichess token</span>
+cp<span class="w"> </span>.env.example<span class="w"> </span>.env
+<span class="c1"># Edit .env and replace lip_your_token_here with your actual token</span>
 
-# Run interactive setup (verifies auth, finds studies, saves config)
-chess-self-coach setup
-</code></pre>
+<span class="c1"># Run interactive setup (verifies auth, finds studies, saves config)</span>
+chess-self-coach<span class="w"> </span>setup
+</code></pre></div>
 <p>The <code>setup</code> command will:</p>
 <ol>
 <li>Verify your Lichess authentication</li>
@@ -823,8 +1045,8 @@ chess-self-coach setup
 <p>!!! note
     Both <code>config.json</code> and <code>.env</code> are gitignored — they contain your personal data (study IDs, API token) and will never be pushed to the repository. Each user has their own.</p>
 <h2 id="8-verify">8. Verify</h2>
-<pre><code class="language-bash">chess-self-coach status
-</code></pre>
+<div class="highlight"><pre><span></span><code>chess-self-coach<span class="w"> </span>status
+</code></pre></div>
 <p>This shows the current state of all files, Stockfish, and Lichess configuration.</p>
 
 
@@ -875,7 +1097,7 @@ chess-self-coach setup
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": [], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
