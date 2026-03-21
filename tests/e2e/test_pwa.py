@@ -540,8 +540,8 @@ def test_app_mode_smoke(page, app_url):
     assert "SF" in version_text, f"Expected SF version in nav header, got: {version_text}"
 
 
-def test_app_mode_stats_modal(page, app_url, console_errors):
-    """[App] mode: Training stats menu item opens modal with stats."""
+def test_raw_data_summary_modal(page, app_url, console_errors):
+    """[App] mode: Raw data summary shows game list with position counts."""
     page.goto(app_url)
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
@@ -549,19 +549,22 @@ def test_app_mode_stats_modal(page, app_url, console_errors):
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
 
-    # Stats item should be visible and enabled
+    # Stats item should be visible (both modes, no disabled check needed)
     stats_item = page.locator("#nav-stats")
     expect(stats_item).to_be_visible()
-    expect(stats_item).not_to_have_class("disabled")
 
     # Click stats
     stats_item.click()
     page.wait_for_timeout(500)
 
-    # Modal should appear with stats from fixture data (4 positions)
+    # Modal should appear with game list from fixture data (4 positions)
     expect(page.locator("#stats-modal")).to_be_visible()
-    expect(page.locator("#stats-content")).to_contain_text("Total positions")
-    expect(page.locator("#stats-content")).to_contain_text("4")
+    expect(page.locator("#stats-content")).to_contain_text("4 positions")
+    expect(page.locator("#stats-content")).to_contain_text("game")
+
+    # Table with opponent names should be present (4 games in fixture)
+    expect(page.locator(".raw-data-table")).to_be_visible()
+    expect(page.locator(".raw-data-table tbody tr")).to_have_count(4)
 
     # Close modal
     page.locator("#close-stats").click()
@@ -569,7 +572,7 @@ def test_app_mode_stats_modal(page, app_url, console_errors):
 
     # Verify console logs
     log_text = "\n".join(console_errors["messages"])
-    assert "[showStats]" in log_text
+    assert "[showRawDataSummary]" in log_text
 
 
 def test_coming_soon_submenu_toggle(page, app_url, console_errors):
@@ -766,12 +769,12 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
 
-    expect(page.locator("#nav-stats")).not_to_be_visible()
     expect(page.locator("#nav-refresh")).not_to_be_visible()
     expect(page.locator("#nav-config")).not_to_be_visible()
     expect(page.locator("#nav-coming-soon")).not_to_be_visible()
 
-    # Settings is visible in demo mode (not app-only)
+    # Both-mode items are visible in demo mode
+    expect(page.locator("#nav-stats")).to_be_visible()
     expect(page.locator("#nav-settings")).to_be_visible()
 
     # Version is empty in demo mode (no backend)

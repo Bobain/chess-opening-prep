@@ -996,50 +996,124 @@ async function showModalWithData(modalId, contentId, apiUrl, buildFn, fetchOpts)
  * Only available in [App] mode.
  * @async
  */
-async function showStats() {
-  console.log('[showStats] Fetching training stats...');
-  await showModalWithData('stats-modal', 'stats-content', '/api/train/stats', (content, stats) => {
-    console.log('[showStats] Stats received:', JSON.stringify(stats));
+/**
+ * Show the Raw Data Summary modal.
+ * Computed entirely client-side from trainingData + srsState.
+ */
+function showRawDataSummary() {
+  console.log('[showRawDataSummary] Building summary...');
+  const modal = document.getElementById('stats-modal');
+  const content = document.getElementById('stats-content');
+  while (content.firstChild) content.firstChild.remove();
 
-    const addLine = (labelText, valueText) => {
-      const p = document.createElement('p');
-      const label = document.createElement('span');
-      label.className = 'stats-label';
-      label.textContent = labelText;
-      const value = document.createElement('span');
-      value.className = 'stats-value';
-      value.textContent = valueText;
-      p.appendChild(label);
-      p.appendChild(value);
-      content.appendChild(p);
-      return p;
-    };
+  const positions = (trainingData && trainingData.positions) || [];
+  const total = positions.length;
 
-    addLine('Total positions: ', stats.total);
-    addLine('Generated: ', stats.generated);
-
-    const catHeader = document.createElement('p');
-    catHeader.className = 'stats-label';
-    catHeader.style.marginTop = '0.75rem';
-    catHeader.textContent = 'By category:';
-    content.appendChild(catHeader);
-
-    for (const cat of ['blunder', 'mistake', 'inaccuracy']) {
-      const p = addLine(cat.charAt(0).toUpperCase() + cat.slice(1) + ': ', stats.by_category[cat] || 0);
-      p.style.paddingLeft = '1rem';
+  // Group positions by game.id
+  const games = new Map();
+  for (const pos of positions) {
+    const gid = (pos.game && pos.game.id) || 'unknown';
+    if (!games.has(gid)) {
+      games.set(gid, {
+        id: gid,
+        opponent: (pos.game && pos.game.opponent) || '?',
+        source: (pos.game && pos.game.source) || '',
+        date: (pos.game && pos.game.date) || '',
+        positions: 0,
+        positionIds: [],
+      });
     }
+    const g = games.get(gid);
+    g.positions++;
+    g.positionIds.push(pos.id);
+  }
 
-    const srcHeader = document.createElement('p');
-    srcHeader.className = 'stats-label';
-    srcHeader.style.marginTop = '0.75rem';
-    srcHeader.textContent = 'By source:';
-    content.appendChild(srcHeader);
-
-    for (const [src, count] of Object.entries(stats.by_source).sort()) {
-      const p = addLine(src + ': ', count);
-      p.style.paddingLeft = '1rem';
+  // Compute SRS stats per game
+  let totalLessons = 0;
+  let totalDismissed = 0;
+  for (const game of games.values()) {
+    let gameLessons = 0;
+    let gameDismissed = 0;
+    for (const pid of game.positionIds) {
+      const state = srsState[pid];
+      if (state && state.history) {
+        gameLessons += state.history.length;
+        for (const h of state.history) {
+          if (h.dismissed) gameDismissed++;
+        }
+      }
     }
-  });
+    game.lessons = gameLessons;
+    game.dismissed = gameDismissed;
+    totalLessons += gameLessons;
+    totalDismissed += gameDismissed;
+  }
+
+  // Integrity check
+  const sumPositions = [...games.values()].reduce((s, g) => s + g.positions, 0);
+  if (sumPositions !== total) {
+    const warn = document.createElement('p');
+    warn.className = 'raw-data-warning';
+    warn.textContent = `⚠ Integrity error: sum of per-game positions (${sumPositions}) ≠ total (${total})`;
+    content.appendChild(warn);
+  }
+
+  // Header
+  const header = document.createElement('p');
+  header.className = 'raw-data-header';
+  header.textContent = `${total} positions from ${games.size} game${games.size !== 1 ? 's' : ''}`;
+  content.appendChild(header);
+
+  // Global SRS stats
+  const srsLine = document.createElement('p');
+  srsLine.className = 'stats-label';
+  srsLine.textContent = `${totalLessons} lesson${totalLessons !== 1 ? 's' : ''} taken · ${totalDismissed} dismissed`;
+  content.appendChild(srsLine);
+
+  // Game list
+  const table = document.createElement('table');
+  table.className = 'raw-data-table';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>Opponent</th><th>Positions</th><th>Lessons</th><th>Dismissed</th></tr>';
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const game of games.values()) {
+    const tr = document.createElement('tr');
+
+    // Opponent cell with link
+    const tdOpp = document.createElement('td');
+    if (game.id && game.id.startsWith('http')) {
+      const a = document.createElement('a');
+      a.href = game.id;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = game.opponent;
+      tdOpp.appendChild(a);
+    } else {
+      tdOpp.textContent = game.opponent;
+    }
+    tr.appendChild(tdOpp);
+
+    const tdPos = document.createElement('td');
+    tdPos.textContent = game.positions;
+    tr.appendChild(tdPos);
+
+    const tdLes = document.createElement('td');
+    tdLes.textContent = game.lessons;
+    tr.appendChild(tdLes);
+
+    const tdDis = document.createElement('td');
+    tdDis.textContent = game.dismissed;
+    tr.appendChild(tdDis);
+
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+  content.appendChild(table);
+
+  console.log(`[showRawDataSummary] ${total} positions, ${games.size} games, ${totalLessons} lessons, ${totalDismissed} dismissed`);
+  modal.classList.remove('hidden');
 }
 
 // --- Cleanup modal ---
@@ -1648,8 +1722,6 @@ async function init() {
       });
 
       // Enable ready endpoints
-      const statsItem = document.getElementById('nav-stats');
-      if (statsItem) statsItem.classList.remove('disabled');
       const refreshItem = document.getElementById('nav-refresh');
       if (refreshItem) refreshItem.classList.remove('disabled');
       const configItem = document.getElementById('nav-config');
@@ -1790,7 +1862,7 @@ async function init() {
     }
   }
 
-  wireNavItem('nav-stats', showStats, 'stats-modal');
+  wireNavItem('nav-stats', showRawDataSummary, 'stats-modal');
   wireNavItem('nav-refresh', refreshTraining, 'refresh-modal');
   wireNavItem('nav-config', showConfig, 'config-modal');
 
