@@ -564,6 +564,27 @@ def test_raw_data_summary_modal(page, app_url, console_errors):
     assert "[showRawDataSummary]" in log_text
 
 
+def test_raw_data_summary_in_demo_mode(page, pwa_url):
+    """[Demo] mode: Raw data summary works without backend."""
+    _wait_for_board(page, pwa_url)
+
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+
+    stats_item = page.locator("#nav-stats")
+    expect(stats_item).to_be_visible()
+
+    stats_item.click()
+    page.wait_for_timeout(500)
+
+    expect(page.locator("#stats-modal")).to_be_visible()
+    expect(page.locator("#stats-content")).to_contain_text("positions")
+    expect(page.locator(".raw-data-table")).to_be_visible()
+
+    page.locator("#close-stats").click()
+    expect(page.locator("#stats-modal")).not_to_be_visible()
+
+
 def test_coming_soon_submenu_toggle(page, app_url, console_errors):
     """[App] mode: Coming soon submenu expands/collapses and items are not clickable."""
     page.goto(app_url)

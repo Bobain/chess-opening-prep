@@ -147,6 +147,24 @@ Section 2 (Menu + Mode detection) ← DONE
      └──► Section 5b (Config API) ← low priority, parallel with 4a-4c
 ```
 
+## Dormant code (Coming soon features)
+
+When features moved to the "Coming soon" submenu (v0.3.4), their frontend wiring was removed
+but the code was kept for future reactivation. **Decision needed** for each: re-activate UI or delete code.
+
+### Dead frontend code (JS + HTML + CSS)
+- **JS functions** (`pwa/app.js`): `showValidate()`, `showProjectStatus()`, `showCleanup()`, `showJournal()`, `showJournalTopic()`, `showModalWithData()` helper
+- **HTML modals** (`pwa/index.html`): `#validate-modal`, `#status-modal`, `#cleanup-modal`, `#journal-modal`, `#journal-back` button
+- **CSS classes** (`pwa/style.css`): `.validate-*`, `.status-*`, `.journal-*`
+
+### Backend endpoints with no UI
+These are functional and tested but unreachable from the PWA:
+- `POST /api/pgn/validate` — validates PGN files in project
+- `GET /api/pgn/status` — project status (config, Stockfish, training data)
+- `POST /api/pgn/cleanup` — removes duplicate/invalid studies
+- `GET /api/coaching/topics` + `GET /api/coaching/topics/{slug}` — coaching journal reader
+- `GET /api/train/stats` — training stats (replaced client-side by Raw data summary)
+
 ## Existing but undocumented features
 These are implemented and working but not tracked as roadmap items:
 - Tablebase integration (≤7 pieces, Lichess API)
