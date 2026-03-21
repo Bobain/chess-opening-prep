@@ -502,7 +502,7 @@ async function getStockfishBestMove(fen) {
 
 /**
  * Handle a move made on the board. Validates with chess.js, compares to
- * acceptable moves, and shows feedback. Allows up to 3 attempts.
+ * acceptable moves, and shows feedback. Player can retry until correct or dismiss.
  * @param {string} orig - Source square (e.g. "e2").
  * @param {string} dest - Destination square (e.g. "e4").
  */
@@ -526,11 +526,6 @@ async function handleMove(orig, dest) {
     console.log('[handleMove] → CORRECT, calling showFeedback(true)');
     showFeedback(true, position);
     recordResult(true);
-  } else if (attempts >= 3) {
-    // Out of attempts
-    console.log('[handleMove] → GAVE UP, calling showFeedback(false, gaveUp=true)');
-    showFeedback(false, position, true);
-    recordResult(false);
   } else {
     // Wrong — show opponent response, then let the player retry
     console.log('[handleMove] → WRONG, try again');
@@ -759,10 +754,9 @@ function showFeedback(correct, position, gaveUp = false) {
 function showTryAgain() {
   const feedbackEl = document.getElementById('feedback');
   const feedbackText = document.getElementById('feedback-text');
-  const remaining = 3 - attempts;
 
   feedbackEl.classList.remove('hidden');
-  feedbackText.textContent = `Not quite. Try again. (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`;
+  feedbackText.textContent = 'Not quite. Try again.';
   feedbackText.className = 'try-again';
   document.getElementById('dismiss-btn').classList.remove('hidden');
   document.getElementById('explanation').textContent = '';

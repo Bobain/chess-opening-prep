@@ -92,27 +92,24 @@ def test_wrong_move_shows_try_again(page, pwa_url):
     expect(page.locator("#next-btn")).not_to_be_visible()
 
 
-def test_three_wrong_attempts_reveals_answer(page, pwa_url):
-    """After 3 wrong attempts, the correct answer is revealed."""
+def test_unlimited_retries_until_dismiss(page, pwa_url):
+    """Wrong moves always allow retry — no forced reveal after N attempts."""
     _wait_for_board(page, pwa_url)
     _wait_for_animation(page)
 
+    # Make 3 wrong attempts — each should show retry, not reveal answer
     for i in range(3):
         page.wait_for_selector("cg-board piece", timeout=5000)
         page.wait_for_timeout(200)
         make_move(page, "a2", "a3", "white")
-        if i < 2:
-            # Wait for punishment + Retry button, then click Retry
-            page.locator("#retry-btn").wait_for(state="visible", timeout=15000)
-            page.locator("#retry-btn").click()
-            page.wait_for_timeout(500)
-        else:
-            # 3rd attempt — wait for the answer to be revealed
-            page.wait_for_timeout(700)
+        # Wait for punishment + Retry button
+        page.locator("#retry-btn").wait_for(state="visible", timeout=15000)
+        page.locator("#retry-btn").click()
+        page.wait_for_timeout(500)
 
-    expect(page.locator("#feedback-text")).to_contain_text("answer was")
-    expect(page.locator("#explanation")).not_to_be_empty()
-    expect(page.locator("#next-btn")).to_be_visible()
+    # After 3 wrong attempts, we're still retrying (no forced reveal)
+    expect(page.locator("#feedback-text")).to_contain_text("Try again")
+    expect(page.locator("#dismiss-btn")).to_be_visible()
 
 
 # --- Navigation ---
@@ -188,28 +185,20 @@ def test_intra_session_repetition_on_correct(page, pwa_url):
 
 
 def test_failed_position_returns_in_session(page, pwa_url):
-    """A failed position is reinserted closer in the session queue."""
+    """A dismissed position advances to the next position."""
     _wait_for_board(page, pwa_url)
     _wait_for_animation(page)
 
-    # Fail position 1 three times to exhaust attempts
-    for i in range(3):
-        page.wait_for_selector("cg-board piece", timeout=5000)
-        page.wait_for_timeout(200)
-        make_move(page, "a2", "a3", "white")
-        if i < 2:
-            page.locator("#retry-btn").wait_for(state="visible", timeout=15000)
-            page.locator("#retry-btn").click()
-            page.wait_for_timeout(500)
-        else:
-            page.wait_for_timeout(700)
+    # Make a wrong move to reveal the dismiss button
+    make_move(page, "a2", "a3", "white")
+    page.wait_for_timeout(500)
+    expect(page.locator("#dismiss-btn")).to_be_visible()
 
-    expect(page.locator("#feedback-text")).to_contain_text("answer was")
-    page.locator("#next-btn").click()
+    # Dismiss the position
+    page.locator("#dismiss-btn").click()
     _wait_for_animation(page)
 
-    # Position 1 was reinserted — it will appear again later in the session
-    # For now, we should be on position 2
+    # Should advance to the next position
     page.wait_for_selector("cg-board piece", timeout=5000)
     expect(page.locator("#prompt")).to_contain_text("You played")
 
@@ -255,7 +244,7 @@ def test_see_moves_visible_after_correct(page, pwa_url):
 
 
 def test_see_moves_visible_after_two_wrong(page, pwa_url):
-    """The 'See moves' link appears after 2 wrong attempts (not 3)."""
+    """The 'See moves' link appears after 2 wrong attempts."""
     _wait_for_board(page, pwa_url)
     _wait_for_animation(page)
 
