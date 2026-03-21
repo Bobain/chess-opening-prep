@@ -8,6 +8,13 @@ from pathlib import Path
 import pytest
 
 
+def pytest_xdist_auto_num_workers(config):
+    """Use N-1 cores for test parallelization (harmonized with trainer)."""
+    from chess_self_coach import worker_count
+
+    return worker_count()
+
+
 @pytest.fixture
 def fixtures_dir() -> Path:
     """Return the path to the tests/fixtures/ directory."""

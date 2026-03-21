@@ -1,0 +1,76 @@
+name: Generate flow diagram images
+
+on:
+  push:
+    branches: [main, dev]
+    paths:
+      - 'docs/flows/*.md'
+
+permissions:
+  contents: write
+
+jobs:
+  generate-svgs:
+    name: Mermaid → SVG
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Mermaid CLI
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Extract and render Mermaid blocks
+        run: |
+          mkdir -p docs/flows/images
+          changed=false
+
+          for md_file in docs/flows/*.md; do
+            # Extract mermaid blocks with their preceding image reference
+            python3 -c "
+          import re, sys, hashlib
+
+          with open('$md_file') as f:
+              content = f.read()
+
+          # Find all mermaid blocks
+          pattern = r'!\[([^\]]*)\]\(images/([^)]+\.svg)\)\s*\n\s*\n\s*\`\`\`mermaid\n(.*?)\`\`\`'
+          matches = re.findall(pattern, content, re.DOTALL)
+
+          for alt, filename, mermaid_src in matches:
+              stem = filename.replace('.svg', '')
+              mmd_path = f'docs/flows/images/{stem}.mmd'
+              with open(mmd_path, 'w') as out:
+                  out.write(mermaid_src)
+              print(f'{stem}')
+          " | while read stem; do
+              mmd="docs/flows/images/${stem}.mmd"
+              svg="docs/flows/images/${stem}.svg"
+
+              mmdc -i "$mmd" -o "$svg" -t neutral --backgroundColor transparent 2>&1 || true
+              rm -f "$mmd"
+
+              if [ -f "$svg" ]; then
+                changed=true
+              fi
+            done
+          done
+
+          echo "changed=$changed" >> "$GITHUB_ENV"
+
+      - name: Commit generated images
+        if: env.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/flows/images/
+          if git diff --cached --quiet; then
+            echo "No image changes to commit"
+          else
+            git commit -m "Generate flow diagram SVGs [skip ci]"
+            git push
+          fi

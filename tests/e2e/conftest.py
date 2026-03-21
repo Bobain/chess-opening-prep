@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import http.server
 import shutil
+import socket
 import threading
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -43,6 +45,11 @@ def _copy_pwa_files(tmp_dir, training_data_path):
     for f in PWA_DIR.iterdir():
         if f.is_file() and f.name != "training_data.json":
             shutil.copy2(f, tmp_dir / f.name)
+
+    # Copy Stockfish WASM directory if present
+    stockfish_src = PWA_DIR / "stockfish"
+    if stockfish_src.exists():
+        shutil.copytree(stockfish_src, tmp_dir / "stockfish")
 
     # Inject unique version into service worker
     sw_path = tmp_dir / "sw.js"
@@ -76,6 +83,61 @@ def pwa_real_url(tmp_path_factory):
     url, server = _serve_pwa_dir(tmp_dir)
     yield url
     server.shutdown()
+
+
+@pytest.fixture(scope="session")
+def app_url(tmp_path_factory):
+    """Serve the FastAPI app with test fixture data ([App] mode).
+
+    Starts a uvicorn server in a background thread with _project_root
+    patched to a temp directory containing the test training_data.json.
+    The real PWA files are served via symlink.
+    """
+    import uvicorn
+
+    from chess_self_coach.server import app
+
+    # Create temp dir mimicking project root
+    tmp_dir = tmp_path_factory.mktemp("app_e2e")
+    shutil.copy2(FIXTURES_DIR / "training_data.json", tmp_dir / "training_data.json")
+    for pgn in FIXTURES_DIR.glob("*.pgn"):
+        shutil.copy2(pgn, tmp_dir / pgn.name)
+    (tmp_dir / "pwa").symlink_to(PWA_DIR)
+
+    # Copy coaching journal fixtures
+    coaching_src = PROJECT_ROOT / "coaching"
+    if coaching_src.exists():
+        shutil.copytree(coaching_src, tmp_dir / "coaching")
+
+    # Create a test config.json for config API tests
+    import json
+    test_config = {
+        "stockfish": {"path": "/usr/games/stockfish"},
+        "players": {"lichess": "testuser", "chesscom": "testcom"},
+        "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
+        "studies": {},
+    }
+    (tmp_dir / "config.json").write_text(json.dumps(test_config, indent=2))
+
+    # Find a free port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+
+    with patch("chess_self_coach.server._find_project_root", return_value=tmp_dir):
+        config = uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
+        server = uvicorn.Server(config)
+
+        thread = threading.Thread(target=server.run, daemon=True)
+        thread.start()
+
+        while not server.started:
+            time.sleep(0.05)
+
+        yield f"http://127.0.0.1:{port}"
+
+        server.should_exit = True
+        thread.join(timeout=5)
 
 
 @pytest.fixture(autouse=True)

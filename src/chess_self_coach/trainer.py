@@ -12,7 +12,9 @@ import io
 import json
 import os
 import sys
+import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
@@ -21,6 +23,7 @@ import chess
 import chess.engine
 import chess.pgn
 
+from chess_self_coach import worker_count
 from chess_self_coach.config import (
     _find_project_root,
     check_stockfish_version,
@@ -269,6 +272,39 @@ def _describe_advantage(score_before_cp: int | None, player_color: str) -> str:
     return "you were in a difficult position"
 
 
+def _time_pressure_context(
+    player_clock: float | None, opponent_clock: float | None,
+) -> str:
+    """Generate time pressure context string, or empty if not relevant.
+
+    Args:
+        player_clock: Player's remaining time in seconds, or None.
+        opponent_clock: Opponent's remaining time in seconds, or None.
+    """
+    if player_clock is None:
+        return ""
+
+    p_min = player_clock / 60
+
+    if p_min < 2:
+        if opponent_clock and opponent_clock / 60 > p_min * 2:
+            o_min = opponent_clock / 60
+            return (
+                f"You were under severe time pressure "
+                f"({p_min:.0f}min left vs {o_min:.0f}min for your opponent)."
+            )
+        return f"You were under time pressure ({p_min:.0f}min remaining)."
+
+    if opponent_clock and player_clock > opponent_clock * 1.5:
+        o_min = opponent_clock / 60
+        return (
+            f"You had more time ({p_min:.0f}min vs {o_min:.0f}min) "
+            f"and could have taken longer on this move."
+        )
+
+    return ""
+
+
 def _generate_context(
     category: str,
     cp_loss: int,
@@ -395,6 +431,12 @@ def extract_mistakes(
         actual_move = next_node.move
         piece_count = len(board.piece_map())
 
+        # Extract clock data (seconds remaining after this move)
+        player_clock = next_node.clock()
+        opponent_clock = None
+        if next_node.variations:
+            opponent_clock = next_node.variations[0].clock()
+
         # Priority: tablebase for endgame positions (<= 7 pieces)
         tb_result = None
         if piece_count <= MAX_PIECES:
@@ -416,6 +458,9 @@ def extract_mistakes(
                 "actual_san": board.san(actual_move),
                 "pv": [tb_result.best_move] if tb_result.best_move else [],
                 "tb": tb_result,
+                "score_after_best_cp": None,
+                "player_clock": player_clock,
+                "opponent_clock": opponent_clock,
             })
         else:
             # Stockfish: adaptive depth
@@ -430,10 +475,32 @@ def extract_mistakes(
             score_cp, is_mate = _score_to_cp(score)
             best_move = pv[0] if pv else None
 
-            # Convert PV to SAN (up to 5 moves)
+            # Analyze position after best move (for accurate eval display)
+            # Uses adaptive depth + tablebase probe if ≤7 pieces
+            score_after_best_cp = None
+            if best_move:
+                board_after_best = board.copy()
+                board_after_best.push(best_move)
+                pc_after = len(board_after_best.piece_map())
+                tb_after_best = probe_position(board_after_best.fen()) if pc_after <= MAX_PIECES else None
+                if tb_after_best:
+                    tier = tb_after_best.tier
+                    score_after_best_cp = _MATE_CP if tier == "WIN" else (-_MATE_CP if tier == "LOSS" else 0)
+                    if board_after_best.turn == chess.BLACK:
+                        score_after_best_cp = -score_after_best_cp
+                else:
+                    info_after_best = engine.analyse(
+                        board_after_best, _analysis_limit(board_after_best, depth),
+                    )
+                    score_ab = info_after_best.get("score")
+                    if score_ab:
+                        score_after_best_cp, _ = _score_to_cp(score_ab)
+
+            # Convert PV to SAN (up to 10 moves, or full line if mate found)
+            pv_limit = len(pv) if is_mate else 10
             pv_san = []
             pv_board = board.copy()
-            for move in pv[:5]:
+            for move in pv[:pv_limit]:
                 try:
                     pv_san.append(pv_board.san(move))
                     pv_board.push(move)
@@ -449,6 +516,9 @@ def extract_mistakes(
                 "actual_san": board.san(actual_move),
                 "pv": pv_san,
                 "tb": None,
+                "score_after_best_cp": score_after_best_cp,
+                "player_clock": player_clock,
+                "opponent_clock": opponent_clock,
             })
         node = next_node
 
@@ -545,8 +615,16 @@ def extract_mistakes(
             explanation = tablebase_explanation(
                 tb_before, tb_after, pos["actual_san"], pos["best_san"],
             )
-            score_before = f"TB:{tb_before.tier.lower()}"
-            score_after = f"TB:{tb_after.tier.lower()}"
+            # Convert from side-to-move perspective to player perspective
+            tier_before = tb_before.tier
+            tier_after = tb_after.tier
+            if player_color == chess.BLACK:
+                _flip = {"WIN": "LOSS", "LOSS": "WIN", "DRAW": "DRAW"}
+                tier_before = _flip[tier_before]
+                tier_after = _flip[tier_after]
+            score_before = f"TB:{tier_before.lower()}"
+            score_after = f"TB:{tier_after.lower()}"
+            score_after_best = score_before  # Best move preserves TB verdict
             tb_data = {
                 "before": {"category": tb_before.category, "dtm": tb_before.dtm, "dtz": tb_before.dtz},
                 "after": {"category": tb_after.category, "dtm": tb_after.dtm, "dtz": tb_after.dtz},
@@ -565,6 +643,15 @@ def extract_mistakes(
             if pos["actual_san"] == pos["best_san"]:
                 continue
 
+            # Pedagogical filter: skip positions already lost (no learning value)
+            player_cp = pos["score_cp"] if player_color == chess.WHITE else -pos["score_cp"]
+            player_cp_after = next_pos["score_cp"] if player_color == chess.WHITE else -next_pos["score_cp"]
+            if player_cp < -500 and player_cp_after < -500 and not pos.get("is_mate", False):
+                continue
+            # Pedagogical filter: skip positions already won (no learning value)
+            if player_cp > 500 and player_cp_after > 500:
+                continue
+
             was_mate = pos.get("is_mate", False)
             score_after_cp = next_pos["score_cp"]
             board = chess.Board(pos["fen"])
@@ -580,7 +667,18 @@ def extract_mistakes(
             )
             score_before = _format_score_cp(pos["score_cp"])
             score_after = _format_score_cp(next_pos["score_cp"])
+            score_after_best = _format_score_cp(pos.get("score_after_best_cp"))
             tb_data = None
+
+        # Append time pressure context if relevant
+        time_ctx = _time_pressure_context(
+            pos.get("player_clock"), pos.get("opponent_clock"),
+        )
+        if time_ctx:
+            context = f"{context} {time_ctx}"
+
+        player_clk = pos.get("player_clock")
+        opponent_clk = pos.get("opponent_clock")
 
         mistake = {
             "id": _make_position_id(pos["fen"], pos["actual_san"]),
@@ -591,12 +689,14 @@ def extract_mistakes(
             "context": context,
             "score_before": score_before,
             "score_after": score_after,
+            "score_after_best": score_after_best,
             "cp_loss": cp_loss,
             "category": category,
             "explanation": explanation,
             "acceptable_moves": [pos["best_san"]],
             "pv": pos.get("pv", []),
             "game": game_info,
+            "clock": {"player": player_clk, "opponent": opponent_clk} if player_clk is not None else None,
         }
         if tb_data:
             mistake["tablebase"] = tb_data
@@ -604,28 +704,6 @@ def extract_mistakes(
 
     return mistakes
 
-
-def _physical_core_count() -> int:
-    """Return the number of physical CPU cores.
-
-    Reads /proc/cpuinfo on Linux, falls back to os.cpu_count() // 2.
-    """
-    try:
-        cores = set()
-        with open("/proc/cpuinfo") as f:
-            physical_id = core_id = None
-            for line in f:
-                if line.startswith("physical id"):
-                    physical_id = line.split(":")[1].strip()
-                elif line.startswith("core id"):
-                    core_id = line.split(":")[1].strip()
-                    if physical_id is not None:
-                        cores.add((physical_id, core_id))
-        if cores:
-            return len(cores)
-    except OSError:
-        pass
-    return os.cpu_count() // 2 or 1
 
 
 def _analyze_game_worker(
@@ -664,12 +742,52 @@ def _load_existing_training_data(path: Path) -> dict | None:
         return None
 
 
+class TrainingInterrupted(Exception):
+    """Raised when training is cancelled via the interrupt signal."""
+
+
+def _atomic_write_json(path: Path, data: dict) -> None:
+    """Write JSON atomically: temp file, fsync, os.replace."""
+    tmp_path = path.with_suffix(".tmp")
+    with open(tmp_path, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, path)
+
+
+_SEVERITY = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
+
+
+def _build_output(
+    positions: dict[str, dict],
+    lichess_user: str,
+    chesscom_user: str,
+    analyzed_game_ids: set[str] | None = None,
+) -> dict:
+    """Build the training_data.json dict from positions map."""
+    sorted_pos = sorted(
+        positions.values(),
+        key=lambda m: (_SEVERITY.get(m["category"], 3), -m["cp_loss"]),
+    )
+    return {
+        "version": "1.0",
+        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "player": {"lichess": lichess_user, "chesscom": chesscom_user or ""},
+        "positions": sorted_pos,
+        "analyzed_game_ids": sorted(analyzed_game_ids) if analyzed_game_ids else [],
+    }
+
+
 def prepare_training_data(
     *,
     max_games: int = 20,
     depth: int = 18,
     engine_path: str | None = None,
     fresh: bool = False,
+    on_progress: Callable[[dict], None] | None = None,
+    cancel: threading.Event | None = None,
 ) -> None:
     """Fetch games, analyze with Stockfish, extract mistakes, export training JSON.
 
@@ -681,30 +799,34 @@ def prepare_training_data(
         depth: Stockfish analysis depth.
         engine_path: Override path to Stockfish binary.
         fresh: If True, discard existing data and start from scratch.
+        on_progress: Optional callback for structured progress events. When None,
+            all existing print() output is preserved unchanged.
     """
+    def _emit(event: dict) -> None:
+        if on_progress:
+            on_progress(event)
+
     config = load_config()
     players = config.get("players", {})
     lichess_user = players.get("lichess", "")
     chesscom_user = players.get("chesscom")
 
     if not lichess_user and not chesscom_user:
-        print(
-            "No player configured. Run 'chess-self-coach setup' to set your Lichess and/or chess.com username.",
-            file=sys.stderr,
+        raise RuntimeError(
+            "No player configured. Run 'chess-self-coach setup' to set your Lichess and/or chess.com username."
         )
-        sys.exit(1)
 
     # Find Stockfish
     if engine_path:
         sf_path = Path(engine_path)
         if not sf_path.exists():
-            print(f"Engine not found: {sf_path}", file=sys.stderr)
-            sys.exit(1)
+            raise FileNotFoundError(f"Engine not found: {sf_path}")
     else:
         sf_path = find_stockfish(config)
         expected = config.get("stockfish", {}).get("expected_version")
         version = check_stockfish_version(sf_path, expected)
         print(f"  Using {version} at {sf_path}")
+        _emit({"phase": "init", "message": f"Using {version}"})
 
     root = _find_project_root()
     output_path = root / "training_data.json"
@@ -714,16 +836,22 @@ def prepare_training_data(
     existing_game_ids: set[str] = set()
     existing_positions: dict[str, dict] = {}  # id -> position (preserves SRS)
     if existing_data:
+        # Primary source: explicit list (handles 0-mistake games)
+        for gid in existing_data.get("analyzed_game_ids", []):
+            if gid and gid != "?":
+                existing_game_ids.add(gid)
+        # Fallback: also extract from positions (backward compat with old files)
         for pos in existing_data.get("positions", []):
             existing_positions[pos["id"]] = pos
             game_id = pos.get("game", {}).get("id", "")
-            if game_id:
+            if game_id and game_id != "?":
                 existing_game_ids.add(game_id)
         if existing_game_ids:
             print(f"  Loaded {len(existing_positions)} existing position(s) from {len(existing_game_ids)} game(s)")
 
     # Fetch games
     print("\n  Fetching games...")
+    _emit({"phase": "fetch", "message": "Fetching games...", "percent": 5})
     all_games: list[chess.pgn.Game] = []
 
     if lichess_user:
@@ -736,53 +864,123 @@ def prepare_training_data(
 
     if not all_games:
         print("  No games found.")
+        _emit({"phase": "done", "message": "No games found.", "percent": 100})
         return
 
-    # Filter out already-analyzed games
+    # Filter out already-analyzed games and malformed games
     new_games = []
+    skipped_analyzed = 0
+    skipped_malformed = 0
     for game in all_games:
         game_id = game.headers.get("Link", game.headers.get("Site", ""))
-        if game_id and game_id in existing_game_ids:
+        if game_id and game_id != "?" and game_id in existing_game_ids:
+            skipped_analyzed += 1
+            continue
+        # Skip games with no player info (malformed PGN — can never be analyzed)
+        white = game.headers.get("White", "?")
+        black = game.headers.get("Black", "?")
+        if white == "?" and black == "?":
+            skipped_malformed += 1
             continue
         new_games.append(game)
 
-    skipped = len(all_games) - len(new_games)
-    if skipped:
-        print(f"  Skipped {skipped} already-analyzed game(s)")
+    if skipped_analyzed:
+        print(f"  Skipped {skipped_analyzed} already-analyzed game(s)")
+    if skipped_malformed:
+        print(f"  Skipped {skipped_malformed} game(s) with missing player headers")
+
+    _emit({"phase": "fetch", "message": f"Found {len(all_games)} game(s) ({len(new_games)} new)", "percent": 10})
 
     if not new_games:
         print("  No new games to analyze.")
         if existing_data:
             print(f"  Existing training data unchanged ({len(existing_positions)} positions)")
+        _emit({"phase": "done", "message": f"No new games. {len(existing_positions)} positions unchanged.", "percent": 100})
         return
 
-    # Analyze new games
-    workers = _physical_core_count()
-    workers = min(workers, len(new_games))
-    print(f"\n  Analyzing {len(new_games)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
-    print("  This may take several minutes...\n")
-    all_mistakes: list[dict] = []
-
+    # Build analysis tasks (filter games where player is identifiable)
     tasks = []
+    task_game_ids: list[str] = []
+    skipped_color = 0
     for i, game in enumerate(new_games):
+        game_id = game.headers.get("Link", game.headers.get("Site", ""))
+        if game_id == "?":
+            game_id = ""
         player_color = _determine_player_color(game, lichess_user, chesscom_user)
         if player_color is None:
+            white = game.headers.get("White", "?")
+            black = game.headers.get("Black", "?")
+            print(f"  Skipped {white} vs {black}: player not found in game headers")
+            skipped_color += 1
+            if game_id:
+                existing_game_ids.add(game_id)
             continue
         white = game.headers.get("White", "?")
         black = game.headers.get("Black", "?")
         exporter = chess.pgn.StringExporter(headers=True, variations=True, comments=True)
         pgn_str = game.accept(exporter)
+        task_game_ids.append(game_id)
         tasks.append((pgn_str, str(sf_path), depth, player_color, i + 1, len(new_games), f"{white} vs {black}"))
 
-    with ProcessPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(_analyze_game_worker, *t): t for t in tasks}
-        done_count = 0
-        total_tasks = len(tasks)
+    if not tasks:
+        if skipped_color:
+            print(f"  No analyzable games ({skipped_color} skipped: player not in headers)")
+        else:
+            print("  No analyzable games.")
+        _atomic_write_json(
+            output_path,
+            _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids),
+        )
+        _emit({"phase": "done", "message": f"No analyzable games. {len(existing_positions)} positions unchanged.", "percent": 100})
+        return
+
+    workers = worker_count()
+    workers = min(workers, len(tasks))
+    print(f"\n  Analyzing {len(tasks)} new game(s) with Stockfish (depth {depth}, {workers} workers)...")
+    print("  This may take several minutes...\n")
+
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    new_count = 0
+    done_count = 0
+    total_tasks = len(tasks)
+
+    pool = ProcessPoolExecutor(max_workers=workers)
+    try:
+        future_to_gid = {}
+        for task, gid in zip(tasks, task_game_ids):
+            f = pool.submit(_analyze_game_worker, *task)
+            future_to_gid[f] = gid
         wall_start = time.time()
-        for future in as_completed(futures):
-            idx, total, label, mistakes, elapsed = future.result()
+        for future in as_completed(future_to_gid):
+            gid = future_to_gid[future]
             done_count += 1
-            all_mistakes.extend(mistakes)
+            try:
+                idx, total, label, mistakes, elapsed = future.result()
+            except Exception as exc:
+                print(f"  [{done_count}/{total_tasks}] Error: {exc}")
+                continue  # Don't track — will be retried on next run
+
+            # Only track after successful analysis
+            if gid:
+                existing_game_ids.add(gid)
+
+            # Merge this game's positions immediately (preserve SRS)
+            for m in mistakes:
+                if m["id"] not in existing_positions:
+                    m["srs"] = {
+                        "interval": 0,
+                        "ease": 2.5,
+                        "next_review": today,
+                        "history": [],
+                    }
+                    existing_positions[m["id"]] = m
+                    new_count += 1
+
+            # Atomic incremental write — crash-safe
+            _atomic_write_json(
+                output_path,
+                _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids),
+            )
 
             wall_elapsed = time.time() - wall_start
             avg_per_game = wall_elapsed / done_count
@@ -795,44 +993,28 @@ def prepare_training_data(
                 f"{len(mistakes)} mistake(s) ({elapsed:.1f}s) "
                 f"— ETA {eta_str}"
             )
+            # Progress: 15% to 90% spread across analysis tasks
+            pct = 15 + int(75 * done_count / total_tasks)
+            _emit({
+                "phase": "analyze",
+                "message": f"Analyzing {done_count}/{total_tasks}: {label}",
+                "percent": pct,
+                "current": done_count,
+                "total": total_tasks,
+            })
 
-    # Merge new positions with existing (preserve SRS data)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    new_count = 0
-    for m in all_mistakes:
-        if m["id"] in existing_positions:
-            continue  # already exists, keep the one with SRS progress
-        m["srs"] = {
-            "interval": 0,
-            "ease": 2.5,
-            "next_review": today,
-            "history": [],
-        }
-        existing_positions[m["id"]] = m
-        new_count += 1
+            # Check cancel signal after each game
+            if cancel and cancel.is_set():
+                pool.shutdown(wait=False, cancel_futures=True)
+                raise TrainingInterrupted(
+                    f"Interrupted. Saved {len(existing_positions)} positions "
+                    f"({done_count}/{total_tasks} games analyzed)."
+                )
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
-    # Sort: blunders first, then by cp_loss descending
-    severity = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
-    all_positions = sorted(
-        existing_positions.values(),
-        key=lambda m: (severity.get(m["category"], 3), -m["cp_loss"]),
-    )
-
-    # Build and write output
-    training_data = {
-        "version": "1.0",
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "player": {
-            "lichess": lichess_user,
-            "chesscom": chesscom_user or "",
-        },
-        "positions": all_positions,
-    }
-    with open(output_path, "w") as f:
-        json.dump(training_data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-
-    total = len(all_positions)
+    total = len(existing_positions)
+    all_positions = _build_output(existing_positions, lichess_user, chesscom_user, existing_game_ids)["positions"]
     print(f"\n  Training data exported: {output_path}")
     print(f"  Total positions: {total} ({new_count} new)")
     blunders = sum(1 for m in all_positions if m["category"] == "blunder")
@@ -841,6 +1023,11 @@ def prepare_training_data(
     print(f"    Blunders: {blunders}")
     print(f"    Mistakes: {mistake_count}")
     print(f"    Inaccuracies: {inaccuracies}")
+    _emit({
+        "phase": "done",
+        "message": f"Done! {total} positions ({blunders} blunders, {mistake_count} mistakes, {inaccuracies} inaccuracies)",
+        "percent": 100,
+    })
 
 
 def refresh_explanations() -> None:
@@ -868,6 +1055,50 @@ def refresh_explanations() -> None:
     if removed:
         data["positions"] = positions
         print(f"  Removed {removed} invalid position(s) (player_move == best_move)")
+
+    # Remove positions where both moves win or both lose (no learning value)
+    def _parse_score_cp(s: str) -> int | None:
+        try:
+            return int(float(s) * 100)
+        except (ValueError, TypeError):
+            return None
+
+    before_count = len(positions)
+    filtered = []
+    for p in positions:
+        sb = _parse_score_cp(p.get("score_before", ""))
+        sa = _parse_score_cp(p.get("score_after", ""))
+        if sb is None or sa is None:
+            filtered.append(p)
+            continue
+        mul = 1 if p.get("player_color") == "white" else -1
+        player_before = sb * mul
+        player_after = sa * mul
+        if player_before > 500 and player_after > 500:
+            continue
+        if player_before < -500 and player_after < -500:
+            continue
+        filtered.append(p)
+    positions = filtered
+    removed_decisive = before_count - len(positions)
+    if removed_decisive:
+        data["positions"] = positions
+        print(f"  Removed {removed_decisive} position(s) already decisive (both win or both lose)")
+
+    # Fix tablebase scores for Black: convert from side-to-move to player perspective
+    _tb_flip = {"TB:win": "TB:loss", "TB:loss": "TB:win"}
+    tb_fixed = 0
+    for pos in positions:
+        if "tablebase" not in pos or pos.get("player_color") != "black":
+            continue
+        for key in ("score_before", "score_after", "score_after_best"):
+            val = pos.get(key)
+            if val in _tb_flip:
+                pos[key] = _tb_flip[val]
+                tb_fixed += 1
+    if tb_fixed:
+        data["positions"] = positions
+        print(f"  Fixed {tb_fixed} tablebase score(s) (side-to-move → player perspective)")
 
     updated = 0
     for pos in positions:
@@ -917,124 +1148,76 @@ def refresh_explanations() -> None:
             pos["context"] = new_context
             updated += 1
 
-    with open(data_path, "w") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    _atomic_write_json(data_path, data)
 
     print(f"  Refreshed {updated}/{len(positions)} explanation(s) in {data_path}")
     if updated:
         print("  💡 Run /review-training to verify text quality")
 
 
+def get_stats_data(project_root: Path) -> dict:
+    """Compute training statistics from training_data.json.
+
+    Args:
+        project_root: Path to the project root containing training_data.json.
+
+    Returns:
+        Dict with keys: generated, total, by_category, by_source.
+
+    Raises:
+        FileNotFoundError: If training_data.json does not exist.
+    """
+    data_path = project_root / "training_data.json"
+    if not data_path.exists():
+        raise FileNotFoundError(f"No training data at {data_path}")
+
+    with open(data_path) as f:
+        data = json.load(f)
+
+    positions = data.get("positions", [])
+
+    categories: dict[str, int] = {}
+    for p in positions:
+        cat = p.get("category", "unknown")
+        categories[cat] = categories.get(cat, 0) + 1
+
+    sources: dict[str, int] = {}
+    for p in positions:
+        src = p.get("game", {}).get("source", "unknown")
+        sources[src] = sources.get(src, 0) + 1
+
+    return {
+        "generated": data.get("generated", "unknown"),
+        "total": len(positions),
+        "by_category": categories,
+        "by_source": sources,
+    }
+
+
 def print_stats() -> None:
     """Show training progress from training_data.json."""
     root = _find_project_root()
-    data_path = root / "training_data.json"
-
-    if not data_path.exists():
+    try:
+        stats = get_stats_data(root)
+    except FileNotFoundError:
         print(
             "No training data found. Run: chess-self-coach train --prepare",
             file=sys.stderr,
         )
         sys.exit(1)
 
-    with open(data_path) as f:
-        data = json.load(f)
-
-    positions = data.get("positions", [])
-    if not positions:
+    if stats["total"] == 0:
         print("  No positions in training data.")
         return
 
     print("\n  Training Data Stats")
-    print(f"  Generated: {data.get('generated', '?')}")
-    print(f"  Total positions: {len(positions)}")
-
-    # By category
-    categories: dict[str, int] = {}
-    for p in positions:
-        cat = p.get("category", "unknown")
-        categories[cat] = categories.get(cat, 0) + 1
+    print(f"  Generated: {stats['generated']}")
+    print(f"  Total positions: {stats['total']}")
 
     print("\n  By category:")
     for cat in ["blunder", "mistake", "inaccuracy"]:
-        print(f"    {cat.capitalize()}: {categories.get(cat, 0)}")
-
-    # By source
-    sources: dict[str, int] = {}
-    for p in positions:
-        src = p.get("game", {}).get("source", "unknown")
-        sources[src] = sources.get(src, 0) + 1
+        print(f"    {cat.capitalize()}: {stats['by_category'].get(cat, 0)}")
 
     print("\n  By source:")
-    for src, count in sorted(sources.items()):
+    for src, count in sorted(stats["by_source"].items()):
         print(f"    {src}: {count}")
-
-
-def serve_pwa() -> None:
-    """Start a local HTTP server and open the training PWA in the browser.
-
-    Copies PWA files + training data to a temp directory and injects the
-    project version into the service worker cache name. Source files are
-    never modified.
-    """
-    import http.server
-    import shutil
-    import tempfile
-    import threading
-    import webbrowser
-
-    from chess_self_coach import __version__
-
-    root = _find_project_root()
-    pwa_src = root / "pwa"
-
-    if not pwa_src.exists():
-        print("PWA directory not found at pwa/", file=sys.stderr)
-        sys.exit(1)
-
-    # Copy PWA files to a temp directory (never modify source files)
-    serve_dir = Path(tempfile.mkdtemp(prefix="chess-self-coach-"))
-    for f in pwa_src.iterdir():
-        if f.is_file() and f.name != "training_data.json":
-            shutil.copy2(f, serve_dir / f.name)
-
-    # Inject version + timestamp into service worker (invalidates cache on each serve)
-    sw_path = serve_dir / "sw.js"
-    sw_text = sw_path.read_text()
-    cache_version = f"{__version__}-{int(time.time())}"
-    sw_path.write_text(sw_text.replace("__VERSION__", cache_version))
-
-    # Copy training data
-    data_path = root / "training_data.json"
-    if data_path.exists():
-        shutil.copy2(data_path, serve_dir / "training_data.json")
-        print("  Copied training_data.json")
-    else:
-        print(
-            "  Warning: No training_data.json found. Run --prepare first.",
-            file=sys.stderr,
-        )
-
-    port = 8000
-
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *a, **kw):
-            super().__init__(*a, directory=str(serve_dir), **kw)
-
-        def log_message(self, format, *args):
-            pass  # suppress request logs
-
-    server = http.server.HTTPServer(("localhost", port), Handler)
-    url = f"http://localhost:{port}"
-    print(f"  Serving PWA at {url} (v{__version__})")
-    print("  Press Ctrl+C to stop\n")
-
-    threading.Timer(0.5, lambda: webbrowser.open(url)).start()
-
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print("\n  Server stopped.")
-        server.shutdown()
-        shutil.rmtree(serve_dir, ignore_errors=True)

@@ -64,6 +64,12 @@ def main(argv: list[str] | None = None) -> None:
         help="Interactive setup: verify auth, find studies, configure config.json",
     )
 
+    # --- update ---
+    subparsers.add_parser(
+        "update",
+        help="Update chess-self-coach to the latest version",
+    )
+
     # --- push ---
     p_push = subparsers.add_parser(
         "push",
@@ -121,27 +127,11 @@ def main(argv: list[str] | None = None) -> None:
         help="Chess.com username (to also fetch games from chess.com)",
     )
     p_import.add_argument(
-        "--masters",
-        action="store_true",
-        help="Also query the Lichess masters database",
-    )
-    p_import.add_argument(
         "--max",
         type=int,
         default=100,
         dest="max_games",
         help="Maximum number of games to fetch per source (default: 100)",
-    )
-    p_import.add_argument(
-        "--enrich",
-        action="store_true",
-        help="Enrich repertoire PGN with deviation statistics",
-    )
-    p_import.add_argument(
-        "--rating",
-        type=str,
-        default=None,
-        help="Rating bracket filter (e.g. '800-1200')",
     )
 
     # --- status ---
@@ -203,24 +193,33 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
 
     if args.command is None:
-        parser.print_help()
-        sys.exit(0)
+        _launch_server()
+        return
 
     if args.command == "analyze":
         from chess_self_coach.analyze import analyze_pgn
 
-        analyze_pgn(
-            args.pgn_file,
-            depth=args.depth,
-            threshold=args.threshold,
-            engine_path=args.engine,
-            in_place=args.in_place,
-        )
+        try:
+            analyze_pgn(
+                args.pgn_file,
+                depth=args.depth,
+                threshold=args.threshold,
+                engine_path=args.engine,
+                in_place=args.in_place,
+            )
+        except FileNotFoundError as e:
+            print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.command == "setup":
         from chess_self_coach.lichess import setup
 
         setup()
+
+    elif args.command == "update":
+        from chess_self_coach.updater import update
+
+        update()
 
     elif args.command == "push":
         from chess_self_coach.config import load_lichess_token
@@ -230,7 +229,11 @@ def main(argv: list[str] | None = None) -> None:
             sys.exit(1)
         from chess_self_coach.lichess import push_pgn
 
-        push_pgn(args.pgn_file, replace=not args.no_replace)
+        try:
+            push_pgn(args.pgn_file, replace=not args.no_replace)
+        except FileNotFoundError as e:
+            print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
 
     elif args.command == "pull":
         from chess_self_coach.config import load_lichess_token
@@ -274,7 +277,11 @@ def main(argv: list[str] | None = None) -> None:
     elif args.command == "validate":
         from chess_self_coach.validate import print_report, validate_pgn
 
-        results = validate_pgn(args.pgn_file)
+        try:
+            results = validate_pgn(args.pgn_file)
+        except FileNotFoundError as e:
+            print(f"  {e}", file=sys.stderr)
+            sys.exit(1)
         has_errors = print_report(results)
         if has_errors:
             sys.exit(1)
@@ -285,9 +292,7 @@ def main(argv: list[str] | None = None) -> None:
         import_games(
             args.username,
             chesscom=args.chesscom,
-            masters=args.masters,
             max_games=args.max_games,
-            enrich=args.enrich,
         )
 
     elif args.command == "status":
@@ -299,7 +304,6 @@ def main(argv: list[str] | None = None) -> None:
         from chess_self_coach.trainer import (
             prepare_training_data,
             print_stats,
-            serve_pwa,
         )
 
         if args.refresh_explanations:
@@ -307,19 +311,55 @@ def main(argv: list[str] | None = None) -> None:
 
             refresh_explanations()
         elif args.prepare:
-            prepare_training_data(
-                max_games=args.games,
-                depth=args.depth,
-                engine_path=args.engine,
-                fresh=args.fresh,
-            )
+            try:
+                prepare_training_data(
+                    max_games=args.games,
+                    depth=args.depth,
+                    engine_path=args.engine,
+                    fresh=args.fresh,
+                )
+            except (FileNotFoundError, RuntimeError) as e:
+                print(f"  {e}", file=sys.stderr)
+                sys.exit(1)
         elif args.serve:
-            serve_pwa()
+            print("  Tip: you can now just run `chess-self-coach` directly.\n")
+            _launch_server()
         elif args.stats:
             print_stats()
         else:
             print("Usage: chess-self-coach train [--prepare|--serve|--stats]")
             print("Run 'chess-self-coach train -h' for details.")
+
+
+def _launch_server() -> None:
+    """Check for updates and start the FastAPI server."""
+    from chess_self_coach.updater import check_update
+
+    available, latest = check_update()
+    if available:
+        answer = input(
+            f"  Version {latest} available (current: {__version__}). "
+            "Update now? [y/N] ",
+        )
+        if answer.strip().lower() == "y":
+            from chess_self_coach.updater import update
+
+            update()
+            print("  Please re-run: chess-self-coach")
+            sys.exit(0)
+
+    from chess_self_coach.updater import check_stockfish_update
+
+    sf_available, sf_installed, sf_latest = check_stockfish_update()
+    if sf_available:
+        print(
+            f"  Stockfish update: {sf_latest} available (current: {sf_installed}).\n"
+            "  Update with: sudo apt install stockfish  (Linux) or  brew upgrade stockfish  (macOS)\n"
+        )
+
+    from chess_self_coach.server import run_server
+
+    run_server()
 
 
 if __name__ == "__main__":

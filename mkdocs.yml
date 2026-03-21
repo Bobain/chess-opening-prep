@@ -3,6 +3,14 @@ site_url: https://bobain.github.io/chess-self-coach/docs/
 repo_url: https://github.com/Bobain/chess-self-coach
 theme:
   name: material
+  features:
+    - content.code.copy
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 plugins:
   - search
   - mkdocstrings:
@@ -16,6 +24,13 @@ nav:
   - Setup Guide: setup.md
   - CLI Reference: cli.md
   - Training Mode: training.md
+  - Flows:
+    - Overview: flows/index.md
+    - User flows: flows/user-flows.md
+    - Data flows: flows/data-flows.md
+    - System flows: flows/system-flows.md
+    - Coming soon: flows/coming-soon-flows.md
+    - Meta flows: flows/meta-flows.md
   - API Reference:
     - Python: api.md
     - PWA (JavaScript): pwa-api.md

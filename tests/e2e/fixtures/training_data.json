@@ -10,10 +10,12 @@
       "id": "test_pos_001",
       "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
       "player_color": "white",
+      "context": "Move 1 as White. Test Opening.",
       "player_move": "a3",
       "best_move": "d4",
       "score_before": "+0.30",
       "score_after": "-0.20",
+      "score_after_best": "+0.25",
       "cp_loss": 250,
       "category": "blunder",
       "explanation": "You played a3 (blunder, -250 cp). A better move was d4.",
@@ -26,6 +28,7 @@
         "result": "0-1",
         "opening": "Test Opening"
       },
+      "clock": {"player": 540.0, "opponent": 480.0},
       "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
     },
     {
@@ -36,6 +39,7 @@
       "best_move": "Nf3",
       "score_before": "+0.30",
       "score_after": "-0.10",
+      "score_after_best": "+0.28",
       "cp_loss": 120,
       "category": "mistake",
       "explanation": "You played a3 (mistake, -120 cp). A better move was Nf3.",
@@ -54,10 +58,12 @@
       "id": "test_pos_003",
       "fen": "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
       "player_color": "black",
+      "context": "Move 1 as Black. Queen's Pawn.",
       "player_move": "a6",
       "best_move": "d5",
       "score_before": "+0.30",
       "score_after": "+0.80",
+      "score_after_best": "+0.32",
       "cp_loss": 50,
       "category": "inaccuracy",
       "explanation": "You played a6 (inaccuracy, -50 cp). A better move was d5.",
@@ -69,6 +75,31 @@
         "date": "2026-03-14",
         "result": "0-1",
         "opening": "Queen's Pawn"
+      },
+      "clock": {"player": 540.0, "opponent": 480.0},
+      "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
+    },
+    {
+      "id": "test_pos_004",
+      "fen": "r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4",
+      "player_color": "white",
+      "player_move": "Qf3",
+      "best_move": "Qxf7#",
+      "score_before": "+100.00",
+      "score_after": "+2.12",
+      "score_after_best": "+100.00",
+      "cp_loss": 7888,
+      "category": "blunder",
+      "explanation": "You played Qf3 (blunder). You had checkmate with Qxf7#.",
+      "acceptable_moves": ["Qxf7#"],
+      "pv": ["Qxf7#"],
+      "game": {
+        "id": "https://lichess.org/testgame4",
+        "source": "lichess",
+        "opponent": "opponent4",
+        "date": "2026-03-15",
+        "result": "1-0",
+        "opening": "Scholar's Mate"
       },
       "srs": { "interval": 0, "ease": 2.5, "next_review": "2026-03-16", "history": [] }
     }

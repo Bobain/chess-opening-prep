@@ -12,21 +12,60 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="demo-banner">
+    Sample data — <a href="https://github.com/Bobain/chess-self-coach#installation">Install the app</a> to train on your own games
+  </div>
   <header>
-    <h1>Find the Better Move</h1>
+    <button id="menu-btn" title="Menu">&#9776;</button>
+    <h1>Find a Better Move</h1>
     <div id="session-info">
       <span id="progress"></span>
-      <button id="settings-btn" title="Settings">&#9881;</button>
     </div>
   </header>
 
+  <!-- Slide-out navigation menu -->
+  <div id="nav-overlay" class="hidden"></div>
+  <nav id="nav-menu" class="nav-closed">
+    <div id="nav-header">
+      <span>Chess Self-Coach</span>
+      <span id="nav-version"></span>
+    </div>
+    <ul id="nav-items">
+      <li id="nav-refresh" class="nav-item nav-app-only hidden">Analyse latest games</li>
+      <li id="nav-config" class="nav-item nav-app-only hidden">Edit config</li>
+      <li id="nav-coming-soon" class="nav-item nav-app-only hidden">
+        <span class="nav-submenu-label">Coming soon <span class="nav-arrow">▸</span></span>
+        <ul id="nav-coming-soon-items" class="nav-submenu hidden">
+          <li class="nav-submenu-header">PGN Management</li>
+          <li id="nav-import" class="nav-coming-soon-item">Import games</li>
+          <li id="nav-validate" class="nav-coming-soon-item">Validate PGN</li>
+          <li id="nav-cleanup" class="nav-coming-soon-item">Cleanup studies</li>
+          <li class="nav-submenu-header">Coaching</li>
+          <li id="nav-journal" class="nav-coming-soon-item">Coaching journal</li>
+          <li class="nav-submenu-header">Project</li>
+          <li id="nav-status" class="nav-coming-soon-item">Project status</li>
+        </ul>
+      </li>
+      <li class="nav-separator"></li>
+      <li id="nav-stats" class="nav-item">Raw data summary</li>
+      <li id="nav-settings" class="nav-item">Settings</li>
+      <li id="nav-about" class="nav-item">About</li>
+    </ul>
+  </nav>
+
   <main>
     <div id="board-wrapper">
-      <div id="material-top" class="material-balance"></div>
+      <div class="board-info-row">
+        <div id="material-top" class="material-balance"></div>
+        <div id="clock-top" class="clock hidden"></div>
+      </div>
       <div id="board-container">
         <div id="board"></div>
       </div>
-      <div id="material-bottom" class="material-balance"></div>
+      <div class="board-info-row">
+        <div id="material-bottom" class="material-balance"></div>
+        <div id="clock-bottom" class="clock hidden"></div>
+      </div>
     </div>
 
     <div id="info-panel">
@@ -36,9 +75,12 @@
         <a id="see-moves" class="see-moves-link hidden" target="_blank" rel="noopener">See moves played during the game</a>
       </div>
 
+      <p id="thinking-indicator" class="thinking hidden">Analyzing...</p>
+
       <div id="feedback" class="hidden">
         <p id="feedback-text"></p>
         <p id="explanation"></p>
+        <p id="eval-summary" class="hidden"></p>
         <p id="pv-line" class="hidden"></p>
       </div>
 
@@ -46,10 +88,39 @@
         <button id="show-position-btn" class="hidden">Show original position</button>
         <button id="play-line-btn" class="hidden">Play best line</button>
         <button id="next-btn" class="hidden">Next</button>
+        <button id="retry-btn" class="hidden">Retry</button>
         <button id="dismiss-btn" class="hidden" title="This position will be permanently removed from your training. You will never see it again.">Give up on this lesson</button>
       </div>
     </div>
   </main>
+
+  <!-- Config Modal -->
+  <div id="config-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Edit Config</h2>
+      <label>
+        Lichess username:
+        <input type="text" id="config-lichess" placeholder="username">
+      </label>
+      <label>
+        Chess.com username:
+        <input type="text" id="config-chesscom" placeholder="username">
+      </label>
+      <label>
+        Default analysis depth:
+        <input type="number" id="config-depth" min="1" max="30" value="18">
+      </label>
+      <label>
+        Blunder threshold (cp):
+        <input type="number" id="config-threshold" min="0.1" max="5.0" step="0.1" value="1.0">
+      </label>
+      <div class="modal-actions">
+        <span id="config-status"></span>
+        <button id="save-config">Save</button>
+        <button id="close-config" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Settings Modal -->
   <div id="settings-modal" class="modal hidden">
@@ -58,6 +129,10 @@
       <label>
         Positions per session:
         <input type="number" id="session-size" min="1" max="50" value="10">
+      </label>
+      <label>
+        Analysis depth:
+        <input type="number" id="analysis-depth" min="1" max="30" value="12">
       </label>
       <label>
         Difficulty:
@@ -69,7 +144,7 @@
       </label>
       <div class="modal-actions">
         <button id="reset-progress">Reset Progress</button>
-        <button id="close-settings">Close</button>
+        <button id="close-settings" class="modal-close">Close</button>
       </div>
     </div>
   </div>
@@ -80,6 +155,94 @@
       <h2>Session Complete</h2>
       <div id="summary-stats"></div>
       <button id="new-session">New Session</button>
+    </div>
+  </div>
+
+  <!-- Raw Data Summary Modal -->
+  <div id="stats-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Raw Data Summary</h2>
+      <div id="stats-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <span></span>
+        <button id="close-stats" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Status Modal -->
+  <div id="status-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Project Status</h2>
+      <div id="status-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <span></span>
+        <button id="close-status" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cleanup Studies Modal -->
+  <div id="cleanup-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Cleanup Studies</h2>
+      <div id="cleanup-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <span></span>
+        <button id="close-cleanup" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Refresh Training Modal -->
+  <div id="refresh-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Refresh Training</h2>
+      <div id="refresh-content" class="modal-body">
+        <div id="refresh-steps"></div>
+      </div>
+      <div class="modal-actions">
+        <button id="interrupt-refresh" class="modal-interrupt hidden"
+                title="Stop the analysis and save partial results">Interrupt</button>
+        <button id="close-refresh" class="modal-close"
+                title="Hide this dialog — the refresh continues in the background">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Validate PGN Modal -->
+  <div id="validate-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>PGN Validation</h2>
+      <div id="validate-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <span></span>
+        <button id="close-validate" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coaching Journal Modal -->
+  <div id="journal-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="journal-title">Coaching Journal</h2>
+      <div id="journal-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <button id="journal-back" class="hidden">Back</button>
+        <button id="close-journal" class="modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="about-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Chess Self-Coach</h2>
+      <div id="about-content" class="modal-body"></div>
+      <div class="modal-actions">
+        <span></span>
+        <button id="close-about" class="modal-close">Close</button>
+      </div>
     </div>
   </div>
 

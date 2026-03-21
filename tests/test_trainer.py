@@ -12,13 +12,17 @@ from chess_self_coach.trainer import (
     BLUNDER_THRESHOLD,
     INACCURACY_THRESHOLD,
     MISTAKE_THRESHOLD,
+    TrainingInterrupted,
     _analysis_limit,
+    _atomic_write_json,
+    _build_output,
     _classify_mistake,
     _detect_source,
     _determine_player_color,
     _format_score_cp,
     _make_position_id,
     _score_to_cp,
+    _time_pressure_context,
     compute_cp_loss,
     generate_explanation,
 )
@@ -282,3 +286,108 @@ def test_analysis_limit_opening():
     limit = _analysis_limit(board, 18)
     assert limit.time is None
     assert limit.depth == 18
+
+
+# --- _time_pressure_context ---
+
+
+def test_time_pressure_none():
+    """No clock data returns empty string."""
+    assert _time_pressure_context(None, None) == ""
+
+
+def test_time_pressure_severe():
+    """Under 2 minutes with opponent having much more time."""
+    result = _time_pressure_context(90, 420)  # 1.5min vs 7min
+    assert "severe time pressure" in result
+    assert "1min" in result or "2min" in result
+
+
+def test_time_pressure_low():
+    """Under 2 minutes without large opponent advantage."""
+    result = _time_pressure_context(60, 90)  # 1min vs 1.5min
+    assert "time pressure" in result
+    assert "severe" not in result
+
+
+def test_time_advantage():
+    """Player has significantly more time than opponent."""
+    result = _time_pressure_context(600, 300)  # 10min vs 5min
+    assert "more time" in result
+    assert "could have taken longer" in result
+
+
+def test_time_neutral():
+    """Similar clocks, no time pressure."""
+    result = _time_pressure_context(600, 500)  # 10min vs 8min
+    assert result == ""
+
+
+# --- Atomic write ---
+
+
+def test_atomic_write_json(tmp_path):
+    """_atomic_write_json writes valid JSON and leaves no .tmp file."""
+    target = tmp_path / "data.json"
+    data = {"key": "value", "list": [1, 2, 3]}
+    _atomic_write_json(target, data)
+
+    import json
+    from pathlib import Path
+
+    assert target.exists()
+    assert not Path(str(target) + ".tmp").exists()
+    assert not target.with_suffix(".tmp").exists()
+    loaded = json.loads(target.read_text())
+    assert loaded == data
+
+
+def test_atomic_write_preserves_old_on_target_exists(tmp_path):
+    """_atomic_write_json replaces existing file atomically."""
+    target = tmp_path / "data.json"
+    target.write_text('{"old": true}\n')
+
+    _atomic_write_json(target, {"new": True})
+
+    import json
+
+    loaded = json.loads(target.read_text())
+    assert loaded == {"new": True}
+
+
+# --- TrainingInterrupted ---
+
+
+def test_training_interrupted_is_exception():
+    """TrainingInterrupted carries the message."""
+    exc = TrainingInterrupted("Stopped at 3/5 games")
+    assert str(exc) == "Stopped at 3/5 games"
+    assert isinstance(exc, Exception)
+
+
+# --- _build_output ---
+
+
+def test_build_output_includes_analyzed_game_ids():
+    """_build_output includes sorted analyzed_game_ids in output."""
+    pos = {
+        "pos1": {
+            "id": "pos1", "category": "blunder", "cp_loss": 300,
+            "fen": "x", "player_move": "e4", "best_move": "d4",
+        },
+    }
+    result = _build_output(pos, "user", "", analyzed_game_ids={"b_id", "a_id"})
+    assert result["analyzed_game_ids"] == ["a_id", "b_id"]
+    assert len(result["positions"]) == 1
+
+
+def test_build_output_no_game_ids():
+    """_build_output defaults to empty analyzed_game_ids."""
+    pos = {
+        "pos1": {
+            "id": "pos1", "category": "mistake", "cp_loss": 150,
+            "fen": "x", "player_move": "e4", "best_move": "d4",
+        },
+    }
+    result = _build_output(pos, "user", "")
+    assert result["analyzed_game_ids"] == []

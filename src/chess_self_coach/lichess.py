@@ -16,6 +16,7 @@ import berserk
 import requests
 
 from chess_self_coach.config import (
+    CONFIG_FILE,
     error_exit,
     load_config,
     load_lichess_token,
@@ -53,7 +54,6 @@ def _get_client() -> berserk.Client:
                 "https://lichess.org/api/account | python3 -m json.tool"
             ),
         )
-    return None  # unreachable
 
 
 def _get_chapters(study_id: str, token: str) -> list[dict[str, str]]:
@@ -236,15 +236,25 @@ def setup() -> None:
     Guides the user through connecting their Lichess account and mapping
     PGN files to Lichess Studies.
     """
+    try:
+        _setup_interactive()
+    except KeyboardInterrupt:
+        print("\n\n  Setup cancelled.")
+        sys.exit(130)
+
+
+def _setup_interactive() -> None:
+    """Run the interactive setup flow (called by setup())."""
     print("\n🔧 chess-self-coach setup\n")
 
     # Step 1: Check Stockfish
     print("Step 1: Checking Stockfish...")
     from chess_self_coach.config import find_stockfish, check_stockfish_version
 
-    try:
+    config_path = _find_project_root() / CONFIG_FILE
+    if config_path.exists():
         config = load_config()
-    except SystemExit:
+    else:
         config = {
             "stockfish": {
                 "path": str(
@@ -279,6 +289,11 @@ def setup() -> None:
             username = account["username"]
             players["lichess"] = username
             print(f"    ✓ Token verified: {username}")
+        except (requests.exceptions.ConnectionError, OSError):
+            print("    ⚠ Cannot reach lichess.org — skipping token verification.")
+            print("      Token found in .env; will be used when network is available.")
+            players.pop("lichess", None)
+            client = None
         except Exception as e:
             print(f"    ✗ Token invalid: {e}")
             players.pop("lichess", None)
@@ -300,6 +315,11 @@ def setup() -> None:
                     username = account["username"]
                     players["lichess"] = username
                     print(f"\n    ✓ Token verified: {username}")
+                except (requests.exceptions.ConnectionError, OSError):
+                    print("\n    ⚠ Cannot reach lichess.org — skipping token verification.")
+                    print("      Token saved in .env; will be used when network is available.")
+                    players.pop("lichess", None)
+                    client = None
                 except Exception as e:
                     print(f"\n    ✗ Token invalid: {e}")
                     players.pop("lichess", None)
@@ -482,8 +502,7 @@ def push_pgn(pgn_path: str | Path, *, replace: bool = True) -> None:
     """
     pgn_path = Path(pgn_path)
     if not pgn_path.exists():
-        print(f"❌ File not found: {pgn_path}", file=sys.stderr)
-        sys.exit(1)
+        raise FileNotFoundError(f"❌ File not found: {pgn_path}")
 
     config = load_config()
     from chess_self_coach.config import get_study_mapping
