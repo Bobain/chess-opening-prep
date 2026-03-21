@@ -49,18 +49,30 @@ An item is [x] when ALL applicable criteria are met:
 - [x] cleanup (CLI: cleanup_study) ← fast
 - [x] POST /api/pgn/cleanup — trigger from menu
 
-### 3b. SSE job runner + long-running endpoints
-- [x] ⚠️ UX DESIGN PHASE: "Refresh training" button runs `train --prepare` in background.
+### 3b. SSE job runner + "Analyse latest games"
+- [x] ⚠️ UX DESIGN PHASE: "Analyse latest games" button runs `train --prepare` in background.
       Individual commands (import, analyze, push, pull) deferred to future design phase.
 - [x] Generic SSE job runner (POST starts job → 202, GET streams progress via SSE)
 - [x] train --prepare (CLI: prepare_training_data with --games, --depth, --engine, --fresh)
 - [x] POST /api/train/prepare + GET /api/jobs/{id}/events (SSE)
-- [x] PWA "Refresh training" menu item + progress modal
-- Deferred to future design phase:
-  - import/analyze/push/pull → individual PWA buttons (needs own design phase)
-  - `--games N` → future PWA setting (default 20)
-  - `--fresh` → future "Force re-analysis" option
-  - `--engine /path` → future config setting
+- [x] PWA "Analyse latest games" menu item + progress modal
+
+**Current behavior** (v0.3.6):
+The button calls `POST /api/train/prepare` with hardcoded defaults:
+- Fetches up to 20 most recent rated games per source (Lichess + Chess.com)
+- Skips games already in `analyzed_game_ids` (incremental merge)
+- Runs Stockfish depth-18 analysis on new games only
+- Extracts blunders/mistakes/inaccuracies, creates training positions
+- Merges into existing `training_data.json`, preserving SRS progress
+- Atomic writes after each game (crash-safe)
+
+**Next priority — design & test the workflow:**
+- [>] Test current behavior end-to-end with real games, identify UX issues
+- [ ] Evolve to truly incremental "add latest games" (not just latest 20)
+- [ ] Expose `--games N` as a PWA option (default 20)
+- [ ] Expose `--fresh` as "Force re-analysis" option
+- [ ] Expose `--engine /path` as config setting
+- [ ] import/analyze/push/pull → individual PWA buttons (needs own design phase)
 
 ### 3c. Interrupt resilience & data recovery
 - [x] Interrupt button + incremental atomic writes (crash-safe pipeline)
