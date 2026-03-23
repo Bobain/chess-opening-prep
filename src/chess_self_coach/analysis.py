@@ -9,8 +9,10 @@ This decoupling allows re-running Phase 2 (cheap) without re-running Phase 1 (ex
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
+import time as _time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -28,6 +30,8 @@ from chess_self_coach.tablebase import MAX_PIECES, probe_position_full
 
 # Sentinel for mate scores (centipawns)
 _MATE_CP = 10000
+
+_log = logging.getLogger(__name__)
 
 
 # Default analysis limits matching trainer._analysis_limit() hardcoded values
@@ -490,29 +494,46 @@ def collect_game_data(
             eval_source = "opening_explorer"
 
             # eval_before
+            t0 = _time.time()
             if cached_eval is not None:
                 eval_before = cached_eval
+                _eb_src = "cache"
             else:
                 cloud = query_cloud_eval(board.fen())
                 if cloud:
                     eval_before = _cloud_eval_to_eval(cloud, board)
+                    _eb_src = "cloud_eval"
                 else:
                     info = engine.analyse(board, _analysis_limit_from_settings(board, limits))
                     eval_before = _extract_eval(info, board)
+                    _eb_src = "sf_fallback"
+            eval_before_ms = (_time.time() - t0) * 1000
 
             # eval_after
+            t0 = _time.time()
             cloud_after = query_cloud_eval(board_after_fen)
             if cloud_after:
                 eval_after = _cloud_eval_to_eval(cloud_after, board_after)
+                _ea_src = "cloud_eval"
             else:
                 info_after = engine.analyse(
                     board_after, _analysis_limit_from_settings(board_after, limits),
                 )
                 eval_after = _extract_eval(info_after, board_after)
+                _ea_src = "sf_fallback"
+            eval_after_ms = (_time.time() - t0) * 1000
+
+            _log.info(
+                "  ply %d %s: opening — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s)",
+                ply + 1, board.san(actual_move),
+                _eb_src, eval_before_ms, eval_before.get("score_cp"),
+                _ea_src, eval_after_ms, eval_after.get("score_cp"),
+            )
 
             cached_eval = eval_after
             cached_tb = None
             eval_after_best = None
+            eval_after_best_ms = None
             cp_loss = 0
             tb_before_stored = None
             tb_after_stored = None
@@ -520,24 +541,31 @@ def collect_game_data(
             tb_before = None
             eval_source = "stockfish"
 
+            # eval_before (+ tablebase probe)
+            t0 = _time.time()
             if piece_count <= MAX_PIECES:
                 tb_before = probe_position_full(board.fen())
 
             if cached_eval is not None:
                 eval_before = cached_eval
+                _eb_src = "cache"
                 if cached_tb is not None:
                     tb_before = cached_tb
                     eval_source = "tablebase" if cached_eval.get("depth") is None else "stockfish+tablebase"
             elif tb_before:
                 eval_before = _tb_to_eval(tb_before, board.turn)
                 eval_source = "tablebase"
+                _eb_src = "tablebase"
             else:
                 info = engine.analyse(board, _analysis_limit_from_settings(board, limits))
                 eval_before = _extract_eval(info, board)
+                _eb_src = "stockfish"
                 if tb_before:
                     eval_source = "stockfish+tablebase"
+            eval_before_ms = (_time.time() - t0) * 1000
 
             # --- Eval after actual move (will be cached as eval_before for next ply) ---
+            t0 = _time.time()
             pc_after = len(board_after.piece_map())
             tb_after = None
 
@@ -548,6 +576,7 @@ def collect_game_data(
                 eval_after = _tb_to_eval(tb_after, board_after.turn)
                 cached_eval = eval_after
                 cached_tb = tb_after
+                _ea_src = "tablebase"
             else:
                 info_after = engine.analyse(
                     board_after, _analysis_limit_from_settings(board_after, limits),
@@ -555,9 +584,13 @@ def collect_game_data(
                 eval_after = _extract_eval(info_after, board_after)
                 cached_eval = eval_after
                 cached_tb = None
+                _ea_src = "stockfish"
+            eval_after_ms = (_time.time() - t0) * 1000
 
             # --- Eval after best move (only if best differs from actual) ---
+            t0 = _time.time()
             eval_after_best: dict | None = None
+            _eab_src: str | None = None
             best_uci = eval_before.get("best_move_uci")
             if best_uci and best_uci != actual_move.uci():
                 best_move_obj = chess.Move.from_uci(best_uci)
@@ -571,12 +604,14 @@ def collect_game_data(
                         "is_mate": _tb_to_eval(tb_ab, board_after_best.turn)["is_mate"],
                         "mate_in": _tb_to_eval(tb_ab, board_after_best.turn)["mate_in"],
                     }
+                    _eab_src = "tablebase"
                 else:
                     info_ab = engine.analyse(
                         board_after_best,
                         _analysis_limit_from_settings(board_after_best, limits),
                     )
                     eval_after_best = _extract_eval_score_only(info_ab)
+                    _eab_src = "stockfish"
             elif best_uci and best_uci == actual_move.uci():
                 # Best move == actual move: eval_after_best = eval_after
                 eval_after_best = {
@@ -584,6 +619,16 @@ def collect_game_data(
                     "is_mate": eval_after["is_mate"],
                     "mate_in": eval_after.get("mate_in"),
                 }
+                _eab_src = "=actual"
+            eval_after_best_ms = (_time.time() - t0) * 1000 if _eab_src else None
+
+            _log.info(
+                "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s)%s",
+                ply + 1, board.san(actual_move), eval_source,
+                _eb_src, eval_before_ms, eval_before.get("score_cp"),
+                _ea_src, eval_after_ms, eval_after.get("score_cp"),
+                f" best={_eab_src}({eval_after_best_ms:.0f}ms)" if _eab_src and eval_after_best_ms is not None else "",
+            )
 
             # --- cp_loss ---
             cp_loss = 0
@@ -629,6 +674,11 @@ def collect_game_data(
                 "player": player_clock,
                 "opponent": opponent_clock,
                 "time_spent": round(time_spent, 1) if time_spent is not None else None,
+            },
+            "timing_ms": {
+                "eval_before": round(eval_before_ms, 1),
+                "eval_after": round(eval_after_ms, 1),
+                "eval_after_best": round(eval_after_best_ms, 1) if eval_after_best_ms is not None else None,
             },
         }
         moves_data.append(move_dict)
@@ -723,8 +773,6 @@ def analyze_games(
         on_progress: Optional callback for structured progress events.
         cancel: Threading event for cancellation.
     """
-    import time as _time
-
     from chess_self_coach.config import (
         _find_project_root,
         check_stockfish_version,
@@ -737,6 +785,12 @@ def analyze_games(
     def _emit(event: dict) -> None:
         if on_progress:
             on_progress(event)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+    )
 
     config = load_config()
     players = config.get("players", {})
@@ -876,6 +930,37 @@ def analyze_games(
 
             # Store analysis duration for ETA estimation
             game_data["analysis_duration_s"] = round(elapsed, 1)
+
+            # Per-game summary
+            _moves = game_data["moves"]
+            _opening = [m for m in _moves if m["eval_source"] == "opening_explorer"]
+            _other = [m for m in _moves if m["eval_source"] != "opening_explorer"]
+            _log.info(
+                "Game %d/%d: %s — %d moves in %.1fs",
+                done_count, total_tasks, label, len(_moves), elapsed,
+            )
+            if _opening:
+                _op_ms = sum(
+                    m["timing_ms"]["eval_before"] + m["timing_ms"]["eval_after"]
+                    for m in _opening
+                )
+                _log.info("  Opening: %d moves in %.1fs", len(_opening), _op_ms / 1000)
+            if _other:
+                _ot_ms = sum(
+                    m["timing_ms"]["eval_before"]
+                    + m["timing_ms"]["eval_after"]
+                    + (m["timing_ms"]["eval_after_best"] or 0)
+                    for m in _other
+                )
+                _src_counts: dict[str, int] = {}
+                for m in _other:
+                    s = m["eval_source"]
+                    _src_counts[s] = _src_counts.get(s, 0) + 1
+                _src_str = ", ".join(f"{k}: {v}" for k, v in _src_counts.items())
+                _log.info(
+                    "  Non-opening: %d moves (%s) in %.1fs",
+                    len(_other), _src_str, _ot_ms / 1000,
+                )
 
             # Store in analysis data
             store_id = game_id or f"unknown_{done_count}"
