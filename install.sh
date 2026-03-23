@@ -186,8 +186,8 @@ install_syzygy() {
 
   echo "  Downloading 3-5 piece tables (~1 GB) to $syzygy_dir..."
   mkdir -p "$syzygy_dir"
-  wget -q -c -r -np -nH --cut-dirs=2 -P "$syzygy_dir" \
-      http://tablebase.sesse.net/syzygy/3-4-5/ || {
+  wget -q -c -r -np -nH --cut-dirs=2 -e robots=off -A "*.rtbw,*.rtbz" \
+      -P "$syzygy_dir" http://tablebase.sesse.net/syzygy/3-4-5/ || {
     echo "  ⚠ Syzygy download failed (analysis will still work via API fallback)"
     return
   }

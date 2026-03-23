@@ -49,7 +49,8 @@ def test_find_syzygy_none_if_empty_dir(tmp_path):
     # No .rtbw files
 
     config = {"syzygy": {"path": str(syzygy_dir)}}
-    assert find_syzygy(config) is None
+    with patch("chess_self_coach.syzygy._SEARCH_PATHS", [Path("/nonexistent")]):
+        assert find_syzygy(config) is None
 
 
 def test_find_syzygy_none_without_config():

@@ -85,6 +85,7 @@ def download_syzygy(target_dir: Path | None = None) -> Path:
     subprocess.run(
         [
             "wget", "-c", "-r", "-np", "-nH", "--cut-dirs=2",
+            "-e", "robots=off", "-A", "*.rtbw,*.rtbz",
             "-P", str(target_dir),
             _MIRROR,
         ],
