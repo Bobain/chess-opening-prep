@@ -47,7 +47,7 @@ sequenceDiagram
 
 ## Analyse latest games (app mode)
 
-Fetches recent games, runs Stockfish analysis, and generates training positions.
+Fetches recent games, runs full analysis (Stockfish + APIs), and generates training positions.
 
 ![Analyse latest games flow](images/analyse-games.svg)
 
@@ -56,33 +56,53 @@ sequenceDiagram
     participant U as Player
     participant PWA as Browser
     participant API as FastAPI server
-    participant W as Worker threads
     participant SF as Stockfish (native)
+    participant TB as Lichess Tablebase
+    participant OE as Lichess Opening Explorer
     participant L as Lichess API
     participant C as Chess.com API
 
     U->>PWA: Click "Analyse latest games"
-    PWA->>API: POST /api/train/prepare
+    PWA->>API: GET /api/analysis/settings
+    API-->>PWA: {threads, hash_mb, limits}
+    PWA->>U: Show Analysis Settings modal
+
+    U->>PWA: Adjust settings + click "Start analysis"
+    PWA->>API: POST /api/analysis/settings (save)
+    PWA->>API: POST /api/analysis/start {max_games, reanalyze_all}
     API-->>PWA: 202 + job_id
     PWA->>API: GET /api/jobs/{id}/events (SSE)
 
-    API->>API: Load existing training_data.json<br/>(preserve SRS + analyzed_game_ids)
+    API->>API: Load existing analysis_data.json
 
     par Fetch games
-        API->>L: Fetch ≤20 recent rated games
-        API->>C: Fetch ≤20 recent rated games
+        API->>L: Fetch recent rated games
+        API->>C: Fetch recent rated games
     end
 
-    API->>API: Filter: skip already-analyzed games
+    API->>API: Filter: skip already-analyzed<br/>(or same-settings if reanalyze_all)
 
-    loop Each new game (parallel workers)
-        API->>W: Analyze game
-        W->>SF: depth-18 analysis per position
-        SF-->>W: eval scores
-        W-->>API: Positions with cp_loss > threshold
+    Note over API,SF: Phase 1 — Collection (1 SF, N-1 threads)
+
+    loop Each new game (sequential)
+        API->>OE: Query opening positions<br/>(stop at theory departure)
+        OE-->>API: Opening name + move popularity
+
+        loop Each position in game
+            alt ≤7 pieces
+                API->>TB: Tablebase probe
+                TB-->>API: WDL + all moves + DTM/DTZ
+            end
+            API->>SF: engine.analyse() (adaptive depth)
+            SF-->>API: Full eval (score, PV, depth, nodes, time...)
+        end
+
+        API->>API: Atomic write analysis_data.json
         API-->>PWA: SSE: analyze phase (X/Y, percent)
-        API->>API: Atomic write to training_data.json
     end
+
+    Note over API: Phase 2 — Derivation (no Stockfish)
+    API->>API: annotate_and_derive()<br/>Filter mistakes → training_data.json
 
     API-->>PWA: SSE: done (summary)
     PWA->>PWA: Reload training_data.json
@@ -91,12 +111,14 @@ sequenceDiagram
 
 ### Key details
 
-- **Incremental merge**: only new games are analyzed. Existing positions keep their SRS state.
+- **Settings modal**: before analysis starts, user configures threads, hash, depth/time limits, and number of games.
+- **Two-phase pipeline**: Phase 1 collects raw data (expensive), Phase 2 derives training data (cheap, re-runnable via `POST /api/train/derive`).
+- **Engine model**: one Stockfish with N-1 threads + 1GB hash (configurable), sequential game-by-game.
+- **Opening Explorer**: queries Lichess API position by position until theory departure (move not in database).
+- **Incremental**: only unanalyzed games are processed. `reanalyze_all` skips only same-settings games.
+- **Crash safety**: atomic write of `analysis_data.json` after each game. Resumable on interruption.
 - **Thresholds**: blunder ≥ 200cp, mistake ≥ 100cp, inaccuracy ≥ 50cp.
-- **Parallelism**: N-1 CPU cores (ProcessPoolExecutor).
-- **Crash safety**: atomic write after each game — if interrupted, partial results are saved.
-- **Interrupt**: user can click the interrupt button → `POST /api/jobs/{id}/cancel` → saves progress so far.
-- **Hardcoded defaults**: 20 games per source, depth 18, no UI to customize.
+- **Interrupt**: user can click interrupt → `POST /api/jobs/{id}/cancel` → saves progress so far.
 
 ---
 
@@ -172,7 +194,7 @@ flowchart LR
     end
 
     subgraph "config.json"
-        CFG["stockfish: {path, version}<br/>analysis: {depth, threshold}<br/>players: {lichess, chesscom}<br/>studies: {pgn → study_id}"]
+        CFG["stockfish: {path, version}<br/>analysis: {depth, threshold}<br/>analysis_engine: {threads, hash_mb, limits}<br/>players: {lichess, chesscom}<br/>studies: {pgn → study_id}"]
     end
 
     subgraph "PWA (app mode only)"
@@ -180,6 +202,9 @@ flowchart LR
         MODAL --> SAVE_BTN[Save]
         SAVE_BTN --> POST[POST /api/config]
         POST --> MERGE[Merge players + analysis<br/>Preserve stockfish + studies]
+        SHOW2[GET /api/analysis/settings] --> MODAL2[Analysis Settings modal]
+        MODAL2 --> SAVE2[POST /api/analysis/settings]
+        SAVE2 --> MERGE2[Update analysis_engine]
     end
 
     WRITE --> CFG

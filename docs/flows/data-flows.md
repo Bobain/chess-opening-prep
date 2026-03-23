@@ -15,15 +15,21 @@ flowchart LR
         CC[Chess.com API]
     end
 
-    subgraph Backend
+    subgraph "Phase 1 — Collection"
         IMP[Importer<br/>fetch games]
-        SF[Stockfish 18<br/>analyze positions]
-        TR[Trainer<br/>extract mistakes]
+        SF[Stockfish 18<br/>N-1 threads, 1GB hash]
+        TB[Lichess Tablebase<br/>≤7 pieces]
+        OE[Lichess Opening Explorer<br/>theory detection]
     end
 
     subgraph Storage
-        TD[training_data.json<br/>positions + game metadata]
+        AD[analysis_data.json<br/>all moves, max granularity]
+        TD[training_data.json<br/>filtered mistakes]
         LS[localStorage<br/>SRS state per position]
+    end
+
+    subgraph "Phase 2 — Derivation"
+        DER[annotate_and_derive<br/>filter + explain]
     end
 
     subgraph PWA
@@ -34,15 +40,51 @@ flowchart LR
     LI --> IMP
     CC --> IMP
     IMP --> SF
-    SF --> TR
-    TR --> TD
+    IMP --> TB
+    IMP --> OE
+    SF --> AD
+    TB --> AD
+    OE --> AD
+    AD --> DER
+    DER --> TD
     TD --> SEL
     LS --> SEL
     SEL --> QUIZ
     QUIZ --> LS
 ```
 
-### training_data.json structure
+### Two-layer data model
+
+| File | Content | Used by |
+|------|---------|---------|
+| `analysis_data.json` | All moves, all evals, per game (App only) | Phase 2 derivation |
+| `training_data.json` | Filtered mistakes (unchanged schema) | App + Demo |
+
+Phase 2 can be re-run cheaply without re-running Stockfish (`chess-self-coach train --derive`).
+
+### analysis_data.json structure (per game, per move)
+
+```
+{
+  version, player,
+  games: {
+    "<game_url>": {
+      headers, player_color, analyzed_at, analysis_duration_s, settings,
+      moves: [
+        { ply, fen_before, fen_after, move_san, move_uci, side,
+          eval_source, eval_before: {score_cp, is_mate, depth, seldepth, nodes, nps, time_ms, pv_san, ...},
+          eval_after: {...}, eval_after_best: {score_cp, is_mate, mate_in},
+          tablebase_before, tablebase_after,
+          opening_explorer: {opening: {eco, name}, moves: [{san, white, draws, black}]},
+          cp_loss, board: {piece_count, is_check, is_capture, ...},
+          clock: {player, opponent, time_spent} }
+      ]
+    }
+  }
+}
+```
+
+### training_data.json structure (unchanged)
 
 ```
 {

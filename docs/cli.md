@@ -15,11 +15,15 @@ chess-self-coach train [options]
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--prepare` | off | Analyze games and export `training_data.json` |
+| `--prepare` | off | Fetch games, run full analysis (SF + Opening Explorer + Tablebase), write `analysis_data.json` + `training_data.json` |
+| `--derive` | off | Re-derive `training_data.json` from `analysis_data.json` (no Stockfish needed, fast) |
 | `--serve` | off | Open the training PWA in the browser |
 | `--stats` | off | Show training progress statistics |
-| `--games N` | 20 | Maximum games to fetch per source |
-| `--depth N` | 18 | Stockfish analysis depth |
+| `--games N` | 10 | Maximum games to analyze |
+| `--depth N` | 18 | Stockfish analysis depth (default bracket for >12 pieces) |
+| `--threads N` | auto | Stockfish threads (default: CPU count - 1) |
+| `--hash N` | 1024 | Stockfish hash table size in MB |
+| `--reanalyze-all` | off | Re-analyze all games (skip only those with identical settings) |
 | `--engine PATH` | config.json | Override Stockfish binary path |
 | `--refresh-explanations` | off | [Dev] Regenerate explanations without re-running Stockfish |
 | `--fresh` | off | [Dev] Discard existing training data and start from scratch |
@@ -27,11 +31,17 @@ chess-self-coach train [options]
 ### Examples
 
 ```bash
-# Fetch games + Stockfish analysis
+# Fetch + analyze 10 games (default) with full pipeline
 chess-self-coach train --prepare
 
-# Limit to 5 games at depth 12
-chess-self-coach train --prepare --games 5 --depth 12
+# Analyze 5 games with custom engine settings
+chess-self-coach train --prepare --games 5 --threads 4 --hash 2048
+
+# Re-derive training data from existing analysis (no Stockfish, fast)
+chess-self-coach train --derive
+
+# Re-analyze all games with new settings
+chess-self-coach train --prepare --reanalyze-all --threads 8
 
 # Open the training interface
 chess-self-coach train --serve
@@ -39,6 +49,15 @@ chess-self-coach train --serve
 # Check your stats
 chess-self-coach train --stats
 ```
+
+### Two-phase pipeline
+
+`--prepare` runs two phases:
+
+1. **Phase 1 (collection)**: Stockfish eval + Lichess Tablebase + Lichess Opening Explorer for every move. Results stored in `analysis_data.json` (atomic write after each game, crash-safe).
+2. **Phase 2 (derivation)**: Filter player mistakes, generate explanations, write `training_data.json`.
+
+`--derive` runs Phase 2 only — useful to iterate on thresholds or explanations without re-running Stockfish.
 
 ## update
 
