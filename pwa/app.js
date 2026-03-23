@@ -2782,7 +2782,7 @@ async function init() {
     console.log(`[init] Loaded ${trainingData.positions.length} position(s)`);
   } catch (err) {
     const hint = appMode === 'app'
-      ? 'No training data yet. Use menu ☰ → Refresh Training to generate it.'
+      ? 'No training data yet. Use menu ☰ → Analyse latest games to generate it.'
       : 'Could not load training data.';
     document.getElementById('prompt').textContent = hint;
     console.error('[init] Training data load failed:', err);
