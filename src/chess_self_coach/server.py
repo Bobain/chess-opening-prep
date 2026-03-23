@@ -429,14 +429,153 @@ async def coaching_topic_detail(slug: str) -> TopicDetailResponse:
     return TopicDetailResponse(slug=slug, content=path.read_text())
 
 
+# --- Analysis settings endpoints ---
+
+
+class AnalysisSettingsResponse(BaseModel):
+    """Response body for GET /api/analysis/settings."""
+
+    threads: int
+    hash_mb: int
+    limits: dict
+
+
+class AnalysisStartRequest(BaseModel):
+    """Request body for POST /api/analysis/start."""
+
+    max_games: int = 10
+    reanalyze_all: bool = False
+
+
+@app.get("/api/analysis/settings")
+async def get_analysis_settings() -> AnalysisSettingsResponse:
+    """Return current analysis engine settings (with 'auto' resolved)."""
+    from chess_self_coach.analysis import AnalysisSettings
+    from chess_self_coach.config import load_config
+
+    config = load_config()
+    settings = AnalysisSettings.from_config(config)
+    d = settings.to_dict()
+    return AnalysisSettingsResponse(
+        threads=d["threads"],
+        hash_mb=d["hash_mb"],
+        limits=d["limits"],
+    )
+
+
+@app.post("/api/analysis/settings")
+async def update_analysis_settings(req: AnalysisSettingsResponse) -> AnalysisSettingsResponse:
+    """Save analysis engine settings to config.json."""
+    config_path = _project_root / "config.json"
+    if not config_path.exists():
+        raise HTTPException(status_code=404, detail="config.json not found")
+
+    with open(config_path) as f:
+        config = json.load(f)
+
+    config["analysis_engine"] = {
+        "threads": req.threads,
+        "hash_mb": req.hash_mb,
+        "limits": req.limits,
+    }
+
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+    return req
+
+
+@app.post("/api/analysis/start", status_code=202)
+async def analysis_start(req: AnalysisStartRequest) -> JobStartResponse:
+    """Start a background full game analysis job."""
+    global _current_job
+
+    with _job_lock:
+        if _current_job and _current_job["status"] == "running":
+            raise HTTPException(status_code=409, detail="A job is already running")
+
+        job_id = str(uuid.uuid4())[:8]
+        _current_job = {
+            "id": job_id,
+            "status": "running",
+            "queue": asyncio.Queue(),
+            "cancel": threading.Event(),
+            "params": {"max_games": req.max_games, "reanalyze_all": req.reanalyze_all},
+        }
+
+    loop = asyncio.get_event_loop()
+    thread = threading.Thread(target=_run_analysis_job, args=(job_id, loop), daemon=True)
+    thread.start()
+
+    return JobStartResponse(job_id=job_id)
+
+
+@app.post("/api/train/derive")
+async def train_derive():
+    """Re-derive training_data.json from analysis_data.json (no Stockfish)."""
+    from chess_self_coach.analysis import annotate_and_derive
+
+    try:
+        annotate_and_derive()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {"status": "ok", "message": "Training data derived successfully"}
+
+
 # --- Job runner ---
 
 _current_job: dict | None = None
 _job_lock = threading.Lock()
 
 
+def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
+    """Run analyze_games in a background thread.
+
+    Pushes progress events to the job's asyncio.Queue via the event loop.
+
+    Args:
+        job_id: ID of the current job.
+        loop: The main asyncio event loop (for call_soon_threadsafe).
+    """
+    global _current_job
+
+    from chess_self_coach.analysis import AnalysisInterrupted, analyze_games
+
+    queue = _current_job["queue"]
+    cancel = _current_job["cancel"]
+    params = _current_job.get("params", {})
+
+    def _push(item: dict | None) -> None:
+        try:
+            loop.call_soon_threadsafe(queue.put_nowait, item)
+        except RuntimeError:
+            pass
+
+    def on_progress(event: dict) -> None:
+        _push(event)
+
+    try:
+        analyze_games(
+            max_games=params.get("max_games", 10),
+            reanalyze_all=params.get("reanalyze_all", False),
+            on_progress=on_progress,
+            cancel=cancel,
+        )
+        _current_job["status"] = "done"
+    except AnalysisInterrupted as exc:
+        _push({"phase": "interrupted", "message": str(exc), "percent": 100})
+        _current_job["status"] = "interrupted"
+    except Exception as exc:
+        _push({"phase": "error", "message": str(exc), "percent": 100})
+        _current_job["status"] = "error"
+    finally:
+        _push(None)  # Signal end of stream
+
+
 def _run_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
-    """Run prepare_training_data in a background thread.
+    """Run prepare_training_data in a background thread (legacy).
 
     Pushes progress events to the job's asyncio.Queue via the event loop.
 
