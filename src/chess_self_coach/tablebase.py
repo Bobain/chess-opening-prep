@@ -111,6 +111,42 @@ def probe_position(fen: str) -> TablebaseResult | None:
     )
 
 
+def probe_position_full(fen: str) -> dict | None:
+    """Probe the Lichess tablebase API and return the complete response.
+
+    Unlike probe_position() which returns a simplified TablebaseResult,
+    this returns the raw API response including all legal moves with their
+    WDL/DTM/DTZ data — suitable for storing in analysis_data.json.
+
+    Args:
+        fen: FEN string of the position.
+
+    Returns:
+        Full API response dict (category, dtm, dtz, precise_dtz, dtw, dtc,
+        checkmate, stalemate, moves[]) or None if unavailable.
+    """
+    board = chess.Board(fen)
+    if len(board.piece_map()) > MAX_PIECES:
+        return None
+
+    try:
+        resp = requests.get(_API_URL, params={"fen": fen}, timeout=_TIMEOUT)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+    except (requests.RequestException, ValueError):
+        return None
+
+    category = data.get("category")
+    if not category or category not in _CATEGORY_TIERS:
+        return None
+
+    # Add computed tier for convenience
+    data["tier"] = _CATEGORY_TIERS[category]
+
+    return data
+
+
 def tablebase_cp_loss(
     before: TablebaseResult,
     after: TablebaseResult,
