@@ -2397,23 +2397,6 @@ function setupReviewBoard() {
 }
 
 /**
- * Derive approximate centipawn eval from opening explorer stats for the played move.
- * @param {Object} move - A move object from reviewGame.moves.
- * @returns {number} Approximate centipawn value (from White's perspective).
- */
-function bookEvalCp(move) {
-  const oe = move.opening_explorer;
-  if (!oe || !oe.moves) return 0;
-  const played = oe.moves.find(m => m.uci === move.move_uci);
-  if (!played) return 0;
-  const total = played.white + played.draws + played.black;
-  if (total === 0) return 0;
-  const winRate = (played.white + 0.5 * played.draws) / total;
-  if (winRate <= 0 || winRate >= 1) return winRate > 0.5 ? 200 : -200;
-  return Math.round(-400 * Math.log10(1 / winRate - 1));
-}
-
-/**
  * Update the eval bar for a given ply.
  * @param {number} ply - Current ply.
  */
@@ -2431,17 +2414,8 @@ function updateEvalBar(ply) {
   const evalData = move.eval_after;
 
   if (!evalData || evalData.score_cp == null) {
-    if (move.eval_source === 'opening_explorer') {
-      const cp = bookEvalCp(move);
-      const pct = 50 + 50 * (2 / (1 + Math.exp(-cp / 200)) - 1);
-      const clamped = Math.max(3, Math.min(97, pct));
-      fill.style.height = clamped + '%';
-      const pawns = cp / 100;
-      label.textContent = (pawns >= 0 ? '+' : '') + pawns.toFixed(1);
-    } else {
-      fill.style.height = '50%';
-      label.textContent = '—';
-    }
+    fill.style.height = '50%';
+    label.textContent = '—';
     return;
   }
 
@@ -2553,7 +2527,7 @@ function renderScoreChart() {
    */
   function getEval(move) {
     const ea = move.eval_after;
-    if (!ea || ea.score_cp == null) return bookEvalCp(move);
+    if (!ea || ea.score_cp == null) return 0;
     if (ea.is_mate && ea.mate_in != null) return ea.mate_in > 0 ? maxCp : -maxCp;
     return Math.max(-maxCp, Math.min(maxCp, ea.score_cp));
   }
@@ -2671,7 +2645,7 @@ function renderScoreChartBase(ctx, w, h) {
 
   function getEval(move) {
     const ea = move.eval_after;
-    if (!ea || ea.score_cp == null) return bookEvalCp(move);
+    if (!ea || ea.score_cp == null) return 0;
     if (ea.is_mate && ea.mate_in != null) return ea.mate_in > 0 ? maxCp : -maxCp;
     return Math.max(-maxCp, Math.min(maxCp, ea.score_cp));
   }
