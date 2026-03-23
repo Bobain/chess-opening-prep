@@ -85,7 +85,7 @@ sequenceDiagram
 - **Mode toggle**: segmented control `[Training | Analysis]` in the header.
 - **Game selector**: cards showing opponent, date, result (W/D/L badge), opening name, move count.
 - **Move classifications**: win probability model — `winProb(cp) = 1/(1+10^(-cp/400))`, thresholds: Best ≤0, Excellent ≤0.02, Good ≤0.05, Inaccuracy ≤0.10, Mistake ≤0.20, Blunder >0.20.
-- **Eval bar**: sigmoid mapping, 50% at equal, smooth CSS transition. Shows "Book" for opening moves, "M3" for mate.
+- **Eval bar**: sigmoid mapping, 50% at equal, smooth CSS transition. For book moves (no Stockfish eval), derives approximate cp from opening explorer win/draw/loss stats. Shows "M3" for mate.
 - **Score chart**: Canvas, click to jump to any move, colored dots at mistakes/blunders.
 - **Board arrows**: `reviewCg.set({drawable: {autoShapes: [...]}})` — green for best move, red for played mistake.
 - **Keyboard**: ArrowLeft/Right, Home/End. Active only in analysis view.

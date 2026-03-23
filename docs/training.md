@@ -107,7 +107,7 @@ GAME SELECTOR                          GAME REVIEW
 
 - **Game selector**: list of analyzed games with W/D/L result, opponent, date, opening
 - **Move list**: two-column grid with classification dots (colored by category)
-- **Eval bar**: sigmoid-mapped vertical bar showing white/black advantage
+- **Eval bar**: sigmoid-mapped vertical bar showing white/black advantage (book moves use explorer win-rate stats)
 - **Score chart**: interactive Canvas eval curve, click to jump to any move
 - **Board arrows**: green = best move, red = played mistake
 - **PV line**: engine best continuation with depth
