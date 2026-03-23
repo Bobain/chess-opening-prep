@@ -67,7 +67,7 @@ The CLI has many separate commands (`import → analyze → push → pull → va
 but the PWA simplifies this into a single action:
 
 - **"Analyse latest games"** button in the hamburger menu
-- Runs `train --prepare` in the background via `POST /api/train/prepare`
+- Runs the full analysis pipeline in the background via `POST /api/analysis/start`
 - Progress displayed via **SSE** (Server-Sent Events) in a modal with a step checklist (init → fetch → analyze → finalize)
 - On completion, reloads `training_data.json` and refreshes the PWA session
 
