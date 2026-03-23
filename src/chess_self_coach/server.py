@@ -447,6 +447,12 @@ class AnalysisStartRequest(BaseModel):
     reanalyze_all: bool = False
 
 
+class JobStartResponse(BaseModel):
+    """Response body for job start endpoints."""
+
+    job_id: str
+
+
 @app.get("/api/analysis/settings")
 async def get_analysis_settings() -> AnalysisSettingsResponse:
     """Return current analysis engine settings (with 'auto' resolved)."""
@@ -572,76 +578,6 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
         _current_job["status"] = "error"
     finally:
         _push(None)  # Signal end of stream
-
-
-def _run_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
-    """Run prepare_training_data in a background thread (legacy).
-
-    Pushes progress events to the job's asyncio.Queue via the event loop.
-
-    Args:
-        job_id: ID of the current job.
-        loop: The main asyncio event loop (for call_soon_threadsafe).
-    """
-    global _current_job
-
-    from chess_self_coach.trainer import TrainingInterrupted, prepare_training_data
-
-    queue = _current_job["queue"]
-    cancel = _current_job["cancel"]
-
-    def _push(item: dict | None) -> None:
-        try:
-            loop.call_soon_threadsafe(queue.put_nowait, item)
-        except RuntimeError:
-            pass  # Event loop closed (server shutdown / test teardown)
-
-    def on_progress(event: dict) -> None:
-        _push(event)
-
-    try:
-        prepare_training_data(on_progress=on_progress, cancel=cancel)
-        _current_job["status"] = "done"
-    except TrainingInterrupted as exc:
-        _push({"phase": "interrupted", "message": str(exc), "percent": 100})
-        _current_job["status"] = "interrupted"
-    except (Exception, SystemExit) as exc:
-        error_event = {"phase": "error", "message": str(exc), "percent": 0}
-        _push(error_event)
-        _current_job["status"] = "error"
-    finally:
-        # Sentinel to signal end of stream
-        _push(None)
-
-
-class JobStartResponse(BaseModel):
-    """Response body for POST /api/train/prepare."""
-
-    job_id: str
-
-
-@app.post("/api/train/prepare", status_code=202)
-async def train_prepare() -> JobStartResponse:
-    """Start a background training preparation job."""
-    global _current_job
-
-    with _job_lock:
-        if _current_job and _current_job["status"] == "running":
-            raise HTTPException(status_code=409, detail="A job is already running")
-
-        job_id = str(uuid.uuid4())[:8]
-        _current_job = {
-            "id": job_id,
-            "status": "running",
-            "queue": asyncio.Queue(),
-            "cancel": threading.Event(),
-        }
-
-    loop = asyncio.get_event_loop()
-    thread = threading.Thread(target=_run_job, args=(job_id, loop), daemon=True)
-    thread.start()
-
-    return JobStartResponse(job_id=job_id)
 
 
 @app.get("/api/jobs/{job_id}/events")

@@ -311,7 +311,7 @@ def test_bestmove_crash_recovery():
         server._sf_path = original_sf_path
 
 
-# --- /api/train/prepare ---
+# --- /api/analysis/start ---
 
 
 def _reset_job():
@@ -319,17 +319,17 @@ def _reset_job():
     server._current_job = None
 
 
-def test_train_prepare_starts_job():
-    """POST /api/train/prepare returns 202 + job_id."""
+def test_analysis_start_returns_202():
+    """POST /api/analysis/start returns 202 + job_id."""
     _reset_job()
 
-    def fake_prepare(**kwargs):
+    def fake_analyze(**kwargs):
         on_progress = kwargs.get("on_progress")
         if on_progress:
             on_progress({"phase": "done", "message": "Done!", "percent": 100})
 
-    with patch("chess_self_coach.trainer.prepare_training_data", fake_prepare):
-        resp = client.post("/api/train/prepare")
+    with patch("chess_self_coach.analysis.analyze_games", fake_analyze):
+        resp = client.post("/api/analysis/start", json={"max_games": 5})
 
     assert resp.status_code == 202
     data = resp.json()
@@ -341,7 +341,7 @@ def test_train_prepare_starts_job():
     _reset_job()
 
 
-def test_train_prepare_rejects_concurrent():
+def test_analysis_start_rejects_concurrent():
     """Second POST returns 409 while a job is running."""
     _reset_job()
     import asyncio
@@ -354,7 +354,7 @@ def test_train_prepare_rejects_concurrent():
         "cancel": threading.Event(),
     }
 
-    resp = client.post("/api/train/prepare")
+    resp = client.post("/api/analysis/start", json={"max_games": 5})
     assert resp.status_code == 409
 
     _reset_job()
