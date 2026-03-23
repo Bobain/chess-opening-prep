@@ -96,7 +96,7 @@ sequenceDiagram
 - **Parallelism**: N-1 CPU cores (ProcessPoolExecutor).
 - **Crash safety**: atomic write after each game — if interrupted, partial results are saved.
 - **Interrupt**: user can click the interrupt button → `POST /api/jobs/{id}/cancel` → saves progress so far.
-- **Hardcoded defaults** (v0.3.8): 20 games per source, depth 18, no UI to customize.
+- **Hardcoded defaults**: 20 games per source, depth 18, no UI to customize.
 
 ---
 

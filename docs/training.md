@@ -1,4 +1,4 @@
-# Training Mode: Find the Better Move
+# Training Mode: Find a Better Move
 
 Review your own games, find your mistakes, and drill the correct moves with spaced repetition.
 
@@ -13,7 +13,7 @@ PREPARATION (your PC, once)              DRILL (browser, daily)
 │ 1. Fetches your games       │         │ 2. "Find a better move"      │
 │    (Lichess + chess.com)    │         │ 3. You drag a piece          │
 │ 2. Stockfish analyzes each  │         │ 4. Correct → explanation     │
-│    position (depth 18)      │         │ 5. Wrong → 3 attempts max    │
+│    position (depth 18)      │         │ 5. Wrong → unlimited retries  │
 │ 3. Finds blunders/mistakes  │         │ 6. Spaced repetition (SM-2)  │
 │ 4. Generates explanations   │         │ 7. Progress in localStorage  │
 │ 5. Exports training_data.json         │                              │
@@ -61,7 +61,7 @@ The scheduler uses the SM-2 algorithm (same as Anki):
 - **New position**: shown immediately
 - **Correct**: interval increases (1d → 3d → 7d → 18d → ...)
 - **Wrong**: interval resets to 1 day, ease factor decreases
-- **Mastered**: interval > 30 days, position is retired from active review
+- **Mastered**: interval ≥ 7 days, position is retired from active review
 
 ## Data format
 

@@ -986,11 +986,6 @@ async function showModalWithData(modalId, contentId, apiUrl, buildFn, fetchOpts)
 // --- Stats modal ---
 
 /**
- * Fetch training stats from the API and display in a modal.
- * Only available in [App] mode.
- * @async
- */
-/**
  * Show the Raw Data Summary modal.
  * Computed entirely client-side from trainingData + srsState.
  */
