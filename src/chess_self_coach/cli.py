@@ -140,6 +140,17 @@ def main(argv: list[str] | None = None) -> None:
         help="Show sync status of all repertoire files",
     )
 
+    # --- syzygy ---
+    p_syzygy = subparsers.add_parser(
+        "syzygy",
+        help="Manage Syzygy endgame tablebases",
+    )
+    p_syzygy.add_argument(
+        "action",
+        choices=["download", "status"],
+        help="download: fetch 3-5 piece tables (~1 GB). status: show installed tables.",
+    )
+
     # --- train ---
     p_train = subparsers.add_parser(
         "train",
@@ -323,6 +334,30 @@ def main(argv: list[str] | None = None) -> None:
         from chess_self_coach.status import show_status
 
         show_status()
+
+    elif args.command == "syzygy":
+        from chess_self_coach.syzygy import download_syzygy, syzygy_status
+
+        if args.action == "download":
+            try:
+                path = download_syzygy()
+                print(f"  ✓ Syzygy tables downloaded to {path}")
+            except (FileNotFoundError, Exception) as e:
+                print(f"  ❌ {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.action == "status":
+            from chess_self_coach.config import load_config
+
+            config = load_config()
+            status = syzygy_status(config)
+            if status["found"]:
+                print(f"  Path: {status['path']}")
+                print(f"  WDL files: {status['wdl_count']}")
+                print(f"  DTZ files: {status['dtz_count']}")
+                print(f"  Total size: {status['total_size_mb']} MB")
+            else:
+                print("  No Syzygy tables found.")
+                print("  Download with: chess-self-coach syzygy download")
 
     elif args.command == "train":
         if args.derive:

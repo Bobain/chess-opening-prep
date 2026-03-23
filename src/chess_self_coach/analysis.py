@@ -913,6 +913,14 @@ def analyze_games(
     engine = chess.engine.SimpleEngine.popen_uci(str(sf_path))
     engine.configure({"Threads": threads, "Hash": hash_mb})
 
+    # Syzygy endgame tablebases
+    from chess_self_coach.syzygy import find_syzygy
+
+    syzygy_path = find_syzygy(config)
+    if syzygy_path:
+        engine.configure({"SyzygyPath": str(syzygy_path)})
+        _log.info("Syzygy tablebases: %s", syzygy_path)
+
     try:
         wall_start = _time.time()
         done_count = 0

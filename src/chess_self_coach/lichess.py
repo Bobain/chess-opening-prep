@@ -273,6 +273,22 @@ def _setup_interactive() -> None:
     version = check_stockfish_version(sf_path, config.get("stockfish", {}).get("expected_version"))
     print(f"  Found {version} at {sf_path}")
 
+    # Step 1b: Syzygy endgame tablebases
+    from chess_self_coach.syzygy import download_syzygy, find_syzygy
+
+    syzygy_path = find_syzygy(config)
+    if syzygy_path:
+        print(f"  ✓ Syzygy tables found at {syzygy_path}")
+    else:
+        print("  Downloading Syzygy endgame tables (3-5 pieces, ~1 GB)...")
+        try:
+            syzygy_path = download_syzygy()
+            config.setdefault("syzygy", {})["path"] = str(syzygy_path)
+            print(f"  ✓ Syzygy tables installed at {syzygy_path}")
+        except (FileNotFoundError, Exception) as exc:
+            print(f"  ⚠ Syzygy download failed: {exc}")
+            print("    Analysis will work without them (using Lichess API fallback).")
+
     # Step 2: Game platforms (at least one required)
     print("\nStep 2: Game platforms (at least one required)")
     players = config.get("players", {})
