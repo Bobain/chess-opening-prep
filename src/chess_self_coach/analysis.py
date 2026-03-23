@@ -917,9 +917,14 @@ def analyze_games(
     from chess_self_coach.syzygy import find_syzygy
 
     syzygy_path = find_syzygy(config)
-    if syzygy_path:
-        engine.configure({"SyzygyPath": str(syzygy_path)})
-        _log.info("Syzygy tablebases: %s", syzygy_path)
+    if not syzygy_path:
+        engine.quit()
+        raise RuntimeError(
+            "Syzygy endgame tablebases (3-5 pieces) not found.\n"
+            "  Install with: chess-self-coach syzygy download"
+        )
+    engine.configure({"SyzygyPath": str(syzygy_path)})
+    _log.info("Syzygy tablebases: %s", syzygy_path)
 
     try:
         wall_start = _time.time()
