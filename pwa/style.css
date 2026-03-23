@@ -908,6 +908,7 @@ cg-container {
   flex: 1;
   aspect-ratio: 1;
   position: relative;
+  margin-left: 1.5rem;
 }
 
 #review-board {
