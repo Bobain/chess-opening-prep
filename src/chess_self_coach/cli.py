@@ -161,16 +161,40 @@ def main(argv: list[str] | None = None) -> None:
         help="Show training progress statistics",
     )
     p_train.add_argument(
+        "--derive",
+        action="store_true",
+        help="Re-derive training_data.json from analysis_data.json (no Stockfish needed)",
+    )
+    p_train.add_argument(
         "--games",
         type=int,
-        default=20,
-        help="Maximum games to fetch per source (default: 20)",
+        default=10,
+        help="Maximum games to analyze (default: 10)",
     )
     p_train.add_argument(
         "--depth",
         type=int,
         default=18,
         help="Stockfish analysis depth (default: 18)",
+    )
+    p_train.add_argument(
+        "--threads",
+        type=int,
+        default=None,
+        help="Stockfish threads (default: auto = CPU count - 1)",
+    )
+    p_train.add_argument(
+        "--hash",
+        type=int,
+        default=None,
+        dest="hash_mb",
+        help="Stockfish hash table size in MB (default: 1024)",
+    )
+    p_train.add_argument(
+        "--reanalyze-all",
+        action="store_true",
+        dest="reanalyze_all",
+        help="Re-analyze all games (skip only those with identical settings)",
     )
     p_train.add_argument(
         "--engine",
@@ -301,22 +325,37 @@ def main(argv: list[str] | None = None) -> None:
         show_status()
 
     elif args.command == "train":
-        from chess_self_coach.trainer import (
-            prepare_training_data,
-            print_stats,
-        )
+        if args.derive:
+            from chess_self_coach.analysis import annotate_and_derive
 
-        if args.refresh_explanations:
+            try:
+                annotate_and_derive()
+            except (FileNotFoundError, RuntimeError) as e:
+                print(f"  {e}", file=sys.stderr)
+                sys.exit(1)
+        elif args.refresh_explanations:
             from chess_self_coach.trainer import refresh_explanations
 
             refresh_explanations()
         elif args.prepare:
+            from chess_self_coach.analysis import AnalysisSettings, analyze_games
+
+            # Build settings from config, with CLI overrides
+            from chess_self_coach.config import load_config
+
+            config = load_config()
+            settings = AnalysisSettings.from_config(config)
+            if args.threads is not None:
+                settings.threads = args.threads
+            if args.hash_mb is not None:
+                settings.hash_mb = args.hash_mb
+
             try:
-                prepare_training_data(
+                analyze_games(
                     max_games=args.games,
-                    depth=args.depth,
+                    reanalyze_all=args.reanalyze_all,
+                    settings=settings,
                     engine_path=args.engine,
-                    fresh=args.fresh,
                 )
             except (FileNotFoundError, RuntimeError) as e:
                 print(f"  {e}", file=sys.stderr)
@@ -325,9 +364,11 @@ def main(argv: list[str] | None = None) -> None:
             print("  Tip: you can now just run `chess-self-coach` directly.\n")
             _launch_server()
         elif args.stats:
+            from chess_self_coach.trainer import print_stats
+
             print_stats()
         else:
-            print("Usage: chess-self-coach train [--prepare|--serve|--stats]")
+            print("Usage: chess-self-coach train [--prepare|--derive|--serve|--stats]")
             print("Run 'chess-self-coach train -h' for details.")
 
 
