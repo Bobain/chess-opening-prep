@@ -91,10 +91,10 @@ def test_cancel_interrupts_analysis(mock_popen, mock_tb):
 
     original_collect = None
 
-    def tracking_collect(game, engine, player_color, settings, lichess_token=None):
+    def tracking_collect(game, engine, player_color, settings, lichess_token=None, game_id=""):
         games_done.append(1)
         cancel.set()  # Cancel after first game
-        return original_collect(game, engine, player_color, settings, lichess_token)
+        return original_collect(game, engine, player_color, settings, lichess_token, game_id=game_id)
 
     # We need the real collect_game_data for the mock to work
     from chess_self_coach.analysis import collect_game_data as real_collect
@@ -207,7 +207,7 @@ def test_error_in_game_continues(mock_popen, mock_tb):
     def mock_save(data, path=None):
         saved_data.update(data)
 
-    def mock_collect(game, engine, player_color, settings, lichess_token=None):
+    def mock_collect(game, engine, player_color, settings, lichess_token=None, game_id=""):
         call_count["n"] += 1
         if call_count["n"] == 1:
             raise RuntimeError("Engine crashed")
