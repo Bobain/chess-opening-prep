@@ -14,7 +14,7 @@ ENDGAME_PIECES_MAX = 7
 MIDDLEGAME_PIECES_MAX = 12
 
 # --- Analysis time/depth limits per bracket ---
-ANALYSIS_TIME_LIMIT = 10.0  # seconds, uniform cap for all brackets
+ANALYSIS_TIME_LIMIT = 5.0  # seconds, uniform cap for all brackets
 
 ANALYSIS_LIMITS: dict[str, dict[str, float | int]] = {
     "kings_pawns_le7": {"time": ANALYSIS_TIME_LIMIT, "depth": 60},

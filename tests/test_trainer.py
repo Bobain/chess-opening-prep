@@ -135,7 +135,7 @@ def test_analysis_limit_kings_and_pawns():
     """King+pawns endgame (<=7 pieces) gets maximum time."""
     board = chess.Board("8/4k3/8/8/8/3K4/4P3/8 w - - 0 1")  # K+P vs K
     limit = _analysis_limit(board, 18)
-    assert limit.time == 10.0
+    assert limit.time == 5.0
     assert limit.depth == 60
 
 
@@ -143,7 +143,7 @@ def test_analysis_limit_pure_endgame():
     """Endgame with pieces (<=7) gets high time."""
     board = chess.Board("8/4k3/8/8/8/3K4/4R3/8 w - - 0 1")  # K+R vs K
     limit = _analysis_limit(board, 18)
-    assert limit.time == 10.0
+    assert limit.time == 5.0
     assert limit.depth == 50
 
 
@@ -154,7 +154,7 @@ def test_analysis_limit_late_middlegame():
     assert len(board.piece_map()) <= 12
     assert len(board.piece_map()) > 7
     limit = _analysis_limit(board, 18)
-    assert limit.time == 10.0
+    assert limit.time == 5.0
     assert limit.depth == 40
 
 
@@ -162,7 +162,7 @@ def test_analysis_limit_opening():
     """Many pieces (>12) uses default depth with time cap."""
     board = chess.Board()  # Starting position, 32 pieces
     limit = _analysis_limit(board, 18)
-    assert limit.time == 10.0
+    assert limit.time == 5.0
     assert limit.depth == 18
 
 

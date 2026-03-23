@@ -13,7 +13,6 @@ from chess_self_coach.analysis import (
     AnalysisSettings,
     _analysis_limit_from_settings,
     _extract_eval,
-    _extract_eval_score_only,
     _score_to_cp,
     _tb_to_eval,
     collect_game_data,
@@ -132,18 +131,6 @@ def test_extract_eval_no_score():
     assert result["pv_san"] == []
 
 
-# --- _extract_eval_score_only ---
-
-
-def test_extract_eval_score_only():
-    """Score-only extraction for eval_after_best."""
-    info = {"score": chess.engine.PovScore(chess.engine.Cp(50), chess.WHITE)}
-    result = _extract_eval_score_only(info)
-    assert result["score_cp"] == 50
-    assert not result["is_mate"]
-    assert "depth" not in result  # Score-only: no engine-specific fields
-
-
 # --- _tb_to_eval ---
 
 
@@ -219,7 +206,7 @@ def test_collect_game_data_field_presence(mock_tb: MagicMock):
 
     required_fields = [
         "ply", "fen_before", "fen_after", "move_san", "move_uci", "side",
-        "eval_source", "eval_before", "eval_after", "eval_after_best",
+        "eval_source", "eval_before", "eval_after",
         "tablebase_before", "tablebase_after", "opening_explorer",
         "cp_loss", "board", "clock",
     ]

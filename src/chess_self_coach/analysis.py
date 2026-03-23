@@ -27,6 +27,7 @@ from chess_self_coach.config import _find_project_root
 from chess_self_coach.cloud_eval import query_cloud_eval
 from chess_self_coach.constants import (
     ANALYSIS_LIMITS,
+    ANALYSIS_TIME_LIMIT,
     DOMINATED_POSITION_CP,
     ENDGAME_PIECES_MAX,
     INACCURACY_THRESHOLD,
@@ -204,8 +205,8 @@ def _analysis_limit_from_settings(
     kwargs: dict[str, float | int] = {}
     if "depth" in lim:
         kwargs["depth"] = int(lim["depth"])
-    if "time" in lim:
-        kwargs["time"] = float(lim["time"])
+    # Always enforce a time cap — use config value or fall back to ANALYSIS_TIME_LIMIT
+    kwargs["time"] = float(lim.get("time", ANALYSIS_TIME_LIMIT))
     return chess.engine.Limit(**kwargs) if kwargs else chess.engine.Limit(depth=18)
 
 
@@ -288,21 +289,6 @@ def _extract_eval(info: dict, board: chess.Board) -> dict:
         "best_move_uci": best_uci,
     }
 
-
-def _extract_eval_score_only(info: dict) -> dict:
-    """Extract only the score from a Stockfish info dict (for eval_after_best).
-
-    Args:
-        info: Result from engine.analyse().
-
-    Returns:
-        Dict with score_cp, is_mate, mate_in only.
-    """
-    score = info.get("score")
-    if score is None:
-        return {"score_cp": None, "is_mate": False, "mate_in": None}
-    score_cp, is_mate, mate_in = _score_to_cp(score)
-    return {"score_cp": score_cp, "is_mate": is_mate, "mate_in": mate_in}
 
 
 def _tb_to_eval(tb_data: dict, board_turn: chess.Color) -> dict:
@@ -532,8 +518,6 @@ def collect_game_data(
 
             cached_eval = eval_after
             cached_tb = None
-            eval_after_best = None
-            eval_after_best_ms = None
             cp_loss = 0
             tb_before_stored = None
             tb_after_stored = None
@@ -587,7 +571,7 @@ def collect_game_data(
                 _ea_src = "stockfish"
             eval_after_ms = (_time.time() - t0) * 1000
 
-            # --- cp_loss (computed before eval_after_best to skip it when low) ---
+            # --- cp_loss ---
             cp_loss = 0
             before_cp = eval_before.get("score_cp")
             after_cp = eval_after.get("score_cp")
@@ -597,51 +581,12 @@ def collect_game_data(
                 else:
                     cp_loss = max(0, after_cp - before_cp)
 
-            # --- Eval after best move (only if cp_loss >= INACCURACY_THRESHOLD and best differs) ---
-            t0 = _time.time()
-            eval_after_best: dict | None = None
-            _eab_src: str | None = None
-            best_uci = eval_before.get("best_move_uci")
-            if cp_loss < INACCURACY_THRESHOLD:
-                _eab_src = None  # skip: not needed for training data
-            elif best_uci and best_uci != actual_move.uci():
-                best_move_obj = chess.Move.from_uci(best_uci)
-                board_after_best = board.copy()
-                board_after_best.push(best_move_obj)
-                pc_ab = len(board_after_best.piece_map())
-                tb_ab = probe_position_full(board_after_best.fen()) if pc_ab <= MAX_PIECES else None
-                if tb_ab:
-                    eval_after_best = {
-                        "score_cp": _tb_to_eval(tb_ab, board_after_best.turn)["score_cp"],
-                        "is_mate": _tb_to_eval(tb_ab, board_after_best.turn)["is_mate"],
-                        "mate_in": _tb_to_eval(tb_ab, board_after_best.turn)["mate_in"],
-                    }
-                    _eab_src = "tablebase"
-                else:
-                    info_ab = engine.analyse(
-                        board_after_best,
-                        _analysis_limit_from_settings(board_after_best, limits),
-                        game=game_id,
-                    )
-                    eval_after_best = _extract_eval_score_only(info_ab)
-                    _eab_src = "stockfish"
-            elif best_uci and best_uci == actual_move.uci():
-                # Best move == actual move: eval_after_best = eval_after
-                eval_after_best = {
-                    "score_cp": eval_after["score_cp"],
-                    "is_mate": eval_after["is_mate"],
-                    "mate_in": eval_after.get("mate_in"),
-                }
-                _eab_src = "=actual"
-            eval_after_best_ms = (_time.time() - t0) * 1000 if _eab_src else None
-
             _log.info(
-                "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d%s",
+                "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d",
                 ply + 1, board.san(actual_move), eval_source,
                 _eb_src, eval_before_ms, eval_before.get("score_cp"),
                 _ea_src, eval_after_ms, eval_after.get("score_cp"),
                 cp_loss,
-                f" best={_eab_src}({eval_after_best_ms:.0f}ms)" if _eab_src and eval_after_best_ms is not None else "",
             )
 
             # --- Tablebase: store full responses ---
@@ -659,7 +604,6 @@ def collect_game_data(
             "eval_source": eval_source,
             "eval_before": eval_before,
             "eval_after": eval_after,
-            "eval_after_best": eval_after_best,
             "tablebase_before": tb_before_stored,
             "tablebase_after": tb_after_stored,
             "opening_explorer": explorer_data,
@@ -682,7 +626,6 @@ def collect_game_data(
             "timing_ms": {
                 "eval_before": round(eval_before_ms, 1),
                 "eval_after": round(eval_after_ms, 1),
-                "eval_after_best": round(eval_after_best_ms, 1) if eval_after_best_ms is not None else None,
             },
         }
         moves_data.append(move_dict)
@@ -967,7 +910,6 @@ def analyze_games(
                 _ot_ms = sum(
                     m["timing_ms"]["eval_before"]
                     + m["timing_ms"]["eval_after"]
-                    + (m["timing_ms"]["eval_after_best"] or 0)
                     for m in _other
                 )
                 _src_counts: dict[str, int] = {}
@@ -1119,11 +1061,9 @@ def annotate_and_derive(
             # Extract scores
             eval_before = move_data.get("eval_before", {})
             eval_after = move_data.get("eval_after", {})
-            eval_after_best = move_data.get("eval_after_best", {})
 
             score_before_cp = eval_before.get("score_cp")
             score_after_cp = eval_after.get("score_cp")
-            score_after_best_cp = eval_after_best.get("score_cp") if eval_after_best else None
 
             # Pedagogical filter: skip already-lost or already-won
             if score_before_cp is not None and score_after_cp is not None:
@@ -1176,7 +1116,7 @@ def annotate_and_derive(
                 "context": context,
                 "score_before": _format_score_cp(score_before_cp),
                 "score_after": _format_score_cp(score_after_cp),
-                "score_after_best": _format_score_cp(score_after_best_cp),
+                "score_after_best": _format_score_cp(score_before_cp),
                 "cp_loss": cp_loss,
                 "category": category,
                 "explanation": explanation,
