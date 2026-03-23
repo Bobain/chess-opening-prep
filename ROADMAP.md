@@ -79,9 +79,39 @@ Then POSTs to `POST /api/analysis/start` which:
 4. Phase 2: `annotate_and_derive()` filters mistakes, generates explanations, writes `training_data.json`
 
 **Next priority:**
+- [>] 3d. Legacy cleanup (below) — clean before testing the new pipeline
 - [ ] import/analyze/push/pull → individual PWA buttons (needs own design phase)
 
-### 3c. Interrupt resilience & data recovery
+### 3d. Legacy cleanup — old parallel analysis pipeline
+The new two-phase pipeline (`analysis.py`) replaces the old parallel pipeline in `trainer.py`/`server.py`.
+**Must be done before real-world testing** to avoid confusion between old and new code paths.
+
+#### Dead code to remove in trainer.py
+- [ ] `prepare_training_data()` — replaced by `analyze_games()` + `annotate_and_derive()`
+- [ ] `_analyze_game_worker()` — replaced by sequential `collect_game_data()`
+- [ ] `ProcessPoolExecutor` import + `worker_count()` usage — replaced by single multi-threaded SF
+- [ ] `extract_mistakes()` — replaced by `collect_game_data()` (Phase 1) + `annotate_and_derive()` (Phase 2)
+- [ ] `_determine_player_color()` — duplicated in `analysis.py`
+- [ ] `_load_existing_training_data()` — no longer needed (analysis_data.json is source of truth)
+- [ ] `_build_output()` — inlined in `annotate_and_derive()`
+- [ ] `TrainingInterrupted` exception — replaced by `AnalysisInterrupted`
+
+#### Dead code to remove in server.py
+- [ ] `_run_job()` — replaced by `_run_analysis_job()`
+- [ ] `POST /api/train/prepare` — replaced by `POST /api/analysis/start`
+
+#### Tests to migrate
+- [ ] `test_resume.py` — update to test `analyze_games()` resumption instead of `prepare_training_data()`
+- [ ] `test_server.py` — update train/prepare tests to use `/api/analysis/start`
+
+#### Functions to KEEP in trainer.py (used by Phase 2 derivation)
+- `generate_explanation()`, `_generate_context()`, `_time_pressure_context()`
+- `compute_cp_loss()`, `_classify_mistake()`, `_format_score_cp()`, `_format_cp_loss_human()`
+- `_detect_game_phase()`, `_describe_advantage()`, `_make_position_id()`
+- `print_stats()`, `get_stats_data()`, `refresh_explanations()`
+- Threshold constants: `BLUNDER_THRESHOLD`, `MISTAKE_THRESHOLD`, `INACCURACY_THRESHOLD`
+
+### 3e. Interrupt resilience & data recovery
 - [x] Interrupt button + incremental atomic writes (crash-safe pipeline)
 - [ ] Legacy data migration: load training_data.json from older versions
       (different fields, missing SRS, etc.) — reuse what can be reused
@@ -136,9 +166,11 @@ Section 2 (Menu + Mode detection) ← DONE
      │         ▼ (pattern established)
      │    Section 3b (SSE + full analysis pipeline) ← DONE
      │         │
-     │         ├──► Section 6 (Legacy cleanup) ← when stable
      │         ▼
-     │    Section 3c (Interrupt resilience + data recovery)
+     │    Section 3d (Legacy cleanup) ← NOW
+     │         │
+     │         ▼
+     │    Section 3e (Interrupt resilience + data recovery)
      │
      ├──► Section 5a (Settings UI) ← DONE
      │
@@ -155,38 +187,6 @@ Section 2 (Menu + Mode detection) ← DONE
      └──► Section 5b (Config API) ← low priority, parallel with 4a-4c
 ```
 
-## 6. Legacy cleanup — old parallel analysis pipeline
-
-The new two-phase analysis pipeline (`analysis.py`) replaces the old parallel pipeline in `trainer.py`.
-The old code is kept temporarily for backward compatibility (existing tests, legacy API endpoint).
-**Clean up when**: all tests are migrated and the old API endpoint is no longer needed.
-
-### Dead code to remove in trainer.py
-- [ ] `prepare_training_data()` — replaced by `analyze_games()` + `annotate_and_derive()`
-- [ ] `_analyze_game_worker()` — replaced by sequential `collect_game_data()`
-- [ ] `ProcessPoolExecutor` import + `worker_count()` usage — replaced by single multi-threaded SF
-- [ ] `extract_mistakes()` — replaced by `collect_game_data()` (Phase 1) + `annotate_and_derive()` (Phase 2)
-- [ ] `_determine_player_color()` — duplicated in `analysis.py`
-- [ ] `_load_existing_training_data()` — no longer needed (analysis_data.json is source of truth)
-- [ ] `_build_output()` — inlined in `annotate_and_derive()`
-- [ ] `TrainingInterrupted` exception — replaced by `AnalysisInterrupted`
-
-### Dead code to remove in server.py
-- [ ] `_run_job()` — replaced by `_run_analysis_job()`
-- [ ] `POST /api/train/prepare` — replaced by `POST /api/analysis/start`
-
-### Tests to migrate
-- [ ] `test_resume.py` — update to test `analyze_games()` resumption instead of `prepare_training_data()`
-- [ ] `test_server.py` — update train/prepare tests to use `/api/analysis/start`
-
-### Functions to KEEP in trainer.py (used by Phase 2 derivation)
-- `generate_explanation()`, `_generate_context()`, `_time_pressure_context()`
-- `compute_cp_loss()`, `_classify_mistake()`, `_format_score_cp()`, `_format_cp_loss_human()`
-- `_detect_game_phase()`, `_describe_advantage()`, `_make_position_id()`
-- `print_stats()`, `get_stats_data()`, `refresh_explanations()`
-- Threshold constants: `BLUNDER_THRESHOLD`, `MISTAKE_THRESHOLD`, `INACCURACY_THRESHOLD`
-
----
 
 ## Dormant code (Coming soon features)
 
