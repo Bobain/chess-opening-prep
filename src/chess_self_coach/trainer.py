@@ -39,12 +39,12 @@ def _analysis_limit(board: chess.Board, default_depth: int) -> chess.engine.Limi
         p.piece_type in (chess.KING, chess.PAWN) for p in board.piece_map().values()
     )
     if kings_and_pawns_only and piece_count <= 7:
-        return chess.engine.Limit(time=6.0, depth=60)
+        return chess.engine.Limit(time=10.0, depth=60)
     if piece_count <= 7:
-        return chess.engine.Limit(time=5.0, depth=50)
+        return chess.engine.Limit(time=10.0, depth=50)
     if piece_count <= 12:
-        return chess.engine.Limit(time=4.0, depth=40)
-    return chess.engine.Limit(depth=default_depth)
+        return chess.engine.Limit(time=10.0, depth=40)
+    return chess.engine.Limit(time=10.0, depth=default_depth)
 
 
 def _format_score_cp(cp: int | None) -> str:

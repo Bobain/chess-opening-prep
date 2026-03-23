@@ -36,10 +36,10 @@ _log = logging.getLogger(__name__)
 
 # Default analysis limits matching trainer._analysis_limit() hardcoded values
 _DEFAULT_LIMITS: dict[str, dict[str, float | int]] = {
-    "kings_pawns_le7": {"time": 6.0, "depth": 60},
-    "pieces_le7": {"time": 5.0, "depth": 50},
-    "pieces_le12": {"time": 4.0, "depth": 40},
-    "default": {"depth": 18},
+    "kings_pawns_le7": {"time": 10.0, "depth": 60},
+    "pieces_le7": {"time": 10.0, "depth": 50},
+    "pieces_le12": {"time": 10.0, "depth": 40},
+    "default": {"depth": 18, "time": 10.0},
 }
 
 
