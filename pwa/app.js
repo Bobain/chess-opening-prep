@@ -2646,11 +2646,11 @@ function updateChartCursor() {
   if (currentPly > 0 && currentPly <= reviewGame.moves.length) {
     const stepX = w / (reviewGame.moves.length + 1);
     const x = stepX * currentPly;
-    ctx.strokeStyle = 'rgba(233,69,96,0.8)';
+    ctx.strokeStyle = 'rgba(76,175,80,0.8)';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
+    ctx.moveTo(x, h * 0.25);
+    ctx.lineTo(x, h * 0.75);
     ctx.stroke();
   }
 }
