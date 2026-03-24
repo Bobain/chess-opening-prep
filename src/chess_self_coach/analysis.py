@@ -754,6 +754,7 @@ def _determine_player_color(
 
 def analyze_games(
     *,
+    game_ids: list[str] | None = None,
     max_games: int = 10,
     reanalyze_all: bool = False,
     settings: AnalysisSettings | None = None,
@@ -767,6 +768,9 @@ def analyze_games(
     After collection, calls annotate_and_derive() (Phase 2) to produce training_data.json.
 
     Args:
+        game_ids: Specific game IDs to analyze from the cache. When set,
+            skips the fetch phase and reads from fetched_games.json.
+            When None or empty, fetches from APIs (original behavior).
         max_games: Maximum total games in the dataset (default: 10).
         reanalyze_all: If True, re-analyze games (skip only same-settings).
         settings: Override analysis settings. None = load from config.
@@ -830,77 +834,109 @@ def analyze_games(
     existing_data = load_analysis_data(analysis_path)
     existing_games = existing_data.get("games", {})
 
-    # Fetch games
-    print("\n  Fetching games...")
-    _emit({"phase": "fetch", "message": "Fetching games...", "percent": 5})
-    all_games: list[chess.pgn.Game] = []
-
-    if lichess_user:
-        all_games.extend(fetch_lichess_games(lichess_user, max_games))
-    if chesscom_user:
-        all_games.extend(fetch_chesscom_games(chesscom_user, max_games))
-
-    if not all_games:
-        print("  No games found.")
-        _emit({"phase": "done", "message": "No games found.", "percent": 100})
-        return
-
-    # Filter games
+    # --- Load games: from cache (game_ids) or from APIs (fetch) ---
     new_games: list[tuple[chess.pgn.Game, str, chess.Color]] = []
-    reanalyzed = 0  # existing games queued for re-analysis (won't increase total)
-    skipped = 0
-    for game in all_games:
-        game_id = game.headers.get("Link", game.headers.get("Site", ""))
-        if game_id == "?":
-            game_id = ""
 
-        # Skip malformed games
-        white = game.headers.get("White", "?")
-        black = game.headers.get("Black", "?")
-        if white == "?" and black == "?":
-            continue
+    if game_ids:
+        # Load specific games from cache (no API fetch needed)
+        from chess_self_coach.game_cache import get_cached_game, load_game_cache
 
-        # Determine player color
-        player_color = _determine_player_color(game, lichess_user, chesscom_user)
-        if player_color is None:
-            continue
+        print(f"\n  Loading {len(game_ids)} game(s) from cache...")
+        _emit({"phase": "fetch", "message": "Loading from cache...", "percent": 5})
 
-        # Check if already analyzed
-        is_reanalysis = False
-        if game_id and game_id in existing_games:
-            if not reanalyze_all:
-                skipped += 1
+        cache = load_game_cache()
+        cached_games = cache.get("games", {})
+
+        for gid in game_ids:
+            if gid in existing_games and not reanalyze_all:
+                print(f"  Skipped (already analyzed): {gid}")
                 continue
-            # Re-analyze mode: skip only if settings match
-            stored_settings = existing_games[game_id].get("settings", {})
-            if settings_match(stored_settings, settings_dict):
-                skipped += 1
+
+            entry = cached_games.get(gid)
+            if entry is None:
+                print(f"  Warning: game not in cache, skipping: {gid}")
                 continue
-            is_reanalysis = True
 
-        new_games.append((game, game_id, player_color))
-        if is_reanalysis:
-            reanalyzed += 1
+            game = get_cached_game(gid)
+            if game is None:
+                continue
 
-    if skipped:
-        print(f"  Skipped {skipped} already-analyzed game(s)")
+            player_color_str = entry.get("player_color", "white")
+            player_color = chess.WHITE if player_color_str == "white" else chess.BLACK
+            new_games.append((game, gid, player_color))
 
-    # Sort by date (most recent first) and cap so total doesn't exceed max_games.
-    # Re-analyses replace existing entries so they don't increase the total.
-    new_games.sort(
-        key=lambda t: t[0].headers.get("Date", "0000.00.00"),
-        reverse=True,
-    )
-    cap = max(0, max_games - len(existing_games)) + reanalyzed
-    new_games = new_games[:cap]
+        _emit(
+            {
+                "phase": "fetch",
+                "message": f"{len(new_games)} game(s) to analyze",
+                "percent": 10,
+            }
+        )
+    else:
+        # Original behavior: fetch from APIs
+        print("\n  Fetching games...")
+        _emit({"phase": "fetch", "message": "Fetching games...", "percent": 5})
+        all_games: list[chess.pgn.Game] = []
 
-    _emit(
-        {
-            "phase": "fetch",
-            "message": f"Found {len(all_games)} game(s) ({len(new_games)} to analyze)",
-            "percent": 10,
-        }
-    )
+        if lichess_user:
+            all_games.extend(fetch_lichess_games(lichess_user, max_games))
+        if chesscom_user:
+            all_games.extend(fetch_chesscom_games(chesscom_user, max_games))
+
+        if not all_games:
+            print("  No games found.")
+            _emit({"phase": "done", "message": "No games found.", "percent": 100})
+            return
+
+        # Filter games
+        reanalyzed = 0
+        skipped = 0
+        for game in all_games:
+            game_id = game.headers.get("Link", game.headers.get("Site", ""))
+            if game_id == "?":
+                game_id = ""
+
+            white = game.headers.get("White", "?")
+            black = game.headers.get("Black", "?")
+            if white == "?" and black == "?":
+                continue
+
+            player_color = _determine_player_color(game, lichess_user, chesscom_user)
+            if player_color is None:
+                continue
+
+            is_reanalysis = False
+            if game_id and game_id in existing_games:
+                if not reanalyze_all:
+                    skipped += 1
+                    continue
+                stored_settings = existing_games[game_id].get("settings", {})
+                if settings_match(stored_settings, settings_dict):
+                    skipped += 1
+                    continue
+                is_reanalysis = True
+
+            new_games.append((game, game_id, player_color))
+            if is_reanalysis:
+                reanalyzed += 1
+
+        if skipped:
+            print(f"  Skipped {skipped} already-analyzed game(s)")
+
+        new_games.sort(
+            key=lambda t: t[0].headers.get("Date", "0000.00.00"),
+            reverse=True,
+        )
+        cap = max(0, max_games - len(existing_games)) + reanalyzed
+        new_games = new_games[:cap]
+
+        _emit(
+            {
+                "phase": "fetch",
+                "message": f"Found {len(all_games)} game(s) ({len(new_games)} to analyze)",
+                "percent": 10,
+            }
+        )
 
     if not new_games:
         print("  No new games to analyze.")
