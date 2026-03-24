@@ -25,8 +25,12 @@ BOARD_TIMEOUT = 20000
 
 
 def _wait_for_board(page, pwa_url):
-    """Navigate to PWA and wait for the board to render."""
+    """Navigate to PWA, switch to training via menu, and wait for the board."""
     page.goto(pwa_url)
+    # Default view is game list; switch to training via nav menu
+    page.wait_for_selector("#menu-btn", timeout=5000)
+    page.click("#menu-btn")
+    page.click("#nav-training")
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
 
@@ -295,6 +299,10 @@ def test_see_moves_works_after_reload(page, pwa_url):
 
     # Reload — SW serves from cache (network-first should still fetch fresh)
     page.reload()
+    # After reload, default view is game list; switch to training again
+    page.wait_for_selector("#menu-btn", timeout=5000)
+    page.click("#menu-btn")
+    page.click("#nav-training")
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
     _wait_for_animation(page)
 
@@ -515,9 +523,9 @@ def test_clock_hidden_when_absent(page, pwa_url):
 
 
 def test_app_mode_smoke(page, app_url):
-    """[App] mode: board loads via FastAPI and /api/status returns mode='app'."""
+    """[App] mode: page loads via FastAPI and /api/status returns mode='app'."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     status = page.evaluate("() => fetch('/api/status').then(r => r.json())")
     assert status["mode"] == "app"
@@ -532,7 +540,7 @@ def test_app_mode_smoke(page, app_url):
 def test_raw_data_summary_modal(page, app_url, console_errors):
     """[App] mode: Raw data summary shows game list with position counts."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     # Open menu
     page.locator("#menu-btn").click()
@@ -588,7 +596,7 @@ def test_raw_data_summary_in_demo_mode(page, pwa_url):
 def test_coming_soon_submenu_toggle(page, app_url, console_errors):
     """[App] mode: Coming soon submenu expands/collapses and items are not clickable."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     # Open menu
     page.locator("#menu-btn").click()
@@ -630,10 +638,10 @@ def test_coming_soon_submenu_toggle(page, app_url, console_errors):
     assert "[nav] Coming soon collapsed" in log_text
 
 
-def test_app_mode_refresh_modal(page, app_url, console_errors):
-    """[App] mode: Refresh menu item opens analysis settings modal."""
+def test_app_mode_refresh_games(page, app_url, console_errors):
+    """[App] mode: Refresh menu item triggers game fetch."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     # Open menu
     page.locator("#menu-btn").click()
@@ -644,28 +652,22 @@ def test_app_mode_refresh_modal(page, app_url, console_errors):
     expect(refresh_item).to_be_visible()
     expect(refresh_item).not_to_have_class("disabled")
 
-    # Click refresh → opens analysis settings modal (2-step flow)
+    # Click refresh → triggers game fetch (console should show it)
     refresh_item.click()
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(2000)
 
-    # Analysis settings modal should appear
-    expect(page.locator("#analysis-modal")).to_be_visible()
-    expect(page.locator("#analysis-threads")).to_be_visible()
-    expect(page.locator("#start-analysis")).to_be_visible()
+    # Game list should still be visible (refreshed)
+    expect(page.locator("#game-selector")).to_be_visible()
 
-    # Close via cancel button
-    page.locator("#close-analysis").click()
-    expect(page.locator("#analysis-modal")).not_to_be_visible()
-
-    # Verify console logs
+    # Check console for fetch log
     log_text = "\n".join(console_errors["messages"])
-    assert "[showAnalysisSettings]" in log_text
+    assert "[nav-refresh] Refreshing game list" in log_text
 
 
 def test_app_mode_config_modal(page, app_url, console_errors):
     """[App] mode: Edit config modal opens, loads values, and saves."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     # Open menu
     page.locator("#menu-btn").click()
@@ -715,7 +717,7 @@ def test_app_mode_config_modal(page, app_url, console_errors):
 def test_coming_soon_journal_not_clickable(page, app_url, console_errors):
     """[App] mode: Journal is in Coming soon submenu and not clickable."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     # Open menu and expand Coming soon
     page.locator("#menu-btn").click()
@@ -753,7 +755,7 @@ def test_about_modal_opens_and_closes(page, pwa_url):
 def test_about_modal_shows_version_in_app_mode(page, app_url, console_errors):
     """[App] mode: About modal shows version and Stockfish version."""
     page.goto(app_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
@@ -773,7 +775,7 @@ def test_about_modal_shows_version_in_app_mode(page, app_url, console_errors):
 def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     """[Demo] mode: App-only menu items are hidden, shared items are visible."""
     page.goto(pwa_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
