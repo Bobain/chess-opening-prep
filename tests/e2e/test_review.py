@@ -1,7 +1,8 @@
 """End-to-end tests for the Game Review & Analysis UI (Section 3c).
 
-Tests the analysis mode: mode toggle, game selector, move navigation,
-eval bar, score chart, move classifications, board arrows, and keyboard nav.
+Tests the game list (default view), game review, move navigation,
+eval bar, score chart, move classifications, board arrows, keyboard nav,
+per-game training, and the Training menu item.
 
 Uses analysis_data.json fixture from tests/e2e/fixtures/.
 
@@ -17,43 +18,30 @@ from playwright.sync_api import expect
 BOARD_TIMEOUT = 20000
 
 
-def _switch_to_analysis(page, pwa_url):
-    """Navigate to PWA and switch to analysis mode."""
+def _wait_for_game_list(page, pwa_url):
+    """Navigate to PWA and wait for the game list (default view)."""
     page.goto(pwa_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
-    page.click("#mode-analysis")
     page.wait_for_selector(".game-card", timeout=10000)
 
 
-# --- Mode toggle ---
+# --- Default view ---
 
 
-def test_mode_toggle_switches_views(page, pwa_url):
-    """Clicking mode toggle switches between Training and Analysis views."""
+def test_game_list_is_default_view(page, pwa_url):
+    """Game list is the default view on app load."""
     page.goto(pwa_url)
-    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
+    page.wait_for_selector(".game-card", timeout=10000)
 
-    # Initially in training mode
-    expect(page.locator("#training-view")).to_be_visible()
-    expect(page.locator("#analysis-view")).to_be_hidden()
-
-    # Switch to analysis
-    page.click("#mode-analysis")
-    expect(page.locator("#training-view")).to_be_hidden()
     expect(page.locator("#analysis-view")).to_be_visible()
-
-    # Switch back to training
-    page.click("#mode-training")
-    expect(page.locator("#training-view")).to_be_visible()
-    expect(page.locator("#analysis-view")).to_be_hidden()
+    expect(page.locator("#training-view")).to_be_hidden()
 
 
 # --- Game selector ---
 
 
 def test_game_selector_shows_games(page, pwa_url):
-    """Analysis mode shows a list of analyzed games."""
-    _switch_to_analysis(page, pwa_url)
+    """Game list shows analyzed games."""
+    _wait_for_game_list(page, pwa_url)
 
     cards = page.locator(".game-card")
     expect(cards).to_have_count(2)
@@ -64,7 +52,7 @@ def test_game_selector_shows_games(page, pwa_url):
 
 def test_game_selector_shows_result_badges(page, pwa_url):
     """Game cards show W/L/D result badges."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
 
     results = page.locator(".game-card-result")
     expect(results).to_have_count(2)
@@ -75,7 +63,7 @@ def test_game_selector_shows_result_badges(page, pwa_url):
 
 def test_click_game_enters_review(page, pwa_url):
     """Clicking a game card opens the review view."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
 
     page.click(".game-card >> nth=0")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
@@ -90,7 +78,7 @@ def test_click_game_enters_review(page, pwa_url):
 
 def test_back_button_returns_to_game_list(page, pwa_url):
     """Back button returns from review to game selector."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=0")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -104,7 +92,7 @@ def test_back_button_returns_to_game_list(page, pwa_url):
 
 def test_move_list_renders(page, pwa_url):
     """Move list renders with move numbers and SAN notation."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=0")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -116,7 +104,7 @@ def test_move_list_renders(page, pwa_url):
 
 def test_click_move_updates_board(page, pwa_url, console_errors):
     """Clicking a move in the list updates the board position."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")  # Longer game
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -136,7 +124,7 @@ def test_click_move_updates_board(page, pwa_url, console_errors):
 
 def test_navigation_buttons(page, pwa_url):
     """Navigation buttons (first/prev/next/last) work correctly."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")  # Longer game
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -162,8 +150,8 @@ def test_navigation_buttons(page, pwa_url):
 
 
 def test_keyboard_navigation(page, pwa_url):
-    """Arrow keys navigate moves in analysis mode."""
-    _switch_to_analysis(page, pwa_url)
+    """Arrow keys navigate moves in review mode."""
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -186,7 +174,7 @@ def test_keyboard_navigation(page, pwa_url):
 
 def test_eval_bar_updates(page, pwa_url):
     """Eval bar updates when navigating moves."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -209,7 +197,7 @@ def test_eval_bar_updates(page, pwa_url):
 
 def test_score_chart_renders(page, pwa_url):
     """Score chart canvas is rendered."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -225,7 +213,7 @@ def test_score_chart_renders(page, pwa_url):
 
 def test_score_chart_click_navigates(page, pwa_url):
     """Clicking on the score chart jumps to that move."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -247,7 +235,7 @@ def test_score_chart_click_navigates(page, pwa_url):
 
 def test_classification_dots_in_move_list(page, pwa_url):
     """Move list shows classification dots."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -262,7 +250,7 @@ def test_classification_dots_in_move_list(page, pwa_url):
 
 def test_game_summary_shows_accuracy(page, pwa_url):
     """Game summary shows accuracy percentages for games with eval data."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")  # Longer game with Stockfish evals
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -285,7 +273,7 @@ def test_game_summary_shows_accuracy(page, pwa_url):
 
 def test_flip_board(page, pwa_url):
     """Flip button changes board orientation."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=0")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -301,7 +289,7 @@ def test_flip_board(page, pwa_url):
 
 def test_autoplay_cycles(page, pwa_url):
     """Auto-play button advances moves automatically."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=0")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -322,7 +310,7 @@ def test_autoplay_cycles(page, pwa_url):
 
 def test_pv_line_shows_for_eval_moves(page, pwa_url):
     """PV line shows the best continuation for analyzed moves."""
-    _switch_to_analysis(page, pwa_url)
+    _wait_for_game_list(page, pwa_url)
     page.click(".game-card >> nth=1")
     page.wait_for_selector("#review-board cg-board", timeout=BOARD_TIMEOUT)
 
@@ -337,16 +325,20 @@ def test_pv_line_shows_for_eval_moves(page, pwa_url):
     assert text is not None
 
 
-# --- Training mode unchanged ---
+# --- Training via menu ---
 
 
-def test_training_mode_still_works_after_analysis(page, pwa_url):
-    """Switching back to training mode works correctly."""
-    _switch_to_analysis(page, pwa_url)
+def test_training_via_menu(page, pwa_url):
+    """Training menu item opens the training view."""
+    _wait_for_game_list(page, pwa_url)
 
-    # Switch back to training
-    page.click("#mode-training")
+    # Open menu and click Training
+    page.click("#menu-btn")
+    page.click("#nav-training")
+
+    # Training view should be visible
     expect(page.locator("#training-view")).to_be_visible()
+    expect(page.locator("#analysis-view")).to_be_hidden()
 
-    # Board should still work
-    page.wait_for_selector("cg-board piece", timeout=5000)
+    # Board should render
+    page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
