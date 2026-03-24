@@ -1028,7 +1028,18 @@ cg-container {
 }
 
 #review-back-btn {
-  margin-left: 1rem;
+  display: inline-block;
+  color: var(--text-secondary, #aaa);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 0.3rem 0;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+#review-back-btn:hover {
+  color: var(--primary);
 }
 
 /* Classification colors */

@@ -2819,7 +2819,8 @@ async function init() {
     reviewOrientation = reviewOrientation === 'white' ? 'black' : 'white';
     if (reviewCg) reviewCg.set({ orientation: reviewOrientation });
   });
-  document.getElementById('review-back-btn').addEventListener('click', () => {
+  document.getElementById('review-back-btn').addEventListener('click', (e) => {
+    e.preventDefault();
     if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
     showGameList();
   });
