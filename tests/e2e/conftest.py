@@ -13,6 +13,7 @@ import http.server
 import shutil
 import socket
 import threading
+from typing import override
 import time
 from pathlib import Path
 from unittest.mock import patch
@@ -30,7 +31,8 @@ def _serve_pwa_dir(tmp_dir):
         def __init__(self, *a, **kw):
             super().__init__(*a, directory=str(tmp_dir), **kw)
 
-        def log_message(self, *a):
+        @override
+        def log_message(self, format: str, *args: object) -> None:
             pass
 
     server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
