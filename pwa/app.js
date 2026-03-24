@@ -2116,6 +2116,46 @@ function showGameSelector() {
     infoEl.appendChild(meta);
     card.appendChild(infoEl);
 
+    // Accuracy + classification badges
+    const classified = classifyAllMoves(game.moves, game.player_color);
+    const playerAcc = computeAccuracy(game.moves, classified, game.player_color);
+    const accEl = document.createElement('div');
+    accEl.className = 'game-card-accuracy';
+    if (playerAcc !== null) {
+      const val = document.createElement('span');
+      val.className = 'accuracy-value';
+      val.textContent = `${playerAcc}%`;
+      accEl.appendChild(val);
+    }
+    // Count classifications for player moves only
+    const counts = {};
+    for (let i = 0; i < game.moves.length; i++) {
+      const cls = classified[i];
+      if (cls && game.moves[i].side === game.player_color) {
+        counts[cls.category] = (counts[cls.category] || 0) + 1;
+      }
+    }
+    const badges = document.createElement('div');
+    badges.className = 'classification-badges';
+    const categories = [
+      { key: 'inaccuracy', label: '?!', color: '#f7c631' },
+      { key: 'mistake', label: '?', color: '#e6912a' },
+      { key: 'blunder', label: '??', color: '#ca3431' },
+    ];
+    for (const cat of categories) {
+      const c = counts[cat.key] || 0;
+      if (c > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'class-badge';
+        badge.style.color = cat.color;
+        badge.style.border = `1px solid ${cat.color}`;
+        badge.textContent = `${c}${cat.label}`;
+        badges.appendChild(badge);
+      }
+    }
+    accEl.appendChild(badges);
+    card.appendChild(accEl);
+
     selector.appendChild(card);
   }
 }
@@ -2174,65 +2214,21 @@ function getOpeningName() {
 }
 
 /**
- * Render the game summary (accuracy + classification counts).
+ * Render the game summary (player names).
  */
 function renderGameSummary() {
   const el = document.getElementById('review-summary');
   el.textContent = '';
 
-  const whiteAcc = computeAccuracy(reviewGame.moves, classifiedMoves, 'white');
-  const blackAcc = computeAccuracy(reviewGame.moves, classifiedMoves, 'black');
-
-  // Count classifications per color
-  const counts = { white: {}, black: {} };
-  for (let i = 0; i < reviewGame.moves.length; i++) {
-    const cls = classifiedMoves[i];
-    const side = reviewGame.moves[i].side;
-    if (cls) {
-      counts[side][cls.category] = (counts[side][cls.category] || 0) + 1;
-    }
-  }
-
   for (const color of ['white', 'black']) {
-    const acc = color === 'white' ? whiteAcc : blackAcc;
     const block = document.createElement('div');
     block.className = 'accuracy-block';
-
-    if (acc !== null) {
-      const val = document.createElement('div');
-      val.className = 'accuracy-value';
-      val.textContent = `${acc}%`;
-      block.appendChild(val);
-    }
 
     const label = document.createElement('div');
     label.className = 'accuracy-label';
     label.textContent = color === 'white' ? reviewGame.headers.white : reviewGame.headers.black;
     block.appendChild(label);
 
-    // Classification badges
-    const badges = document.createElement('div');
-    badges.className = 'classification-badges';
-    const categories = [
-      { key: 'best', label: '\u2605', color: '#96bc4b' },
-      { key: 'excellent', label: '!', color: '#96bc4b' },
-      { key: 'good', label: 'good', color: '#95b776' },
-      { key: 'inaccuracy', label: '?!', color: '#f7c631' },
-      { key: 'mistake', label: '?', color: '#e6912a' },
-      { key: 'blunder', label: '??', color: '#ca3431' },
-    ];
-    for (const cat of categories) {
-      const c = counts[color][cat.key] || 0;
-      if (c > 0) {
-        const badge = document.createElement('span');
-        badge.className = 'class-badge';
-        badge.style.color = cat.color;
-        badge.style.border = `1px solid ${cat.color}`;
-        badge.textContent = `${c}${cat.label}`;
-        badges.appendChild(badge);
-      }
-    }
-    block.appendChild(badges);
     el.appendChild(block);
   }
 }

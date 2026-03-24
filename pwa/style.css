@@ -847,6 +847,20 @@ cg-container {
   color: var(--text-dim);
 }
 
+.game-card-accuracy {
+  text-align: right;
+  min-width: 3.5rem;
+}
+
+.game-card-accuracy .accuracy-value {
+  font-size: 1rem;
+}
+
+.game-card-accuracy .classification-badges {
+  justify-content: flex-end;
+  margin-top: 0.15rem;
+}
+
 /* Review layout */
 #review-game-info {
   text-align: center;
