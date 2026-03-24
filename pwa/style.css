@@ -802,6 +802,16 @@ cg-container {
   background: var(--primary);
 }
 
+.game-card-unanalyzed {
+  opacity: 0.6;
+}
+
+.unanalyzed-badge {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
 .game-card-result {
   font-weight: 700;
   font-size: 1.1rem;

@@ -1800,7 +1800,7 @@ function updateAnalyzeButton() {
 /**
  * Render the game selector list with checkboxes and analysis status.
  */
-function showGameSelector() {
+async function showGameSelector() {
   console.log('[showGameSelector] Rendering game list');
   const selector = document.getElementById('game-selector');
   const review = document.getElementById('game-review');
@@ -1810,7 +1810,29 @@ function showGameSelector() {
   review.classList.add('hidden');
   selectedGameIds.clear();
 
-  if (!analysisData || !analysisData.games || Object.keys(analysisData.games).length === 0) {
+  // In app mode, fetch unified game list (analyzed + cached) from API
+  let unanalyzedGames = {};
+  if (appMode === 'app') {
+    try {
+      const resp = await fetch('/api/games?limit=' + gameListLimit);
+      if (resp.ok) {
+        const data = await resp.json();
+        for (const g of data.games) {
+          if (!g.analyzed && (!analysisData || !analysisData.games || !analysisData.games[g.game_id])) {
+            unanalyzedGames[g.game_id] = g;
+          }
+        }
+        console.log(`[showGameSelector] ${Object.keys(unanalyzedGames).length} unanalyzed game(s) from API`);
+      }
+    } catch (err) {
+      console.log('[showGameSelector] Could not fetch unified game list:', err);
+    }
+  }
+
+  const hasAnalyzed = analysisData && analysisData.games && Object.keys(analysisData.games).length > 0;
+  const hasUnanalyzed = Object.keys(unanalyzedGames).length > 0;
+
+  if (!hasAnalyzed && !hasUnanalyzed) {
     selector.textContent = appMode === 'app'
       ? 'No games yet. Use menu \u2630 \u2192 Refresh games to fetch your games.'
       : 'No analyzed games available.';
@@ -1832,8 +1854,8 @@ function showGameSelector() {
     }
   }
 
-  // Sort games by date descending
-  const gameEntries = Object.entries(analysisData.games);
+  // Sort analyzed games by date descending
+  const gameEntries = hasAnalyzed ? Object.entries(analysisData.games) : [];
   gameEntries.sort((a, b) => {
     const da = a[1].headers.date || '';
     const db = b[1].headers.date || '';
@@ -1976,6 +1998,60 @@ function showGameSelector() {
     accEl.appendChild(buildAccuracyRow(game.player_color, playerAcc, false));
     accEl.appendChild(buildAccuracyRow(opponentColor, opponentAcc, true));
     card.appendChild(accEl);
+
+    selector.appendChild(card);
+  }
+
+  // Append unanalyzed games (app mode only)
+  for (const [gameId, g] of Object.entries(unanalyzedGames)) {
+    const card = document.createElement('div');
+    card.className = 'game-card game-card-unanalyzed';
+    card.dataset.gameId = gameId;
+
+    // Checkbox for batch analysis
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'game-card-checkbox';
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (cb.checked) selectedGameIds.add(gameId);
+      else selectedGameIds.delete(gameId);
+      updateAnalyzeButton();
+    });
+    card.appendChild(cb);
+
+    // Result badge
+    const resultEl = document.createElement('div');
+    resultEl.className = 'game-card-result';
+    const pc = g.player_color;
+    const result = g.result;
+    const isWin = (result === '1-0' && pc === 'white') || (result === '0-1' && pc === 'black');
+    const isLoss = (result === '1-0' && pc === 'black') || (result === '0-1' && pc === 'white');
+    if (isWin) { resultEl.textContent = 'W'; resultEl.classList.add('win'); }
+    else if (isLoss) { resultEl.textContent = 'L'; resultEl.classList.add('loss'); }
+    else { resultEl.textContent = 'D'; resultEl.classList.add('draw'); }
+    card.appendChild(resultEl);
+
+    // Info
+    const infoEl = document.createElement('div');
+    infoEl.className = 'game-card-info';
+    const opponent = document.createElement('div');
+    opponent.className = 'game-card-opponent';
+    const opponentName = pc === 'white' ? g.black : g.white;
+    opponent.textContent = `vs ${opponentName}`;
+    infoEl.appendChild(opponent);
+
+    const meta = document.createElement('div');
+    meta.className = 'game-card-meta';
+    meta.textContent = `${g.date} \u00b7 ${g.move_count} moves \u00b7 ${g.opening || g.source}`;
+    infoEl.appendChild(meta);
+    card.appendChild(infoEl);
+
+    // "Not analyzed" badge instead of accuracy
+    const badge = document.createElement('div');
+    badge.className = 'game-card-accuracy unanalyzed-badge';
+    badge.textContent = 'Not analyzed';
+    card.appendChild(badge);
 
     selector.appendChild(card);
   }
