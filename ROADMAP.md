@@ -217,6 +217,8 @@ Section 6 (UX Improvements) ← independent, parallel with all sections
 ## Cleanup TODO
 
 - [ ] Remove "Coming soon" submenu from PWA nav — only "Project status" remains, not worth a submenu. Either promote it to a regular nav item or remove it entirely.
+- [ ] Show fetched-but-unanalyzed games in game list — backend `GET /api/games` already returns a unified list (cached + analyzed), but PWA only reads `analysisData.games`. Wire PWA to use the unified endpoint so users see all their fetched games, with a visual indicator for unanalyzed ones (greyed out, "Not analyzed" badge).
+- [ ] Simplify settings/config UX — current split between "Settings" (analysis engine params) and "Edit config" (players + analysis) is confusing. Needs UX audit: merge into one view, clearer labels, hide advanced params behind a toggle.
 
 ## Existing but undocumented features
 These are implemented and working but not tracked as roadmap items:
