@@ -18,4 +18,4 @@ except PackageNotFoundError:
 
 def worker_count() -> int:
     """Return the number of parallel workers: cpu_count - 1, minimum 1."""
-    return max(os.cpu_count() - 1, 1)
+    return max((os.cpu_count() or 1) - 1, 1)
