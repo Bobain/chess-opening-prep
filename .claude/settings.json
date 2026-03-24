@@ -1,4 +1,7 @@
 {
+  "enabledPlugins": {
+    "ux-auditor": true
+  },
   "hooks": {
     "PostToolUse": [
       {
