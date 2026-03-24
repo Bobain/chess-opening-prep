@@ -41,17 +41,9 @@ An item is [x] when ALL applicable criteria are met:
 - [x] Extract get_stats_data() from print_stats (returns dict, CLI unchanged)
 - [x] GET /api/train/stats — stats in PWA (dashboard or menu item)
 - [x] Unit + E2E tests for /api/train/stats
-- [x] validate (CLI: validate_pgn) ← instant, no SSE needed
-- [x] POST /api/pgn/validate — trigger from menu
-- [x] status (CLI: show_status) ← instant
-- [x] Extract get_status_data() from show_status (returns dict, CLI unchanged)
-- [x] GET /api/pgn/status — trigger from menu
-- [x] cleanup (CLI: cleanup_study) ← fast
-- [x] POST /api/pgn/cleanup — trigger from menu
 
 ### 3b. SSE job runner + "Analyse latest games" — DONE
 - [x] ⚠️ UX DESIGN PHASE: "Analyse latest games" button runs `train --prepare` in background.
-      Individual commands (import, analyze, push, pull) deferred to future design phase.
 - [x] Generic SSE job runner (POST starts job → 202, GET streams progress via SSE)
 - [x] train --prepare (CLI: prepare_training_data with --games, --depth, --engine, --fresh)
 - [x] POST /api/train/prepare + GET /api/jobs/{id}/events (SSE)
@@ -77,9 +69,6 @@ Then POSTs to `POST /api/analysis/start` which:
 2. Filters: skip already-analyzed (or same-settings if reanalyze-all)
 3. Phase 1: Stockfish + Lichess Tablebase + Opening Explorer per move, writes `analysis_data.json` after each game
 4. Phase 2: `annotate_and_derive()` filters mistakes, generates explanations, writes `training_data.json`
-
-**Next priority:**
-- [ ] import/analyze/push/pull → individual PWA buttons (needs own design phase)
 
 ### 3c. Game Review & Analysis UI — DONE
 
@@ -176,12 +165,6 @@ player-not-found, error recovery). `test_server.py` now tests `/api/analysis/sta
 - [ ] PWA: PGN viewer modal with chessboard (reuse chessground)
 - [ ] Menu item: "View PGN" (nav-app-only)
 
-### 4d. Repertoire explorer + Opening quiz (needs UX design phase)
-- [ ] ⚠️ UX DESIGN PHASE: tree rendering, drill mode, scoring
-- [ ] Repertoire explorer: interactive variation tree from PGN
-- [ ] Opening quiz: drill correct moves from repertoire lines
-- [ ] May depend on 5b (TBD after design phase)
-
 ## 5. Settings & Configuration
 
 ### 5a. Settings UI (no backend needed) — DONE
@@ -223,9 +206,6 @@ Section 2 (Menu + Mode detection) ← DONE
      │         │
      │         ▼ (API pattern reused)
      │    Section 4c (PGN viewer) ← needs API + UX design
-     │         │
-     │         ▼ (PGN parsing reused)
-     │    Section 4d (Repertoire + quiz) ← needs UX design phase, may need 5b
      │
      └──► Section 5b (Config API) ← low priority, parallel with 4a-4c
 ```
@@ -237,15 +217,12 @@ When features moved to the "Coming soon" submenu (v0.3.4), their frontend wiring
 but the code was kept for future reactivation. **Decision needed** for each: re-activate UI or delete code.
 
 ### Dead frontend code (JS + HTML + CSS)
-- **JS functions** (`pwa/app.js`): `showValidate()`, `showProjectStatus()`, `showCleanup()`, `showJournal()`, `showJournalTopic()`, `showModalWithData()` helper
-- **HTML modals** (`pwa/index.html`): `#validate-modal`, `#status-modal`, `#cleanup-modal`, `#journal-modal`, `#journal-back` button
-- **CSS classes** (`pwa/style.css`): `.validate-*`, `.status-*`, `.journal-*`
+- **JS functions** (`pwa/app.js`): `showJournal()`, `showJournalTopic()`, `showModalWithData()` helper
+- **HTML modals** (`pwa/index.html`): `#journal-modal`, `#journal-back` button
+- **CSS classes** (`pwa/style.css`): `.journal-*`
 
 ### Backend endpoints with no UI
 These are functional and tested but unreachable from the PWA:
-- `POST /api/pgn/validate` — validates PGN files in project
-- `GET /api/pgn/status` — project status (config, Stockfish, training data)
-- `POST /api/pgn/cleanup` — removes duplicate/invalid studies
 - `GET /api/coaching/topics` + `GET /api/coaching/topics/{slug}` — coaching journal reader
 - `GET /api/train/stats` — training stats (replaced client-side by Raw data summary)
 
@@ -255,8 +232,6 @@ These are implemented and working but not tracked as roadmap items:
 - Incremental training data merge (preserves SRS progress)
 - Time pressure context analysis (uses clock data)
 - Pedagogical filtering (skips already-won/lost positions)
-- Lichess study auto-discovery in setup wizard
-- Multiline deviation analysis in import
 - update command (self-update via pipx — redundant with startup check, not tracked)
 - train --refresh-explanations (dev: regenerate without re-analyzing)
 - train --fresh (dev: discard existing data)

@@ -85,7 +85,6 @@ The `setup` command will:
 1. Find Stockfish on your system
 2. Guide you through **Lichess token creation** (bilingual FR/EN, step by step)
 3. Ask for your **chess.com username** (for importing games)
-4. Auto-detect your Lichess Studies
 
 ## CLI Reference
 
@@ -112,17 +111,10 @@ chess-self-coach train --prepare --fresh            # [dev] discard data, start 
 chess-self-coach train --refresh-explanations       # [dev] regenerate texts without Stockfish
 ```
 
-### Repertoire management (secondary)
-
-Also includes tools for managing opening repertoire PGN files synced with Lichess Studies:
+### Other commands
 
 ```bash
-chess-self-coach analyze <file.pgn>     # Stockfish analysis with [%eval] annotations
-chess-self-coach push <file.pgn>        # push PGN to Lichess Study
-chess-self-coach pull <file.pgn>        # pull from Lichess Study
-chess-self-coach cleanup [file.pgn]     # remove empty default chapters
 chess-self-coach syzygy [download|status]  # manage Syzygy endgame tablebases
-chess-self-coach status                 # sync status of all repertoire files
 chess-self-coach setup                  # interactive configuration wizard
 ```
 

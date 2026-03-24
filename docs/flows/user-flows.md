@@ -203,24 +203,15 @@ flowchart TD
         PLAT_CHECK -->|No| PLAT_ERR[Exit: need at least one]
     end
 
-    PLAT_CHECK -->|Yes| STUDIES{Lichess configured?}
-    STUDIES -->|No| SAVE
-    STUDIES -->|Yes| STUDY_FETCH[Fetch user's studies]
-    STUDY_FETCH --> STUDY_MAP[Auto-match studies by name]
-    STUDY_MAP --> STUDY_MISS{Unmatched studies?}
-    STUDY_MISS -->|Yes| STUDY_CREATE[Open browser → create studies]
-    STUDY_MISS -->|No| SAVE
-    STUDY_CREATE --> SAVE
-
-    SAVE[Write config.json] --> DONE[Setup complete]
+    PLAT_CHECK -->|Yes| SAVE[Write config.json]
+    SAVE --> DONE[Setup complete]
 ```
 
 ### Key details
 
 - **Stockfish search order**: config path → fallback path → En-Croissant default → `/usr/games/stockfish` → `$PATH`.
 - **Token validation**: must start with `lip_` prefix, verified against Lichess API.
-- **Study mapping**: auto-matches local PGN filenames against Lichess study names (case-insensitive substring).
-- **Idempotent**: re-running setup merges with existing config (preserves studies, updates players/analysis).
+- **Idempotent**: re-running setup merges with existing config (updates players/analysis).
 
 ---
 
@@ -237,14 +228,14 @@ flowchart LR
     end
 
     subgraph "config.json"
-        CFG["stockfish: {path, version}<br/>analysis: {depth, threshold}<br/>analysis_engine: {threads, hash_mb, limits}<br/>players: {lichess, chesscom}<br/>studies: {pgn → study_id}"]
+        CFG["stockfish: {path, version}<br/>analysis: {depth, threshold}<br/>analysis_engine: {threads, hash_mb, limits}<br/>players: {lichess, chesscom}"]
     end
 
     subgraph "PWA (app mode only)"
         SHOW[GET /api/config] --> MODAL[Config modal]
         MODAL --> SAVE_BTN[Save]
         SAVE_BTN --> POST[POST /api/config]
-        POST --> MERGE[Merge players + analysis<br/>Preserve stockfish + studies]
+        POST --> MERGE[Merge players + analysis<br/>Preserve stockfish]
         SHOW2[GET /api/analysis/settings] --> MODAL2[Analysis Settings modal]
         MODAL2 --> SAVE2[POST /api/analysis/settings]
         SAVE2 --> MERGE2[Update analysis_engine]
@@ -257,7 +248,7 @@ flowchart LR
 
 ### Key details
 
-- **CLI creates** the full config: stockfish, analysis, players, studies.
-- **PWA edits** only `players` and `analysis` fields (stockfish and studies are CLI-managed).
+- **CLI creates** the full config: stockfish, analysis, players.
+- **PWA edits** only `players` and `analysis` fields (stockfish is CLI-managed).
 - **Merge strategy**: server loads full config, overwrites only the editable fields, writes back.
 - **Format**: JSON with 2-space indent, `ensure_ascii=False`.

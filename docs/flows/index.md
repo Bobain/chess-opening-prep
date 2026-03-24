@@ -29,12 +29,6 @@ Infrastructure and runtime internals.
 - **Service worker & caching** — Offline access and updates
 - **Stockfish lifecycle** — Detection, crash recovery, WASM fallback
 
-### [Coming soon flows](coming-soon-flows.md)
-
-Planned features not yet fully implemented.
-
-- **PGN sync** — Push/pull/cleanup Lichess studies
-
 ### [Meta flows](meta-flows.md)
 
 How this documentation stays up to date.

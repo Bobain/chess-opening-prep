@@ -49,6 +49,5 @@ flowchart TD
 |------------|---------------|
 | `src/chess_self_coach/trainer.py` | [Data flows](data-flows.md) |
 | `src/chess_self_coach/server.py` | [System flows](system-flows.md) |
-| `src/chess_self_coach/lichess.py` | [Coming soon flows](coming-soon-flows.md) |
 | `pwa/app.js` | [User flows](user-flows.md) |
 | `pwa/sw.js` | [System flows](system-flows.md) |
