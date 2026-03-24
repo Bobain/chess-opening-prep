@@ -803,16 +803,31 @@ cg-container {
 
 .game-card-accuracy {
   text-align: right;
-  min-width: 3.5rem;
+  min-width: 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.accuracy-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.accuracy-row.opponent {
+  opacity: 0.55;
+}
+
+.accuracy-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
 }
 
 .game-card-accuracy .accuracy-value {
-  font-size: 1rem;
-}
-
-.game-card-accuracy .classification-badges {
-  justify-content: flex-end;
-  margin-top: 0.15rem;
+  font-size: 0.9rem;
 }
 
 /* Review layout */

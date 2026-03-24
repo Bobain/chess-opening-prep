@@ -1908,43 +1908,56 @@ function showGameSelector() {
     infoEl.appendChild(meta);
     card.appendChild(infoEl);
 
-    // Accuracy + classification badges
+    // Accuracy + classification badges (both players)
+    const opponentColor = game.player_color === 'white' ? 'black' : 'white';
     const classified = classifyAllMoves(game.moves, game.player_color);
     const playerAcc = computeAccuracy(game.moves, classified, game.player_color);
+    const opponentAcc = computeAccuracy(game.moves, classified, opponentColor);
+    const categories = [
+      { key: 'inaccuracy', label: '?!', color: '#f7c631', title: 'inaccuracies' },
+      { key: 'mistake', label: '?', color: '#e6912a', title: 'mistakes' },
+      { key: 'blunder', label: '??', color: '#ca3431', title: 'blunders' },
+    ];
+
+    function buildAccuracyRow(color, acc, isOpponent) {
+      const row = document.createElement('div');
+      row.className = 'accuracy-row' + (isOpponent ? ' opponent' : '');
+      const label = document.createElement('span');
+      label.className = 'accuracy-label';
+      label.textContent = isOpponent ? 'Opp:' : 'You:';
+      row.appendChild(label);
+      if (acc !== null) {
+        const val = document.createElement('span');
+        val.className = 'accuracy-value';
+        val.textContent = `${acc}%`;
+        row.appendChild(val);
+      }
+      const counts = {};
+      for (let i = 0; i < game.moves.length; i++) {
+        const cls = classified[i];
+        if (cls && game.moves[i].side === color) {
+          counts[cls.category] = (counts[cls.category] || 0) + 1;
+        }
+      }
+      for (const cat of categories) {
+        const c = counts[cat.key] || 0;
+        if (c > 0) {
+          const badge = document.createElement('span');
+          badge.className = 'class-badge';
+          badge.style.color = cat.color;
+          badge.style.border = `1px solid ${cat.color}`;
+          badge.textContent = `${c}${cat.label}`;
+          badge.title = `${c} ${cat.title}`;
+          row.appendChild(badge);
+        }
+      }
+      return row;
+    }
+
     const accEl = document.createElement('div');
     accEl.className = 'game-card-accuracy';
-    if (playerAcc !== null) {
-      const val = document.createElement('span');
-      val.className = 'accuracy-value';
-      val.textContent = `${playerAcc}%`;
-      accEl.appendChild(val);
-    }
-    const counts = {};
-    for (let i = 0; i < game.moves.length; i++) {
-      const cls = classified[i];
-      if (cls && game.moves[i].side === game.player_color) {
-        counts[cls.category] = (counts[cls.category] || 0) + 1;
-      }
-    }
-    const badges = document.createElement('div');
-    badges.className = 'classification-badges';
-    const categories = [
-      { key: 'inaccuracy', label: '?!', color: '#f7c631' },
-      { key: 'mistake', label: '?', color: '#e6912a' },
-      { key: 'blunder', label: '??', color: '#ca3431' },
-    ];
-    for (const cat of categories) {
-      const c = counts[cat.key] || 0;
-      if (c > 0) {
-        const badge = document.createElement('span');
-        badge.className = 'class-badge';
-        badge.style.color = cat.color;
-        badge.style.border = `1px solid ${cat.color}`;
-        badge.textContent = `${c}${cat.label}`;
-        badges.appendChild(badge);
-      }
-    }
-    accEl.appendChild(badges);
+    accEl.appendChild(buildAccuracyRow(game.player_color, playerAcc, false));
+    accEl.appendChild(buildAccuracyRow(opponentColor, opponentAcc, true));
     card.appendChild(accEl);
 
     selector.appendChild(card);
