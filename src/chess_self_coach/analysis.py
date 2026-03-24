@@ -713,7 +713,7 @@ def analyze_games(
     After collection, calls annotate_and_derive() (Phase 2) to produce training_data.json.
 
     Args:
-        max_games: Maximum games to fetch per source (default: 10).
+        max_games: Maximum total games in the dataset (default: 10).
         reanalyze_all: If True, re-analyze games (skip only same-settings).
         settings: Override analysis settings. None = load from config.
         engine_path: Override path to Stockfish binary.
@@ -826,12 +826,13 @@ def analyze_games(
     if skipped:
         print(f"  Skipped {skipped} already-analyzed game(s)")
 
-    # Sort by date (most recent first) and take max_games
+    # Sort by date (most recent first) and cap so total doesn't exceed max_games
     new_games.sort(
         key=lambda t: t[0].headers.get("Date", "0000.00.00"),
         reverse=True,
     )
-    new_games = new_games[:max_games]
+    cap = max(0, max_games - len(existing_games))
+    new_games = new_games[:cap]
 
     _emit({
         "phase": "fetch",
