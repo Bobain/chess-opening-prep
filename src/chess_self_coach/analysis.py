@@ -30,12 +30,10 @@ from chess_self_coach.constants import (
     ANALYSIS_TIME_LIMIT,
     DOMINATED_POSITION_CP,
     ENDGAME_PIECES_MAX,
-    INACCURACY_THRESHOLD,
     MATE_CP,
     MAX_PV_MOVES,
     MIDDLEGAME_PIECES_MAX,
 )
-from chess_self_coach.opening_explorer import query_opening
 from chess_self_coach.tablebase import MAX_PIECES, probe_position_full
 
 _log = logging.getLogger(__name__)
@@ -1112,7 +1110,6 @@ def annotate_and_derive(
     from chess_self_coach.config import _find_project_root, load_config
     from chess_self_coach.trainer import (
         _classify_mistake,
-        _detect_game_phase,
         _format_score_cp,
         _generate_context,
         _time_pressure_context,
