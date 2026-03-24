@@ -2655,8 +2655,6 @@ async function init() {
       if (refreshItem) refreshItem.classList.remove('disabled');
       const configItem = document.getElementById('nav-config');
       if (configItem) configItem.classList.remove('disabled');
-      const comingSoonItem = document.getElementById('nav-coming-soon');
-      if (comingSoonItem) comingSoonItem.classList.remove('disabled');
 
       // Set version in menu
       const versionText = stockfishVersion
@@ -2813,19 +2811,6 @@ async function init() {
     });
   }
   wireNavItem('nav-config', showConfig, 'config-modal');
-
-  // Wire "Coming soon" submenu toggle
-  const comingSoonToggle = document.getElementById('nav-coming-soon');
-  const comingSoonItems = document.getElementById('nav-coming-soon-items');
-  if (comingSoonToggle && comingSoonItems) {
-    comingSoonToggle.addEventListener('click', () => {
-      const expanded = !comingSoonItems.classList.contains('hidden');
-      comingSoonItems.classList.toggle('hidden');
-      comingSoonToggle.classList.toggle('expanded', !expanded);
-      console.log('[nav] Coming soon', expanded ? 'collapsed' : 'expanded');
-    });
-    comingSoonItems.addEventListener('click', (e) => e.stopPropagation());
-  }
 
   document.getElementById('save-config').addEventListener('click', () => {
     saveConfig();

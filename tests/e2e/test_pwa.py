@@ -593,41 +593,6 @@ def test_raw_data_summary_in_demo_mode(page, pwa_url):
     expect(page.locator("#stats-modal")).not_to_be_visible()
 
 
-def test_coming_soon_submenu_toggle(page, app_url, console_errors):
-    """[App] mode: Coming soon submenu expands/collapses and items are not clickable."""
-    page.goto(app_url)
-    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
-
-    # Open menu
-    page.locator("#menu-btn").click()
-    page.wait_for_timeout(300)
-
-    # Coming soon toggle should be visible
-    toggle_label = page.locator("#nav-coming-soon .nav-submenu-label")
-    expect(toggle_label).to_be_visible()
-
-    # Sub-items should be hidden initially
-    submenu = page.locator("#nav-coming-soon-items")
-    expect(submenu).not_to_be_visible()
-
-    # Click label to expand
-    toggle_label.click()
-    page.wait_for_timeout(300)
-    expect(submenu).to_be_visible()
-
-    # Verify sub-items are visible
-    expect(page.locator("#nav-status")).to_be_visible()
-
-    # Click label again to collapse
-    toggle_label.click()
-    page.wait_for_timeout(300)
-    expect(submenu).not_to_be_visible()
-
-    log_text = "\n".join(console_errors["messages"])
-    assert "[nav] Coming soon expanded" in log_text
-    assert "[nav] Coming soon collapsed" in log_text
-
-
 def test_app_mode_refresh_games(page, app_url, console_errors):
     """[App] mode: Refresh menu item triggers game fetch."""
     page.goto(app_url)
@@ -751,7 +716,6 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
 
     expect(page.locator("#nav-refresh")).not_to_be_visible()
     expect(page.locator("#nav-config")).not_to_be_visible()
-    expect(page.locator("#nav-coming-soon")).not_to_be_visible()
 
     # Both-mode items are visible in demo mode
     expect(page.locator("#nav-stats")).to_be_visible()
