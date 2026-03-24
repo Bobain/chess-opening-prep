@@ -7,29 +7,37 @@ All tests automatically capture browser console messages and JS errors
 via the console_errors fixture — zero JS errors are tolerated.
 """
 
+# pyright: reportUnusedCallResult=false, reportAny=false
+
 from __future__ import annotations
 
 import http.server
+import json
 import shutil
 import socket
 import threading
-from typing import override
 import time
 from pathlib import Path
+from collections.abc import Generator
+from typing import override
 from unittest.mock import patch
 
 import pytest
+from playwright.sync_api import Page
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 PWA_DIR = PROJECT_ROOT / "pwa"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-def _serve_pwa_dir(tmp_dir):
+def _serve_pwa_dir(tmp_dir: Path) -> tuple[str, http.server.HTTPServer]:
     """Start an HTTP server for a PWA directory. Returns (url, server)."""
+    _dir = str(tmp_dir)
+
     class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *a, **kw):
-            super().__init__(*a, directory=str(tmp_dir), **kw)
+        def __init__(self, request: socket.socket, client_address: tuple[str, int],
+                     server: http.server.HTTPServer) -> None:
+            super().__init__(request, client_address, server, directory=_dir)
 
         @override
         def log_message(self, format: str, *args: object) -> None:
@@ -42,7 +50,11 @@ def _serve_pwa_dir(tmp_dir):
     return f"http://127.0.0.1:{port}", server
 
 
-def _copy_pwa_files(tmp_dir, training_data_path, analysis_data_path=None):
+def _copy_pwa_files(
+    tmp_dir: Path,
+    training_data_path: Path,
+    analysis_data_path: Path | None = None,
+) -> None:
     """Copy PWA files + training data to a temp directory."""
     for f in PWA_DIR.iterdir():
         if f.is_file() and f.name not in ("training_data.json", "analysis_data.json"):
@@ -66,7 +78,7 @@ def _copy_pwa_files(tmp_dir, training_data_path, analysis_data_path=None):
 
 
 @pytest.fixture(scope="session")
-def pwa_url(tmp_path_factory):
+def pwa_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
     """Serve the PWA with test fixture data (simplified positions)."""
     tmp_dir = tmp_path_factory.mktemp("pwa_e2e")
     analysis_fixture = FIXTURES_DIR / "analysis_data.json"
@@ -81,7 +93,7 @@ def pwa_url(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def pwa_real_url(tmp_path_factory):
+def pwa_real_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
     """Serve the PWA with real training data (production positions).
 
     Skips if training_data.json doesn't exist.
@@ -102,7 +114,7 @@ def pwa_real_url(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def app_url(tmp_path_factory):
+def app_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
     """Serve the FastAPI app with test fixture data ([App] mode).
 
     Starts a uvicorn server in a background thread with _project_root
@@ -124,7 +136,6 @@ def app_url(tmp_path_factory):
     (tmp_dir / "pwa").symlink_to(PWA_DIR)
 
     # Create a test config.json for config API tests
-    import json
     test_config = {
         "stockfish": {"path": "/usr/games/stockfish"},
         "players": {"lichess": "testuser", "chesscom": "testcom"},
@@ -154,15 +165,15 @@ def app_url(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def console_errors(page):
+def console_errors(page: Page) -> Generator[dict[str, list[str]]]:
     """Capture browser console messages and JS errors for every test.
 
     Automatically attached to every e2e test. Fails the test if any
     JS error (console.error or uncaught exception) is detected.
     All console output is printed on failure for debugging.
     """
-    messages = []
-    errors = []
+    messages: list[str] = []
+    errors: list[str] = []
 
     page.on("console", lambda msg: messages.append(f"[{msg.type}] {msg.text}"))
     page.on("pageerror", lambda exc: errors.append(str(exc)))
@@ -176,10 +187,10 @@ def console_errors(page):
             print(f"  {msg}")
 
     # Fail on JS errors
-    assert not errors, f"JS errors detected:\n" + "\n".join(errors)
+    assert not errors, "JS errors detected:\n" + "\n".join(errors)
 
 
-def click_square(page, square: str, orientation: str):
+def click_square(page: Page, square: str, orientation: str) -> None:
     """Click a square on the chessground board.
 
     Computes pixel coordinates from the square name and board orientation,
@@ -210,7 +221,7 @@ def click_square(page, square: str, orientation: str):
     page.mouse.click(x, y)
 
 
-def make_move(page, from_sq: str, to_sq: str, orientation: str):
+def make_move(page: Page, from_sq: str, to_sq: str, orientation: str) -> None:
     """Make a move on the chessground board via click-to-move.
 
     Clicks the source square (selects the piece), waits briefly,
