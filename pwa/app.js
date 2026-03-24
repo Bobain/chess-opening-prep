@@ -1816,13 +1816,17 @@ function showGameSelector() {
     return;
   }
 
-  // Show toolbar (analyze button only in app mode)
+  // Show toolbar (select-all + analyze only in app mode)
   if (toolbar) {
     toolbar.classList.remove('hidden');
+    const selectAllLabel = document.getElementById('select-all-label');
     const analyzeBtn = document.getElementById('analyze-selected-btn');
-    if (analyzeBtn) {
-      if (appMode === 'app') analyzeBtn.classList.remove('hidden');
-      else analyzeBtn.classList.add('hidden');
+    if (appMode === 'app') {
+      if (selectAllLabel) selectAllLabel.classList.remove('hidden');
+      if (analyzeBtn) analyzeBtn.classList.remove('hidden');
+    } else {
+      if (selectAllLabel) selectAllLabel.classList.add('hidden');
+      if (analyzeBtn) analyzeBtn.classList.add('hidden');
     }
   }
 
@@ -2783,7 +2787,8 @@ async function init() {
     document.getElementById('nav-version').textContent = versionText;
   }
 
-  // Wire nav-training menu item
+  // Wire nav menu items
+  wireNavItem('nav-games', () => showGameList());
   wireNavItem('nav-training', () => showTrainingView(null));
 
   // Wire game list toolbar
