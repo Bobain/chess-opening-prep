@@ -22,6 +22,7 @@ import uuid
 import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import TypedDict, cast
 
 import chess
 import chess.engine
@@ -115,6 +116,64 @@ class StatsResponse(BaseModel):
     by_source: dict[str, int]
 
 
+class ConfigResponse(BaseModel):
+    """Response body for GET /api/config."""
+
+    players: dict[str, str]
+    analysis: dict[str, float | int]
+
+
+class ConfigUpdateRequest(BaseModel):
+    """Request body for POST /api/config."""
+
+    players: dict[str, str] | None = None
+    analysis: dict[str, float | int] | None = None
+
+
+class GameSummaryResponse(BaseModel):
+    """One game in the game list."""
+
+    game_id: str
+    white: str
+    black: str
+    player_color: str
+    result: str
+    date: str
+    opening: str
+    move_count: int
+    source: str
+    analyzed: bool
+
+
+class GameListResponse(BaseModel):
+    """Response body for GET /api/games."""
+
+    games: list[GameSummaryResponse]
+    fetched_at: str | None = None
+
+
+class AnalysisSettingsResponse(BaseModel):
+    """Response body for GET /api/analysis/settings."""
+
+    threads: int
+    hash_mb: int
+    limits: dict[str, dict[str, float | int]]
+
+
+class AnalysisStartRequest(BaseModel):
+    """Request body for POST /api/analysis/start."""
+
+    game_ids: list[str] = Field(default_factory=list)
+    max_games: int = 10
+    reanalyze_all: bool = False
+
+
+class JobStartResponse(BaseModel):
+    """Response body for job start endpoints."""
+
+    job_id: str
+
+
 # --- API routes ---
 
 
@@ -173,20 +232,6 @@ async def train_stats() -> StatsResponse:
 
 
 # --- Config API ---
-
-
-class ConfigResponse(BaseModel):
-    """Response body for GET /api/config."""
-
-    players: dict[str, str]
-    analysis: dict[str, float | int]
-
-
-class ConfigUpdateRequest(BaseModel):
-    """Request body for POST /api/config."""
-
-    players: dict[str, str] | None = None
-    analysis: dict[str, float | int] | None = None
 
 
 @app.get("/api/config")
@@ -278,50 +323,6 @@ async def games_list(limit: int = 20) -> GameListResponse:
 # --- Analysis settings endpoints ---
 
 
-class AnalysisSettingsResponse(BaseModel):
-    """Response body for GET /api/analysis/settings."""
-
-    threads: int
-    hash_mb: int
-    limits: dict
-
-
-class AnalysisStartRequest(BaseModel):
-    """Request body for POST /api/analysis/start."""
-
-    game_ids: list[str] = Field(default_factory=list)
-    max_games: int = 10
-    reanalyze_all: bool = False
-
-
-class GameSummaryResponse(BaseModel):
-    """One game in the game list."""
-
-    game_id: str
-    white: str
-    black: str
-    player_color: str
-    result: str
-    date: str
-    opening: str
-    move_count: int
-    source: str
-    analyzed: bool
-
-
-class GameListResponse(BaseModel):
-    """Response body for GET /api/games."""
-
-    games: list[GameSummaryResponse]
-    fetched_at: str | None = None
-
-
-class JobStartResponse(BaseModel):
-    """Response body for job start endpoints."""
-
-    job_id: str
-
-
 @app.get("/api/analysis/settings")
 async def get_analysis_settings() -> AnalysisSettingsResponse:
     """Return current analysis engine settings (with 'auto' resolved)."""
@@ -405,7 +406,17 @@ async def train_derive():
 
 # --- Job runner ---
 
-_current_job: dict | None = None
+class _JobState(TypedDict):
+    """Internal state for a running analysis job."""
+
+    id: str
+    status: str
+    queue: asyncio.Queue[dict[str, object] | None]
+    cancel: threading.Event
+    params: dict[str, object]
+
+
+_current_job: _JobState | None = None
 _job_lock = threading.Lock()
 
 
@@ -422,35 +433,38 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
 
     from chess_self_coach.analysis import AnalysisInterrupted, analyze_games
 
-    queue = _current_job["queue"]
-    cancel = _current_job["cancel"]
-    params = _current_job.get("params", {})
+    assert _current_job is not None
+    job = _current_job
+    queue = job["queue"]
+    cancel = job["cancel"]
+    params = job.get("params", {})
 
-    def _push(item: dict | None) -> None:
+    def _push(item: dict[str, object] | None) -> None:
         try:
             loop.call_soon_threadsafe(queue.put_nowait, item)
         except RuntimeError:
             pass
 
-    def on_progress(event: dict) -> None:
+    def on_progress(event: dict[str, object]) -> None:
         _push(event)
 
     try:
-        game_ids = params.get("game_ids") or None
+        raw_ids = params.get("game_ids")
+        game_ids = cast(list[str] | None, raw_ids) if raw_ids else None
         analyze_games(
             game_ids=game_ids,
-            max_games=params.get("max_games", 10),
-            reanalyze_all=params.get("reanalyze_all", False),
+            max_games=cast(int, params.get("max_games", 10)),
+            reanalyze_all=cast(bool, params.get("reanalyze_all", False)),
             on_progress=on_progress,
             cancel=cancel,
         )
-        _current_job["status"] = "done"
+        job["status"] = "done"
     except AnalysisInterrupted as exc:
         _push({"phase": "interrupted", "message": str(exc), "percent": 100})
-        _current_job["status"] = "interrupted"
+        job["status"] = "interrupted"
     except Exception as exc:
         _push({"phase": "error", "message": str(exc), "percent": 100})
-        _current_job["status"] = "error"
+        job["status"] = "error"
     finally:
         _push(None)  # Signal end of stream
 
