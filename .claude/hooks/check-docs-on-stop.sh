@@ -19,5 +19,5 @@ if [ ! -f "$MARKER" ]; then
 fi
 
 cat <<'EOF'
-{"decision": "block", "reason": "DOCS SYNC — Source code that affects documentation was modified during this session. Check if docs/*.md needs updating:\n- trainer.py → training.md\n- cli.py → cli.md, setup.md\n- app.js → training.md, index.md\nIf the docs are already up to date, remove the marker with: rm .claude/.pending-docs-check"}
+{"decision": "block", "reason": "DOCS SYNC — Source code that affects documentation was modified during this session. Check if docs/*.md needs updating:\n- trainer.py → training.md\n- cli.py → cli.md, setup.md\n- app.js → training.md, index.md\nIf the docs are already up to date, remove the marker with: rm -f .claude/.pending-docs-check"}
 EOF
