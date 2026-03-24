@@ -634,32 +634,6 @@ cg-container {
   font-weight: 600;
 }
 
-#validate-content {
-  line-height: 1.6;
-  max-height: 60vh;
-  overflow-y: auto;
-}
-
-.validate-file {
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-}
-
-.validate-chapter {
-  padding-left: 1rem;
-  margin-bottom: 0.25rem;
-}
-
-.validate-ok { color: var(--success); }
-.validate-warn { color: #f0ad4e; }
-.validate-error { color: var(--accent); }
-
-.validate-detail {
-  padding-left: 2rem;
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
 .status-section {
   margin-bottom: 0.75rem;
 }
