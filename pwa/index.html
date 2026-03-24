@@ -17,10 +17,7 @@
   </div>
   <header>
     <button id="menu-btn" title="Menu">&#9776;</button>
-    <div id="mode-toggle">
-      <button id="mode-training" class="mode-btn active">Training</button>
-      <button id="mode-analysis" class="mode-btn">Analysis</button>
-    </div>
+    <span id="header-title">Chess Self-Coach</span>
     <div id="session-info">
       <span id="progress"></span>
     </div>
@@ -34,7 +31,8 @@
       <span id="nav-version"></span>
     </div>
     <ul id="nav-items">
-      <li id="nav-refresh" class="nav-item nav-app-only hidden">Analyse latest games</li>
+      <li id="nav-training" class="nav-item">Training</li>
+      <li id="nav-refresh" class="nav-item nav-app-only hidden">Refresh games</li>
       <li id="nav-config" class="nav-item nav-app-only hidden">Edit config</li>
       <li id="nav-coming-soon" class="nav-item nav-app-only hidden">
         <span class="nav-submenu-label">Coming soon <span class="nav-arrow">▸</span></span>
@@ -56,7 +54,7 @@
     </ul>
   </nav>
 
-  <main id="training-view">
+  <main id="training-view" class="hidden">
     <div id="board-wrapper">
       <div class="board-info-row">
         <div id="material-top" class="material-balance"></div>
@@ -97,7 +95,19 @@
     </div>
   </main>
 
-  <main id="analysis-view" class="hidden">
+  <main id="analysis-view">
+    <div id="game-list-toolbar" class="hidden">
+      <label id="select-all-label">
+        <input type="checkbox" id="select-all-checkbox">
+        <span>Select all</span>
+      </label>
+      <select id="game-limit-select">
+        <option value="20">20 games</option>
+        <option value="50">50 games</option>
+        <option value="100">100 games</option>
+      </select>
+      <button id="analyze-selected-btn" class="hidden" disabled>Analyze selected</button>
+    </div>
     <div id="game-selector"></div>
     <div id="game-review" class="hidden">
       <div id="review-game-info"></div>
@@ -126,6 +136,7 @@
         <button id="review-next" title="Next move">&gt;</button>
         <button id="review-last" title="Last move">&gt;|</button>
         <button id="review-flip" title="Flip board">&#8645;</button>
+        <button id="review-train-btn" class="hidden" title="Train on positions from this game">Train</button>
         <button id="review-back-btn" title="Back to game list">Back</button>
       </div>
     </div>

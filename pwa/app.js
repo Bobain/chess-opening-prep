@@ -90,8 +90,14 @@ let sessionOriginalSize = 0;
 let animationTimer = null;
 
 // --- Analysis mode state ---
-/** @type {string} Current view: 'training' or 'analysis' */
-let appView = 'training';
+/** @type {string} Current view: 'games' (game list), 'review', or 'training' */
+let appView = 'games';
+/** @type {Set<string>} Selected game IDs for batch analysis */
+let selectedGameIds = new Set();
+/** @type {number} How many games to show in the list */
+let gameListLimit = 20;
+/** @type {?string} When training on a specific game, its ID; null = all positions */
+let trainingGameFilter = null;
 /** @type {?Object} Parsed analysis_data.json */
 let analysisData = null;
 /** @type {?Object} Currently selected game for review */
@@ -943,9 +949,14 @@ function showSummary() {
  * resets session state, and shows the first position.
  */
 function startSession() {
-  console.log('[startSession] Starting new session');
+  console.log('[startSession] Starting new session, gameFilter:', trainingGameFilter);
   const settings = loadSettings();
-  session = selectPositions(trainingData.positions, settings.sessionSize);
+  let positions = trainingData.positions;
+  if (trainingGameFilter) {
+    positions = positions.filter((p) => p.game && p.game.id === trainingGameFilter);
+    console.log(`[startSession] Filtered to ${positions.length} position(s) for game ${trainingGameFilter}`);
+  }
+  session = selectPositions(positions, settings.sessionSize);
   console.log(`[startSession] Selected ${session.length} position(s)`);
   sessionResults = [];
   sessionAppearances = new Map();
@@ -1872,37 +1883,37 @@ async function showJournalTopic(slug) {
   }
 }
 
-// --- Analysis mode ---
+// --- View switching ---
 
 /**
- * Switch to training view.
+ * Show the game list view (default main view).
  */
-function showTrainingMode() {
-  console.log('[showTrainingMode] Switching to training');
-  appView = 'training';
-  document.getElementById('training-view').classList.remove('hidden');
-  document.getElementById('analysis-view').classList.add('hidden');
-  document.getElementById('mode-training').classList.add('active');
-  document.getElementById('mode-analysis').classList.remove('active');
-  if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
-}
-
-/**
- * Switch to analysis view.
- */
-function showAnalysisMode() {
-  console.log('[showAnalysisMode] Switching to analysis');
-  appView = 'analysis';
+function showGameList() {
+  console.log('[showGameList] Switching to game list');
+  appView = 'games';
   document.getElementById('training-view').classList.add('hidden');
   document.getElementById('analysis-view').classList.remove('hidden');
-  document.getElementById('mode-training').classList.remove('active');
-  document.getElementById('mode-analysis').classList.add('active');
   document.getElementById('progress').textContent = '';
+  if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
   if (!analysisData) {
     loadAnalysisData();
   } else {
     showGameSelector();
   }
+}
+
+/**
+ * Show the training view, optionally scoped to one game.
+ * @param {?string} gameId - If set, train only on positions from this game.
+ */
+function showTrainingView(gameId = null) {
+  console.log('[showTrainingView] gameId:', gameId);
+  trainingGameFilter = gameId;
+  appView = 'training';
+  document.getElementById('training-view').classList.remove('hidden');
+  document.getElementById('analysis-view').classList.add('hidden');
+  if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
+  if (trainingData) startSession();
 }
 
 /**
@@ -2040,19 +2051,45 @@ function computeAccuracy(moves, classifications, color) {
 }
 
 /**
- * Render the game selector list.
+ * Update the "Analyze selected (N)" button text and disabled state.
+ */
+function updateAnalyzeButton() {
+  const btn = document.getElementById('analyze-selected-btn');
+  if (!btn) return;
+  const n = selectedGameIds.size;
+  btn.textContent = n > 0 ? `Analyze selected (${n})` : 'Analyze selected';
+  btn.disabled = n === 0;
+}
+
+/**
+ * Render the game selector list with checkboxes and analysis status.
  */
 function showGameSelector() {
   console.log('[showGameSelector] Rendering game list');
   const selector = document.getElementById('game-selector');
   const review = document.getElementById('game-review');
+  const toolbar = document.getElementById('game-list-toolbar');
   selector.textContent = '';
   selector.classList.remove('hidden');
   review.classList.add('hidden');
+  selectedGameIds.clear();
 
   if (!analysisData || !analysisData.games || Object.keys(analysisData.games).length === 0) {
-    selector.textContent = 'No analyzed games available.';
+    selector.textContent = appMode === 'app'
+      ? 'No games yet. Use menu \u2630 \u2192 Refresh games to fetch your games.'
+      : 'No analyzed games available.';
+    if (toolbar) toolbar.classList.add('hidden');
     return;
+  }
+
+  // Show toolbar (analyze button only in app mode)
+  if (toolbar) {
+    toolbar.classList.remove('hidden');
+    const analyzeBtn = document.getElementById('analyze-selected-btn');
+    if (analyzeBtn) {
+      if (appMode === 'app') analyzeBtn.classList.remove('hidden');
+      else analyzeBtn.classList.add('hidden');
+    }
   }
 
   // Sort games by date descending
@@ -2063,9 +2100,31 @@ function showGameSelector() {
     return db.localeCompare(da);
   });
 
-  for (const [gameId, game] of gameEntries) {
+  // Limit to gameListLimit
+  const limitedEntries = gameEntries.slice(0, gameListLimit);
+
+  for (const [gameId, game] of limitedEntries) {
     const card = document.createElement('div');
     card.className = 'game-card';
+    card.dataset.gameId = gameId;
+
+    // Checkbox (app mode only)
+    if (appMode === 'app') {
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'game-card-checkbox';
+      cb.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (cb.checked) selectedGameIds.add(gameId);
+        else selectedGameIds.delete(gameId);
+        updateAnalyzeButton();
+        // Update "select all" state
+        const selectAll = document.getElementById('select-all-checkbox');
+        if (selectAll) selectAll.checked = selectedGameIds.size === limitedEntries.length;
+      });
+      card.appendChild(cb);
+    }
+
     card.addEventListener('click', () => selectGame(gameId));
 
     // Result badge
@@ -2099,7 +2158,6 @@ function showGameSelector() {
     const meta = document.createElement('div');
     meta.className = 'game-card-meta';
     const dateStr = (game.headers.date || '').replace(/\./g, '-');
-    // Find opening name from first opening_explorer move
     let openingName = '';
     for (const m of game.moves) {
       if (m.opening_explorer && m.opening_explorer.moves) {
@@ -2112,7 +2170,7 @@ function showGameSelector() {
         if (openingName) break;
       }
     }
-    meta.textContent = `${dateStr} · ${game.moves.length} moves${openingName ? ' · ' + openingName : ''}`;
+    meta.textContent = `${dateStr} \u00b7 ${game.moves.length} moves${openingName ? ' \u00b7 ' + openingName : ''}`;
     infoEl.appendChild(meta);
     card.appendChild(infoEl);
 
@@ -2127,7 +2185,6 @@ function showGameSelector() {
       val.textContent = `${playerAcc}%`;
       accEl.appendChild(val);
     }
-    // Count classifications for player moves only
     const counts = {};
     for (let i = 0; i < game.moves.length; i++) {
       const cls = classified[i];
@@ -2158,6 +2215,8 @@ function showGameSelector() {
 
     selector.appendChild(card);
   }
+
+  updateAnalyzeButton();
 }
 
 /**
@@ -2182,6 +2241,20 @@ function selectGame(gameId) {
   const infoEl = document.getElementById('review-game-info');
   const result = reviewGame.headers.result;
   infoEl.textContent = `${reviewGame.headers.white} vs ${reviewGame.headers.black}  ${result}`;
+
+  // Show/hide "Train on this game" button
+  const trainBtn = document.getElementById('review-train-btn');
+  if (trainBtn && trainingData) {
+    const hasPositions = trainingData.positions.some((p) => p.game && p.game.id === gameId);
+    if (hasPositions) {
+      trainBtn.classList.remove('hidden');
+      trainBtn.onclick = () => showTrainingView(gameId);
+    } else {
+      trainBtn.classList.add('hidden');
+    }
+  }
+
+  appView = 'review';
 
   // Render components
   renderGameSummary();
@@ -2879,7 +2952,10 @@ async function init() {
   }
 
   wireNavItem('nav-stats', showRawDataSummary, 'stats-modal');
-  wireNavItem('nav-refresh', showAnalysisSettings, 'analysis-modal');
+  wireNavItem('nav-refresh', async () => {
+    console.log('[nav-refresh] Refreshing game list...');
+    await autoFetchGames();
+  });
 
   // Wire analysis modal buttons
   const startAnalysisBtn = document.getElementById('start-analysis');
@@ -2960,9 +3036,37 @@ async function init() {
     document.getElementById('nav-version').textContent = versionText;
   }
 
-  // Wire mode toggle
-  document.getElementById('mode-training').addEventListener('click', showTrainingMode);
-  document.getElementById('mode-analysis').addEventListener('click', showAnalysisMode);
+  // Wire nav-training menu item
+  wireNavItem('nav-training', () => showTrainingView(null));
+
+  // Wire game list toolbar
+  const selectAllCb = document.getElementById('select-all-checkbox');
+  if (selectAllCb) {
+    selectAllCb.addEventListener('change', () => {
+      const checkboxes = document.querySelectorAll('.game-card-checkbox');
+      checkboxes.forEach((cb) => {
+        cb.checked = selectAllCb.checked;
+        const gameId = cb.closest('.game-card').dataset.gameId;
+        if (selectAllCb.checked) selectedGameIds.add(gameId);
+        else selectedGameIds.delete(gameId);
+      });
+      updateAnalyzeButton();
+    });
+  }
+
+  const limitSelect = document.getElementById('game-limit-select');
+  if (limitSelect) {
+    limitSelect.addEventListener('change', () => {
+      gameListLimit = parseInt(limitSelect.value, 10);
+      console.log('[init] Game list limit changed to', gameListLimit);
+      showGameSelector();
+    });
+  }
+
+  const analyzeSelBtn = document.getElementById('analyze-selected-btn');
+  if (analyzeSelBtn) {
+    analyzeSelBtn.addEventListener('click', () => analyzeSelectedGames());
+  }
 
   // Wire review controls
   document.getElementById('review-first').addEventListener('click', () => goToMove(0));
@@ -2995,7 +3099,7 @@ async function init() {
   });
   document.getElementById('review-back-btn').addEventListener('click', () => {
     if (autoPlayTimer) { clearInterval(autoPlayTimer); autoPlayTimer = null; }
-    showGameSelector();
+    showGameList();
   });
 
   // Score chart click handler
@@ -3011,7 +3115,7 @@ async function init() {
 
   // Keyboard navigation for analysis mode
   document.addEventListener('keydown', (e) => {
-    if (appView !== 'analysis' || !reviewGame) return;
+    if (appView !== 'review' || !reviewGame) return;
     // Don't capture if user is typing in an input
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.key === 'ArrowLeft') { e.preventDefault(); goToMove(currentPly - 1); }
@@ -3022,7 +3126,7 @@ async function init() {
 
   // Resize handler for score chart
   window.addEventListener('resize', () => {
-    if (appView === 'analysis' && reviewGame) renderScoreChart();
+    if (appView === 'review' && reviewGame) renderScoreChart();
   });
 
   // Register service worker
@@ -3032,8 +3136,60 @@ async function init() {
     );
   }
 
-  // Start first session (skip if no training data loaded)
-  if (trainingData) startSession();
+  // Default view: game list (load analysis data to populate it)
+  showGameList();
+
+  // In app mode, auto-fetch games
+  if (appMode === 'app') {
+    autoFetchGames();
+  }
+}
+
+/**
+ * Auto-fetch games from Lichess/chess.com at startup.
+ * Falls back to analysis_data.json on error.
+ * @async
+ */
+async function autoFetchGames() {
+  console.log('[autoFetchGames] Fetching games...');
+  const selector = document.getElementById('game-selector');
+  if (selector) selector.textContent = 'Fetching your games...';
+  try {
+    await fetch('/api/games/fetch', { method: 'POST' });
+    // Reload analysis data to get the unified view
+    await loadAnalysisData();
+  } catch (err) {
+    console.error('[autoFetchGames] Failed:', err);
+    // Fallback: analysis data was already loaded by showGameList
+  }
+}
+
+/**
+ * Analyze the selected games (send game_ids to analysis API).
+ * @async
+ */
+async function analyzeSelectedGames() {
+  const ids = Array.from(selectedGameIds);
+  console.log('[analyzeSelectedGames] Analyzing', ids.length, 'game(s)');
+  if (ids.length === 0) return;
+
+  try {
+    const resp = await fetch('/api/analysis/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game_ids: ids }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      console.error('[analyzeSelectedGames] API error:', resp.status, err.detail);
+      return;
+    }
+    const { job_id: jobId } = await resp.json();
+    console.log('[analyzeSelectedGames] Job started:', jobId);
+    showAnalysisProgress(jobId);
+  } catch (err) {
+    console.error('[analyzeSelectedGames] Fetch failed:', err);
+  }
 }
 
 init();
