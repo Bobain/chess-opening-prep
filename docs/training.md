@@ -2,7 +2,7 @@
 
 Review your own games, drill the correct moves with spaced repetition, and analyze full games with chess.com-quality review.
 
-The PWA has two modes, toggled via the header: **Training** (find the better move) and **Analysis** (game review).
+The PWA opens on a **game list** showing your recent games. From there you can review games, analyze them with Stockfish, or train on your mistakes. **Training** is accessible via the hamburger menu or per-game from the review view.
 
 ## Training mode
 
@@ -84,7 +84,7 @@ See `training_data.json` for the full schema. Each position contains:
 
 ### Game review
 
-Click **Analysis** in the header toggle to enter game review mode. This provides chess.com-quality analysis of your games.
+The **game list** is the default view. Click any analyzed game to enter game review mode. This provides chess.com-quality analysis of your games.
 
 ```
 GAME SELECTOR                          GAME REVIEW

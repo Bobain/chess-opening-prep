@@ -9,7 +9,7 @@ This section documents how data and actions flow through the system — from the
 Interactive workflows visible to the player.
 
 - **Training session** — PWA quiz loop with spaced repetition
-- **Analyse latest games** — Fetch, analyze, generate training positions
+- **Analyze selected games** — Fetch games, select for analysis, generate training positions
 - **Setup wizard** — CLI interactive configuration
 - **Config management** — CLI setup + PWA edit config
 

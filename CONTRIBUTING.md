@@ -43,8 +43,8 @@ The PWA detects its mode automatically via `/api/status`. If a FastAPI backend r
 | **Analysis depth default** | 12 | 18 |
 | **Data** | Sample `training_data.json` + `analysis_data.json` | Generated from your own games |
 | **CLI tools** | None | fetch, analyze, repertoire management |
-| **Menu** | Raw data summary, Settings, About | Analyse latest games, Edit config, Coming soon ▸, Raw data summary, Settings, About |
-| **Mode toggle** | [Training \| Analysis] — both modes work in both distributions |
+| **Menu** | Training, Raw data summary, Settings, About | Training, Refresh games, Edit config, Coming soon ▸, Raw data summary, Settings, About |
+| **Default view** | Game list (from analysis_data.json) | Game list (auto-fetched at startup) |
 
 The **demo** showcases the training and analysis interfaces with sample data. Install the app to train on your own games.
 
@@ -65,13 +65,15 @@ When developing a new feature:
 ### PWA Workflow Design
 
 The CLI has many separate commands (`import → analyze → push → pull → validate → cleanup`),
-but the PWA simplifies this into a single action:
+but the PWA simplifies this into a game-list-centric workflow:
 
-- **"Analyse latest games"** button in the hamburger menu
-- Runs the full analysis pipeline in the background via `POST /api/analysis/start`
-- Progress displayed via **SSE** (Server-Sent Events) in a modal with a step checklist (init → fetch → analyze → finalize)
-- On completion, reloads `training_data.json` and refreshes the PWA session
-- The resulting `analysis_data.json` is also used by the **Analysis mode** for game review
+- **Auto-fetch** at startup: `POST /api/games/fetch` retrieves games from Lichess/chess.com and caches them in `fetched_games.json`
+- **Game list** is the default view: shows all games (fetched + analyzed), with checkboxes for batch selection
+- **"Analyze selected"** button sends chosen game IDs via `POST /api/analysis/start {game_ids}`
+- Progress displayed via **SSE** (Server-Sent Events) in a modal with a step checklist (init → analyze → finalize)
+- On completion, reloads data and refreshes the game list with accuracy and classification badges
+- **Per-game training**: click "Train" on any analyzed game to drill only that game's mistakes
+- **Full training**: accessible via the hamburger menu → "Training" (all positions, spaced repetition)
 
 Deferred features are grouped in a **"Coming soon"** submenu (Validate PGN, Cleanup studies, Import games, Coaching journal, Project status).
 

@@ -56,9 +56,9 @@ sequenceDiagram
     participant U as Player
     participant PWA as Browser (PWA)
 
-    U->>PWA: Click "Analysis" in mode toggle
+    Note over PWA: Game list is the default view
     PWA->>PWA: Fetch analysis_data.json
-    PWA->>U: Show game selector (list of games)
+    PWA->>U: Show game list (analyzed + cached games)
 
     U->>PWA: Click a game card
     PWA->>PWA: classifyAllMoves() — win probability model
@@ -82,8 +82,8 @@ sequenceDiagram
 
 ### Key details
 
-- **Mode toggle**: segmented control `[Training | Analysis]` in the header.
-- **Game selector**: cards showing opponent, date, result (W/D/L badge), opening name, move count.
+- **Game list**: default view, shows all games (analyzed + cached). Cards showing opponent, date, result (W/D/L badge), opening name, move count. Analyzed games also show accuracy % and classification badges.
+- **Training**: accessible via hamburger menu → "Training" (all positions) or per-game "Train" button in review.
 - **Move classifications**: win probability model — `winProb(cp) = 1/(1+10^(-cp/400))`, thresholds: Best ≤0, Excellent ≤0.02, Good ≤0.05, Inaccuracy ≤0.10, Mistake ≤0.20, Blunder >0.20.
 - **Eval bar**: sigmoid mapping, 50% at equal, smooth CSS transition. For book moves (no Stockfish eval), derives approximate cp from opening explorer win/draw/loss stats. Shows "M3" for mate.
 - **Score chart**: Canvas, click to jump to any move, colored dots at mistakes/blunders.
@@ -93,9 +93,9 @@ sequenceDiagram
 
 ---
 
-## Analyse latest games (app mode)
+## Analyze selected games (app mode)
 
-Fetches recent games, runs full analysis (Stockfish + APIs), and generates training positions.
+User selects games from the game list, triggers Stockfish analysis on selected games, and generates training positions.
 
 ![Analyse latest games flow](images/analyse-games.svg)
 
@@ -110,14 +110,8 @@ sequenceDiagram
     participant L as Lichess API
     participant C as Chess.com API
 
-    U->>PWA: Click "Analyse latest games"
-    PWA->>API: GET /api/analysis/settings
-    API-->>PWA: {threads, hash_mb, limits}
-    PWA->>U: Show Analysis Settings modal
-
-    U->>PWA: Adjust settings + click "Start analysis"
-    PWA->>API: POST /api/analysis/settings (save)
-    PWA->>API: POST /api/analysis/start {max_games, reanalyze_all}
+    U->>PWA: Select games (checkboxes) + click "Analyze selected"
+    PWA->>API: POST /api/analysis/start {game_ids}
     API-->>PWA: 202 + job_id
     PWA->>API: GET /api/jobs/{id}/events (SSE)
 

@@ -10,10 +10,11 @@
 
 **Your games → Stockfish analysis → Training drills + Game review**
 
-The PWA has two modes, toggled via the header:
+The PWA opens on a **game list** — your recent games from Lichess and chess.com. From there:
 
-- **Training**: spaced repetition drill — find the better move for each mistake
-- **Analysis**: chess.com-style game review — browse all moves with eval bar, score chart, and move classifications
+- **Select games** to analyze with Stockfish (checkboxes + batch analyze)
+- **Click a game** for chess.com-style game review (eval bar, score chart, move classifications)
+- **Train** on any analyzed game, or open full **Training** from the menu for spaced repetition drills across all your mistakes
 
 ### One command to start
 
