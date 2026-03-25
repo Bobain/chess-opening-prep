@@ -978,6 +978,7 @@ def analyze_games(
         wall_start = _time.time()
         done_count = 0
         total_tasks = len(new_games)
+        _emit({"phase": "analyze", "message": f"Analyzing 0/{total_tasks}", "percent": 15, "current": 0, "total": total_tasks})
 
         for game, game_id, player_color in new_games:
             done_count += 1
