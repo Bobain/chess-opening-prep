@@ -94,6 +94,14 @@ let animationTimer = null;
 let appView = 'games';
 /** @type {Set<string>} Selected game IDs for batch analysis */
 let selectedGameIds = new Set();
+/** @type {Set<string>} Game IDs in the current analysis job */
+let analyzingGameIds = new Set();
+/** @type {Set<string>} Game IDs queued for the next analysis batch */
+let pendingGameIds = new Set();
+/** @type {number} Games completed in previous batches (for unified counter) */
+let analysisOffset = 0;
+/** @type {number} Total games across all batches */
+let analysisTotalAll = 0;
 /** @type {number} How many games to show in the list */
 let gameListLimit = 20;
 /** @type {Set<string>} Active result filters ('win', 'loss', 'draw') */
@@ -1223,10 +1231,11 @@ function startSession() {
  */
 function showAnalysisProgress(jobId) {
   console.log('[showAnalysisProgress] Starting job:', jobId);
+  const currentBatchSize = analyzingGameIds.size;
 
   const el = document.getElementById('analysis-progress');
   if (!el) return;
-  el.textContent = 'Analyzing...';
+  el.textContent = `Analyzing ${analysisOffset}/${analysisTotalAll}`;
   el.classList.remove('hidden');
 
   // Click to cancel
@@ -1245,26 +1254,46 @@ function showAnalysisProgress(jobId) {
     console.log('[showAnalysisProgress] Event:', event.phase, event.percent);
 
     if (event.phase === 'fetch') {
-      el.textContent = 'Fetching...';
+      el.textContent = `Analyzing ${analysisOffset}/${analysisTotalAll}`;
     } else if (event.current != null && event.total != null) {
-      el.textContent = `Analyzing ${event.current}/${event.total}`;
+      el.textContent = `Analyzing ${analysisOffset + event.current}/${analysisTotalAll}`;
     } else if (event.phase === 'derive') {
       el.textContent = 'Finalizing...';
     } else if (event.phase === 'analyze') {
-      el.textContent = 'Analyzing...';
+      el.textContent = `Analyzing ${analysisOffset}/${analysisTotalAll}`;
     }
 
     if (event.phase === 'done' || event.phase === 'error' || event.phase === 'interrupted') {
       evtSource.close();
-      setTimeout(() => el.classList.add('hidden'), 2000);
-      if (event.phase === 'done') {
-        loadAnalysisData();
-        loadTrainingData();
+      analysisOffset += currentBatchSize;
+
+      if (event.phase === 'done' && pendingGameIds.size > 0) {
+        // Continue with pending queue
+        analyzingGameIds = new Set(pendingGameIds);
+        pendingGameIds.clear();
+        showGameSelector();
+        startAnalysisJob(Array.from(analyzingGameIds));
+      } else {
+        // All done — reset state and refresh
+        analyzingGameIds.clear();
+        pendingGameIds.clear();
+        analysisOffset = 0;
+        analysisTotalAll = 0;
+        setTimeout(() => el.classList.add('hidden'), 2000);
+        if (event.phase === 'done') {
+          loadAnalysisData();
+          loadTrainingData();
+        }
+        showGameSelector();
       }
     }
   };
   evtSource.onerror = () => {
     evtSource.close();
+    analyzingGameIds.clear();
+    pendingGameIds.clear();
+    analysisOffset = 0;
+    analysisTotalAll = 0;
     el.classList.add('hidden');
   };
 }
@@ -1567,8 +1596,9 @@ async function showGameSelector() {
     card.className = entry.analyzed ? 'game-card' : 'game-card game-card-unanalyzed';
     card.dataset.gameId = gameId;
 
-    // Checkbox (app mode only)
-    if (appMode === 'app') {
+    // Checkbox (app mode only, not for analyzed or queued games)
+    const isQueued = analyzingGameIds.has(gameId) || pendingGameIds.has(gameId);
+    if (appMode === 'app' && !game && !isQueued) {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
       cb.className = 'game-card-checkbox';
@@ -1578,7 +1608,8 @@ async function showGameSelector() {
         else selectedGameIds.delete(gameId);
         updateAnalyzeButton();
         const selectAll = document.getElementById('select-all-checkbox');
-        if (selectAll) selectAll.checked = selectedGameIds.size === limitedEntries.length;
+        const selectableCount = limitedEntries.filter(e => !e.richData && !analyzingGameIds.has(e.gameId) && !pendingGameIds.has(e.gameId)).length;
+        if (selectAll) selectAll.checked = selectedGameIds.size > 0 && selectedGameIds.size === selectableCount;
       });
       card.appendChild(cb);
     }
@@ -1642,11 +1673,19 @@ async function showGameSelector() {
     infoEl.appendChild(meta);
     card.appendChild(infoEl);
 
-    // Accuracy + classification badges (analyzed) or "Not analyzed" badge
+    // Accuracy + classification badges (analyzed), "Queued", or "Not analyzed" badge
     if (!game) {
       const badge = document.createElement('div');
-      badge.className = 'game-card-accuracy unanalyzed-badge';
-      badge.textContent = entry.analyzed ? 'Analyzed' : 'Not analyzed';
+      if (isQueued) {
+        badge.className = 'game-card-accuracy queued-badge';
+        badge.textContent = 'Queued';
+      } else if (entry.analyzed) {
+        badge.className = 'game-card-accuracy unanalyzed-badge';
+        badge.textContent = 'Analyzed';
+      } else {
+        badge.className = 'game-card-accuracy unanalyzed-badge';
+        badge.textContent = 'Not analyzed';
+      }
       card.appendChild(badge);
       selector.appendChild(card);
       continue;
@@ -2632,6 +2671,22 @@ async function analyzeSelectedGames() {
   console.log('[analyzeSelectedGames] Analyzing', ids.length, 'game(s)');
   if (ids.length === 0) return;
 
+  // If a job is already running, queue these games for the next batch
+  if (analyzingGameIds.size > 0) {
+    console.log('[analyzeSelectedGames] Job running, queuing', ids.length, 'game(s)');
+    for (const id of ids) pendingGameIds.add(id);
+    analysisTotalAll += ids.length;
+    selectedGameIds.clear();
+    // Update progress text with new total
+    const el = document.getElementById('analysis-progress');
+    if (el && !el.classList.contains('hidden')) {
+      el.textContent = el.textContent.replace(/\/\d+/, '/' + analysisTotalAll);
+    }
+    showGameSelector();
+    return;
+  }
+
+  // Start a new job
   try {
     const resp = await fetch('/api/analysis/start', {
       method: 'POST',
@@ -2645,9 +2700,42 @@ async function analyzeSelectedGames() {
     }
     const { job_id: jobId } = await resp.json();
     console.log('[analyzeSelectedGames] Job started:', jobId);
+
+    analyzingGameIds = new Set(ids);
+    analysisOffset = 0;
+    analysisTotalAll = ids.length + pendingGameIds.size;
+    selectedGameIds.clear();
+    showGameSelector();
     showAnalysisProgress(jobId);
   } catch (err) {
     console.error('[analyzeSelectedGames] Fetch failed:', err);
+  }
+}
+
+/**
+ * Start an analysis job for the given game IDs (internal helper for queue continuation).
+ * @param {string[]} ids - Game IDs to analyze.
+ * @async
+ */
+async function startAnalysisJob(ids) {
+  console.log('[startAnalysisJob] Starting batch of', ids.length, 'game(s)');
+  try {
+    const resp = await fetch('/api/analysis/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game_ids: ids }),
+    });
+    if (!resp.ok) {
+      console.error('[startAnalysisJob] API error:', resp.status);
+      analyzingGameIds.clear();
+      return;
+    }
+    const { job_id: jobId } = await resp.json();
+    console.log('[startAnalysisJob] Job started:', jobId);
+    showAnalysisProgress(jobId);
+  } catch (err) {
+    console.error('[startAnalysisJob] Fetch failed:', err);
+    analyzingGameIds.clear();
   }
 }
 
