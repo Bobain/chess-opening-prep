@@ -216,7 +216,7 @@ Section 6 (UX Improvements) ← independent, parallel with all sections
 
 ## Cleanup TODO
 
-- [ ] Remove "Coming soon" submenu from PWA nav — only "Project status" remains, not worth a submenu. Either promote it to a regular nav item or remove it entirely.
+- [x] Remove "Coming soon" submenu from PWA nav — removed entirely (only "Project status" remained).
 - [x] Show fetched-but-unanalyzed games in game list — PWA now fetches `/api/games` in [app] mode and appends unanalyzed games (greyed out, "Not analyzed" badge, selectable for batch analysis).
 - [ ] Simplify settings/config UX — **audit findings (2026-03-24)**:
 

@@ -513,6 +513,23 @@ cg-container {
   width: 4rem;
 }
 
+.modal-content details {
+  margin-top: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+}
+
+.modal-content summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.modal-content details[open] summary {
+  margin-bottom: 0.5rem;
+}
+
 .modal-secondary {
   background: var(--surface);
   color: var(--text);
