@@ -141,10 +141,8 @@ player-not-found, error recovery). `test_server.py` now tests `/api/analysis/sta
 - `print_stats()`, `get_stats_data()`, `refresh_explanations()`
 - Threshold constants: `BLUNDER_THRESHOLD`, `MISTAKE_THRESHOLD`, `INACCURACY_THRESHOLD`
 
-### 3e. Interrupt resilience & data recovery
+### 3e. Interrupt resilience — DONE
 - [x] Interrupt button + incremental atomic writes (crash-safe pipeline)
-- [ ] Legacy data migration: load training_data.json from older versions
-      (different fields, missing SRS, etc.) — reuse what can be reused
 
 ## 4. Chess Prep — New features
 
@@ -152,12 +150,6 @@ player-not-found, error recovery). `test_server.py` now tests `/api/analysis/sta
 - [x] About modal: app name, version, GitHub link, SF version (in [app] mode)
 - [x] Click handler for `#nav-about`
 - [x] Works in [demo] (static info) and [app] (version from /api/status)
-
-### 4c. PGN viewer
-- [ ] ⚠️ UX DESIGN PHASE: interactive board + move tree, or read-only text view?
-- [ ] GET /api/pgn/files/{name} — read one PGN file
-- [ ] PWA: PGN viewer modal with chessboard (reuse chessground)
-- [ ] Menu item: "View PGN" (nav-app-only)
 
 ## 5. Settings & Configuration
 
@@ -199,15 +191,13 @@ Section 2 (Menu + Mode detection) ← DONE
      │    Section 3d (Legacy cleanup) ← DONE
      │         │
      │         ▼
-     │    Section 3e (Interrupt resilience + data recovery)
+     │    Section 3e (Interrupt resilience) ← DONE
      │
      ├──► Section 5a (Settings UI) ← DONE
      │
-     ├──► Section 4a (About modal) ← independent, no API needed for [demo]
+     ├──► Section 4a (About modal) ← DONE
      │
-     ├──► Section 4c (PGN viewer) ← needs API + UX design
-     │
-     └──► Section 5b (Config API) ← low priority, parallel with 4c
+     └──► Section 5b (Config API) ← DONE
 
 Section 6 (UX Improvements) ← independent, parallel with all sections
      └──► Driven by ux-auditor agent output
