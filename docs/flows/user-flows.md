@@ -154,7 +154,7 @@ sequenceDiagram
 
 ### Key details
 
-- **Settings modal**: before analysis starts, user configures threads, hash, depth/time limits, and number of games.
+- **Settings modal**: unified modal with Training, Accounts, Analysis (presets: Quick/Balanced/Deep + Advanced toggle), and Danger zone sections.
 - **Two-phase pipeline**: Phase 1 collects raw data (expensive), Phase 2 derives training data (cheap, re-runnable via `chess-self-coach train --derive`).
 - **Engine model**: one Stockfish with N-1 threads + 1GB hash (configurable), sequential game-by-game.
 - **Opening Explorer**: queries Lichess API position by position until theory departure (move not in database).
@@ -232,13 +232,11 @@ flowchart LR
     end
 
     subgraph "PWA (app mode only)"
-        SHOW[GET /api/config] --> MODAL[Config modal]
+        SHOW["Open Settings modal"] --> FETCH["GET /api/config<br/>GET /api/analysis/settings"]
+        FETCH --> MODAL["Unified Settings modal<br/>(Training, Accounts, Analysis, Danger zone)"]
         MODAL --> SAVE_BTN[Save]
-        SAVE_BTN --> POST[POST /api/config]
-        POST --> MERGE[Merge players + analysis<br/>Preserve stockfish]
-        SHOW2[GET /api/analysis/settings] --> MODAL2[Analysis Settings modal]
-        MODAL2 --> SAVE2[POST /api/analysis/settings]
-        SAVE2 --> MERGE2[Update analysis_engine]
+        SAVE_BTN --> POST["POST /api/config<br/>POST /api/analysis/settings"]
+        POST --> MERGE["Merge players + analysis<br/>Update analysis_engine<br/>Preserve stockfish"]
     end
 
     WRITE --> CFG

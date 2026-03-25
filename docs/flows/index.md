@@ -11,7 +11,7 @@ Interactive workflows visible to the player.
 - **Training session** — PWA quiz loop with spaced repetition
 - **Analyze selected games** — Fetch games, select for analysis, generate training positions
 - **Setup wizard** — CLI interactive configuration
-- **Config management** — CLI setup + PWA edit config
+- **Config management** — CLI setup + PWA unified settings
 
 ### [Data flows](data-flows.md)
 
