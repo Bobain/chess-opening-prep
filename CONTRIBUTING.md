@@ -43,7 +43,7 @@ The PWA detects its mode automatically via `/api/status`. If a FastAPI backend r
 | **Analysis depth default** | 12 | 18 |
 | **Data** | Sample `training_data.json` + `analysis_data.json` | Generated from your own games |
 | **CLI tools** | None | fetch, analyze, train |
-| **Menu** | Training, Raw data summary, Settings, About | Training, Refresh games, Edit config, Coming soon ▸, Raw data summary, Settings, About |
+| **Menu** | Training, Settings, About | Training, Refresh games, Edit config, Coming soon ▸, Settings, About |
 | **Default view** | Game list (from analysis_data.json) | Game list (auto-fetched at startup) |
 
 The **demo** showcases the training and analysis interfaces with sample data. Install the app to train on your own games.

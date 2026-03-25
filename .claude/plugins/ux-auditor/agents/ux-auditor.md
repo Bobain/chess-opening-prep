@@ -161,12 +161,11 @@ SERVER_PID=$!
 9. Game review — classification dots, accuracy badges, arrows
 10. Settings modal
 11. About modal
-12. Raw data summary modal
 
 [App] mode (if `uv run chess-self-coach serve` works):
-13. Analysis settings modal
-14. Progress modal (SSE streaming)
-15. Edit config modal
+12. Analysis settings modal
+13. Progress modal (SSE streaming)
+14. Edit config modal
 16. App-only menu items
 
 **For each screenshot, analyze through each persona's eyes:**

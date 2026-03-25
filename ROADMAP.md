@@ -54,7 +54,7 @@ An item is [x] when ALL applicable criteria are met:
 - [x] Single multi-threaded Stockfish (N-1 threads + configurable hash) instead of N × 1-thread workers
 - [x] Analysis settings modal in PWA: threads, hash, depth/time limits, games count
 - [x] CLI: `--derive`, `--threads`, `--hash`, `--reanalyze-all` flags; `--games` default changed to 10
-- [x] API: GET/POST /api/analysis/settings, POST /api/analysis/start, POST /api/train/derive
+- [x] API: GET/POST /api/analysis/settings, POST /api/analysis/start
 - [x] Lichess Opening Explorer integration: theory departure detection (stops querying when move leaves known theory)
 - [x] analysis_duration_s per game for ETA estimation
 - [x] Incremental: analyze only unanalyzed games; reanalyze-all skips same-settings games

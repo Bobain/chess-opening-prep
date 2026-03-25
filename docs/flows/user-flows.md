@@ -155,7 +155,7 @@ sequenceDiagram
 ### Key details
 
 - **Settings modal**: before analysis starts, user configures threads, hash, depth/time limits, and number of games.
-- **Two-phase pipeline**: Phase 1 collects raw data (expensive), Phase 2 derives training data (cheap, re-runnable via `POST /api/train/derive`).
+- **Two-phase pipeline**: Phase 1 collects raw data (expensive), Phase 2 derives training data (cheap, re-runnable via `chess-self-coach train --derive`).
 - **Engine model**: one Stockfish with N-1 threads + 1GB hash (configurable), sequential game-by-game.
 - **Opening Explorer**: queries Lichess API position by position until theory departure (move not in database).
 - **Incremental**: only unanalyzed games are processed. `reanalyze_all` skips only same-settings games.

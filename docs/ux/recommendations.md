@@ -60,7 +60,7 @@ The game list view is clean and functional but suffers from critical data gaps t
 
 **Issues:**
 - The nav menu has no "Games" or "Analysis" item -- the game list is the default view but has no named menu entry. A user navigating away via "Training" has to figure out that closing the menu returns to the game list.
-- Menu items (Training, Raw data summary, Settings, About) are clear but there is no active/selected state indicator
+- Menu items (Training, Settings, About) are clear but there is no active/selected state indicator
 
 ---
 
@@ -215,7 +215,7 @@ The game list view is clean and functional but suffers from critical data gaps t
 - **Scope**: both
 - **Category**: navigation
 - **Chess.com pattern**: Chess.com has explicit "Play", "Puzzles", "Learn", "Watch" tabs in the top navigation. Each major section has a named entry.
-- **Current state**: The nav menu (screenshot: `/tmp/ux-audit/08-nav-menu-mobile.png`) has "Training", "Raw data summary", "Settings", "About" -- but no entry for the game list / analysis view. The game list is the default view, but a user who navigates to Training has no obvious way to get back to the game list. They must close the menu and realize the game list is the "home" view, or use browser back.
+- **Current state**: The nav menu (screenshot: `/tmp/ux-audit/08-nav-menu-mobile.png`) has "Training", "Settings", "About" -- but no entry for the game list / analysis view. The game list is the default view, but a user who navigates to Training has no obvious way to get back to the game list. They must close the menu and realize the game list is the "home" view, or use browser back.
 - **Proposed change**: Add a "Games" or "Game Review" entry at the top of the nav menu, above "Training". Add an active state indicator to show which view is currently active.
 - **Persona impact**:
   - Leo (beginner): Gets lost after going to Training. A "Games" menu item provides a clear way back.
