@@ -563,54 +563,50 @@ def test_app_mode_refresh_games(page, app_url, console_errors):
     assert "[nav-refresh] Refreshing game list" in log_text
 
 
-def test_app_mode_config_modal(page, app_url, console_errors):
-    """[App] mode: Edit config modal opens, loads values, and saves."""
+def test_app_mode_unified_settings(page, app_url, console_errors):
+    """[App] mode: Unified settings modal shows all sections, loads and saves."""
     page.goto(app_url)
     page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
 
-    # Open menu
+    # Open settings via menu
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
-
-    # Config item should be visible and enabled
-    config_item = page.locator("#nav-config")
-    expect(config_item).to_be_visible()
-    expect(config_item).not_to_have_class("disabled")
-
-    # Click config
-    config_item.click()
+    page.locator("#nav-settings").click()
     page.wait_for_timeout(500)
 
-    # Modal should appear with values from test config.json
-    expect(page.locator("#config-modal")).to_be_visible()
+    # Modal should appear with app-only sections visible
+    expect(page.locator("#settings-modal")).to_be_visible()
+    expect(page.locator("#config-lichess")).to_be_visible()
     expect(page.locator("#config-lichess")).to_have_value("testuser")
     expect(page.locator("#config-chesscom")).to_have_value("testcom")
     expect(page.locator("#config-depth")).to_have_value("18")
 
+    # Training fields are also visible
+    expect(page.locator("#session-size")).to_be_visible()
+    expect(page.locator("#difficulty")).to_be_visible()
+
     # Edit a value and save
     page.locator("#config-lichess").fill("newuser")
-    page.locator("#save-config").click()
-    page.wait_for_timeout(500)
+    page.locator("#save-settings").click()
+    page.wait_for_timeout(800)
 
-    expect(page.locator("#config-status")).to_contain_text("Saved")
+    # Modal should close after save
+    expect(page.locator("#settings-modal")).not_to_be_visible()
 
-    # Close and reopen to verify persistence
-    page.locator("#close-config").click()
-    expect(page.locator("#config-modal")).not_to_be_visible()
-
+    # Reopen to verify persistence
     page.locator("#menu-btn").click()
     page.wait_for_timeout(300)
-    page.locator("#nav-config").click()
+    page.locator("#nav-settings").click()
     page.wait_for_timeout(500)
 
     expect(page.locator("#config-lichess")).to_have_value("newuser")
 
-    page.locator("#close-config").click()
+    page.locator("#close-settings").click()
 
     # Verify console logs
     log_text = "\n".join(console_errors["messages"])
-    assert "[showConfig]" in log_text
-    assert "[saveConfig]" in log_text
+    assert "[openSettings]" in log_text
+    assert "[saveAllSettings]" in log_text
 
 
 def test_about_modal_opens_and_closes(page, pwa_url):
@@ -659,10 +655,64 @@ def test_app_mode_menu_hidden_in_demo(page, pwa_url):
     page.wait_for_timeout(300)
 
     expect(page.locator("#nav-refresh")).not_to_be_visible()
-    expect(page.locator("#nav-config")).not_to_be_visible()
 
     # Both-mode items are visible in demo mode
     expect(page.locator("#nav-settings")).to_be_visible()
 
     # Version is empty in demo mode (no backend)
     expect(page.locator("#nav-version")).to_have_text("")
+
+
+def test_settings_app_only_hidden_in_demo(page, pwa_url):
+    """[Demo] mode: Settings modal hides app-only sections."""
+    page.goto(pwa_url)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
+
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+    page.locator("#nav-settings").click()
+    page.wait_for_timeout(300)
+
+    expect(page.locator("#settings-modal")).to_be_visible()
+
+    # Training section visible
+    expect(page.locator("#session-size")).to_be_visible()
+
+    # App-only sections hidden in demo mode
+    expect(page.locator("#config-lichess")).not_to_be_visible()
+    expect(page.locator("#config-depth")).not_to_be_visible()
+
+    page.locator("#close-settings").click()
+
+
+def test_settings_presets(page, app_url, console_errors):
+    """[App] mode: Clicking a preset updates the limit fields."""
+    page.goto(app_url)
+    page.wait_for_selector("#game-selector", timeout=BOARD_TIMEOUT)
+
+    page.locator("#menu-btn").click()
+    page.wait_for_timeout(300)
+    page.locator("#nav-settings").click()
+    page.wait_for_timeout(500)
+
+    # Click "Quick" preset
+    page.locator('.preset-btn[data-preset="quick"]').click()
+    page.wait_for_timeout(200)
+
+    # Verify Quick preset values applied
+    expect(page.locator("#limit-kp-depth")).to_have_value("40")
+    expect(page.locator("#limit-kp-time")).to_have_value("2")
+    expect(page.locator("#limit-default-depth")).to_have_value("14")
+
+    # Quick button should be active, balanced should not
+    expect(page.locator('.preset-btn[data-preset="quick"]')).to_have_class(
+        "preset-btn active"
+    )
+    expect(page.locator('.preset-btn[data-preset="balanced"]')).to_have_class(
+        "preset-btn"
+    )
+
+    page.locator("#close-settings").click()
+
+    log_text = "\n".join(console_errors["messages"])
+    assert "[wirePresets] Applying preset: quick" in log_text

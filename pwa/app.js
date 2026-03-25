@@ -153,6 +153,244 @@ function saveSettings(s) {
   localStorage.setItem('train_settings', JSON.stringify(s));
 }
 
+// --- Analysis presets (Quick / Balanced / Deep) ---
+
+const ANALYSIS_PRESETS = {
+  quick: {
+    kings_pawns_le7: { depth: 40, time: 2 },
+    pieces_le7: { depth: 30, time: 2 },
+    pieces_le12: { depth: 25, time: 1.5 },
+    default: { depth: 14 },
+  },
+  balanced: {
+    kings_pawns_le7: { depth: 60, time: 5 },
+    pieces_le7: { depth: 50, time: 5 },
+    pieces_le12: { depth: 40, time: 5 },
+    default: { depth: 18 },
+  },
+  deep: {
+    kings_pawns_le7: { depth: 80, time: 15 },
+    pieces_le7: { depth: 70, time: 12 },
+    pieces_le12: { depth: 55, time: 10 },
+    default: { depth: 24 },
+  },
+};
+
+/**
+ * Populate the limit form fields from a limits object.
+ * @param {Object} limits - Limits keyed by bracket name.
+ */
+function populateLimitFields(limits) {
+  const lim = limits || {};
+  if (lim.kings_pawns_le7) {
+    document.getElementById('limit-kp-depth').value = lim.kings_pawns_le7.depth || 60;
+    document.getElementById('limit-kp-time').value = lim.kings_pawns_le7.time || 5;
+  }
+  if (lim.pieces_le7) {
+    document.getElementById('limit-eg-depth').value = lim.pieces_le7.depth || 50;
+    document.getElementById('limit-eg-time').value = lim.pieces_le7.time || 5;
+  }
+  if (lim.pieces_le12) {
+    document.getElementById('limit-mg-depth').value = lim.pieces_le12.depth || 40;
+    document.getElementById('limit-mg-time').value = lim.pieces_le12.time || 5;
+  }
+  if (lim.default) {
+    document.getElementById('limit-default-depth').value = lim.default.depth || 18;
+  }
+}
+
+/**
+ * Read limit values from the form fields.
+ * @returns {Object} Limits object keyed by bracket name.
+ */
+function readLimitFields() {
+  return {
+    kings_pawns_le7: {
+      depth: parseInt(document.getElementById('limit-kp-depth').value, 10),
+      time: parseFloat(document.getElementById('limit-kp-time').value),
+    },
+    pieces_le7: {
+      depth: parseInt(document.getElementById('limit-eg-depth').value, 10),
+      time: parseFloat(document.getElementById('limit-eg-time').value),
+    },
+    pieces_le12: {
+      depth: parseInt(document.getElementById('limit-mg-depth').value, 10),
+      time: parseFloat(document.getElementById('limit-mg-time').value),
+    },
+    default: {
+      depth: parseInt(document.getElementById('limit-default-depth').value, 10),
+    },
+  };
+}
+
+/**
+ * Detect which preset matches the current limit field values and update buttons.
+ */
+function detectPreset() {
+  const current = readLimitFields();
+  let matched = null;
+  for (const [name, preset] of Object.entries(ANALYSIS_PRESETS)) {
+    if (
+      current.kings_pawns_le7.depth === preset.kings_pawns_le7.depth &&
+      current.kings_pawns_le7.time === preset.kings_pawns_le7.time &&
+      current.pieces_le7.depth === preset.pieces_le7.depth &&
+      current.pieces_le7.time === preset.pieces_le7.time &&
+      current.pieces_le12.depth === preset.pieces_le12.depth &&
+      current.pieces_le12.time === preset.pieces_le12.time &&
+      current.default.depth === preset.default.depth
+    ) {
+      matched = name;
+      break;
+    }
+  }
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.preset === matched);
+  });
+}
+
+/**
+ * Wire preset buttons: click applies preset values, field changes detect preset.
+ */
+function wirePresets() {
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = ANALYSIS_PRESETS[btn.dataset.preset];
+      if (!preset) return;
+      console.log('[wirePresets] Applying preset:', btn.dataset.preset);
+      populateLimitFields(preset);
+      document.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // When any advanced field changes, re-detect preset
+  document.querySelectorAll('#analysis-threads, #analysis-hash, [id^="limit-"]').forEach((input) => {
+    input.addEventListener('input', () => detectPreset());
+  });
+}
+
+/**
+ * Open the unified settings modal, populating all fields.
+ * @async
+ */
+async function openSettings() {
+  console.log('[openSettings] Opening unified settings modal');
+  const modal = document.getElementById('settings-modal');
+  const statusEl = document.getElementById('settings-status');
+  if (statusEl) statusEl.textContent = '';
+
+  // 1. Populate training fields from localStorage
+  const settings = loadSettings();
+  document.getElementById('session-size').value = settings.sessionSize;
+  document.getElementById('difficulty').value = settings.difficulty;
+  const defaultDepth = appMode === 'app' ? 18 : 12;
+  document.getElementById('analysis-depth').value = settings.analysisDepth || defaultDepth;
+
+  // 2. Show/hide app-only sections
+  document.querySelectorAll('.settings-app-only').forEach((el) => {
+    el.classList.toggle('hidden', appMode !== 'app');
+  });
+
+  // 3. Populate max_games from localStorage
+  const savedMaxGames = localStorage.getItem('analysis_max_games');
+  if (savedMaxGames) {
+    document.getElementById('analysis-max-games').value = savedMaxGames;
+  }
+
+  // 4. In app mode, fetch config + analysis settings from backend
+  if (appMode === 'app') {
+    try {
+      const [configResp, analysisResp] = await Promise.all([
+        fetch('/api/config'),
+        fetch('/api/analysis/settings'),
+      ]);
+      if (configResp.ok) {
+        const config = await configResp.json();
+        document.getElementById('config-lichess').value = config.players.lichess || '';
+        document.getElementById('config-chesscom').value = config.players.chesscom || '';
+        document.getElementById('config-depth').value = config.analysis.default_depth || 18;
+        document.getElementById('config-threshold').value = config.analysis.blunder_threshold || 1.0;
+      }
+      if (analysisResp.ok) {
+        const data = await analysisResp.json();
+        document.getElementById('analysis-threads').value = data.threads;
+        document.getElementById('analysis-hash').value = data.hash_mb;
+        populateLimitFields(data.limits);
+        detectPreset();
+      }
+    } catch (err) {
+      console.error('[openSettings] Failed to load backend settings:', err);
+      if (statusEl) statusEl.textContent = 'Could not load server settings.';
+    }
+  }
+
+  modal.classList.remove('hidden');
+}
+
+/**
+ * Save all settings from the unified modal.
+ * @async
+ */
+async function saveAllSettings() {
+  console.log('[saveAllSettings] Saving...');
+  const statusEl = document.getElementById('settings-status');
+  if (statusEl) statusEl.textContent = 'Saving...';
+
+  // 1. Save training settings to localStorage (always)
+  const defaultDepth = appMode === 'app' ? 18 : 12;
+  const trainSettings = {
+    sessionSize: parseInt(document.getElementById('session-size').value) || 10,
+    difficulty: document.getElementById('difficulty').value,
+    analysisDepth: parseInt(document.getElementById('analysis-depth').value) || defaultDepth,
+  };
+  saveSettings(trainSettings);
+
+  // 2. Save max_games to localStorage
+  localStorage.setItem('analysis_max_games', document.getElementById('analysis-max-games').value);
+
+  // 3. In app mode, save config + analysis settings to backend
+  if (appMode === 'app') {
+    try {
+      const configBody = {
+        players: {
+          lichess: document.getElementById('config-lichess').value.trim(),
+          chesscom: document.getElementById('config-chesscom').value.trim(),
+        },
+        analysis: {
+          default_depth: parseInt(document.getElementById('config-depth').value) || 18,
+          blunder_threshold: parseFloat(document.getElementById('config-threshold').value) || 1.0,
+        },
+      };
+      const analysisBody = {
+        threads: parseInt(document.getElementById('analysis-threads').value, 10),
+        hash_mb: parseInt(document.getElementById('analysis-hash').value, 10),
+        limits: readLimitFields(),
+      };
+
+      const [configResp, analysisResp] = await Promise.all([
+        fetch('/api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configBody) }),
+        fetch('/api/analysis/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(analysisBody) }),
+      ]);
+
+      if (!configResp.ok || !analysisResp.ok) {
+        console.error('[saveAllSettings] Backend save failed:', configResp.status, analysisResp.status);
+        if (statusEl) statusEl.textContent = 'Failed to save server settings.';
+        return;
+      }
+    } catch (err) {
+      console.error('[saveAllSettings] Backend save failed:', err);
+      if (statusEl) statusEl.textContent = 'Connection failed.';
+      return;
+    }
+  }
+
+  console.log('[saveAllSettings] All settings saved');
+  if (statusEl) statusEl.textContent = 'Saved!';
+  setTimeout(() => {
+    document.getElementById('settings-modal').classList.add('hidden');
+  }, 600);
+}
+
 // --- SRS (SM-2 algorithm) ---
 
 /**
@@ -978,130 +1216,6 @@ function startSession() {
 
 // --- Analysis settings modal ---
 
-/**
- * Show the analysis settings modal, populated from the API.
- * @async
- */
-async function showAnalysisSettings() {
-  console.log('[showAnalysisSettings] Loading settings...');
-  const modal = document.getElementById('analysis-modal');
-  const statusEl = document.getElementById('analysis-status');
-  if (!modal) {
-    console.error('[showAnalysisSettings] Modal not found');
-    return;
-  }
-
-  modal.classList.remove('hidden');
-  if (statusEl) statusEl.textContent = '';
-
-  try {
-    const resp = await fetch('/api/analysis/settings');
-    if (!resp.ok) {
-      if (statusEl) statusEl.textContent = 'Failed to load settings.';
-      return;
-    }
-    const data = await resp.json();
-    console.log('[showAnalysisSettings] Settings loaded:', data);
-
-    document.getElementById('analysis-threads').value = data.threads;
-    document.getElementById('analysis-hash').value = data.hash_mb;
-
-    const lim = data.limits || {};
-    if (lim.kings_pawns_le7) {
-      document.getElementById('limit-kp-depth').value = lim.kings_pawns_le7.depth || 60;
-      document.getElementById('limit-kp-time').value = lim.kings_pawns_le7.time || 6;
-    }
-    if (lim.pieces_le7) {
-      document.getElementById('limit-eg-depth').value = lim.pieces_le7.depth || 50;
-      document.getElementById('limit-eg-time').value = lim.pieces_le7.time || 5;
-    }
-    if (lim.pieces_le12) {
-      document.getElementById('limit-mg-depth').value = lim.pieces_le12.depth || 40;
-      document.getElementById('limit-mg-time').value = lim.pieces_le12.time || 4;
-    }
-    if (lim.default) {
-      document.getElementById('limit-default-depth').value = lim.default.depth || 18;
-    }
-  } catch (err) {
-    console.error('[showAnalysisSettings] Error:', err);
-    if (statusEl) statusEl.textContent = 'Connection failed.';
-  }
-}
-
-/**
- * Read settings from the modal form, save them, then start analysis.
- * @param {boolean} reanalyzeAll - If true, re-analyze all games.
- * @async
- */
-async function startAnalysis(reanalyzeAll = false) {
-  console.log('[startAnalysis] reanalyzeAll:', reanalyzeAll);
-  const statusEl = document.getElementById('analysis-status');
-
-  // Read form values
-  const settings = {
-    threads: parseInt(document.getElementById('analysis-threads').value, 10),
-    hash_mb: parseInt(document.getElementById('analysis-hash').value, 10),
-    limits: {
-      kings_pawns_le7: {
-        depth: parseInt(document.getElementById('limit-kp-depth').value, 10),
-        time: parseFloat(document.getElementById('limit-kp-time').value),
-      },
-      pieces_le7: {
-        depth: parseInt(document.getElementById('limit-eg-depth').value, 10),
-        time: parseFloat(document.getElementById('limit-eg-time').value),
-      },
-      pieces_le12: {
-        depth: parseInt(document.getElementById('limit-mg-depth').value, 10),
-        time: parseFloat(document.getElementById('limit-mg-time').value),
-      },
-      default: {
-        depth: parseInt(document.getElementById('limit-default-depth').value, 10),
-      },
-    },
-  };
-  const maxGames = parseInt(document.getElementById('analysis-max-games').value, 10);
-
-  // Save settings
-  try {
-    const saveResp = await fetch('/api/analysis/settings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings),
-    });
-    if (!saveResp.ok) {
-      if (statusEl) statusEl.textContent = 'Failed to save settings.';
-      return;
-    }
-  } catch (err) {
-    console.error('[startAnalysis] Save settings failed:', err);
-    if (statusEl) statusEl.textContent = 'Connection failed.';
-    return;
-  }
-
-  // Hide analysis modal, start analysis job
-  document.getElementById('analysis-modal').classList.add('hidden');
-
-  // Start analysis via the existing refresh progress modal
-  try {
-    const resp = await fetch('/api/analysis/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ max_games: maxGames, reanalyze_all: reanalyzeAll }),
-    });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      console.error('[startAnalysis] API error:', resp.status, err.detail);
-      return;
-    }
-    const { job_id: jobId } = await resp.json();
-    console.log('[startAnalysis] Job started:', jobId);
-
-    // Reuse the refresh modal for progress display
-    showAnalysisProgress(jobId);
-  } catch (err) {
-    console.error('[startAnalysis] Fetch failed:', err);
-  }
-}
 
 /**
  * Display analysis job progress in the refresh modal.
@@ -1117,10 +1231,6 @@ function showAnalysisProgress(jobId) {
   if (headerProgress) headerProgress.classList.remove('hidden');
   if (progressBar) progressBar.value = 0;
   if (progressText) progressText.textContent = 'Starting...';
-
-  // Close the analysis modal — user can navigate freely
-  const analysisModal = document.getElementById('analysis-modal');
-  if (analysisModal) analysisModal.classList.add('hidden');
 
   // Click on progress bar to cancel
   if (headerProgress) {
@@ -1175,75 +1285,6 @@ function showAnalysisProgress(jobId) {
   };
 }
 
-// --- Config modal ---
-
-/**
- * Fetch config from backend and populate the config modal.
- * @async
- */
-async function showConfig() {
-  console.log('[showConfig] Fetching config...');
-  const modal = document.getElementById('config-modal');
-  const statusEl = document.getElementById('config-status');
-  statusEl.textContent = '';
-  modal.classList.remove('hidden');
-
-  try {
-    const resp = await fetch('/api/config');
-    if (!resp.ok) {
-      statusEl.textContent = 'Failed to load config.';
-      return;
-    }
-    const data = await resp.json();
-    console.log('[showConfig] Config loaded');
-
-    document.getElementById('config-lichess').value = data.players.lichess || '';
-    document.getElementById('config-chesscom').value = data.players.chesscom || '';
-    document.getElementById('config-depth').value = data.analysis.default_depth || 18;
-    document.getElementById('config-threshold').value = data.analysis.blunder_threshold || 1.0;
-  } catch (err) {
-    console.error('[showConfig] Fetch failed:', err);
-    statusEl.textContent = 'Failed to connect to server.';
-  }
-}
-
-/**
- * Save config modal values to backend.
- * @async
- */
-async function saveConfig() {
-  console.log('[saveConfig] Saving config...');
-  const statusEl = document.getElementById('config-status');
-  statusEl.textContent = 'Saving...';
-
-  const body = {
-    players: {
-      lichess: document.getElementById('config-lichess').value.trim(),
-      chesscom: document.getElementById('config-chesscom').value.trim(),
-    },
-    analysis: {
-      default_depth: parseInt(document.getElementById('config-depth').value) || 18,
-      blunder_threshold: parseFloat(document.getElementById('config-threshold').value) || 1.0,
-    },
-  };
-
-  try {
-    const resp = await fetch('/api/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (resp.ok) {
-      console.log('[saveConfig] Config saved');
-      statusEl.textContent = 'Saved!';
-    } else {
-      statusEl.textContent = 'Failed to save.';
-    }
-  } catch (err) {
-    console.error('[saveConfig] Fetch failed:', err);
-    statusEl.textContent = 'Failed to connect to server.';
-  }
-}
 
 // --- View switching ---
 
@@ -2256,8 +2297,6 @@ async function init() {
       // Enable ready endpoints
       const refreshItem = document.getElementById('nav-refresh');
       if (refreshItem) refreshItem.classList.remove('disabled');
-      const configItem = document.getElementById('nav-config');
-      if (configItem) configItem.classList.remove('disabled');
 
       // Set version in menu
       const versionText = stockfishVersion
@@ -2314,34 +2353,25 @@ async function init() {
 
   document.getElementById('nav-settings').addEventListener('click', () => {
     closeMenu();
-    const modal = document.getElementById('settings-modal');
-    const settings = loadSettings();
-    document.getElementById('session-size').value = settings.sessionSize;
-    document.getElementById('difficulty').value = settings.difficulty;
-    const defaultDepth = appMode === 'app' ? 18 : 12;
-    document.getElementById('analysis-depth').value = settings.analysisDepth || defaultDepth;
-    modal.classList.remove('hidden');
+    openSettings();
   });
 
+  document.getElementById('save-settings').addEventListener('click', () => saveAllSettings());
+
   document.getElementById('close-settings').addEventListener('click', () => {
-    const defaultDepth = appMode === 'app' ? 18 : 12;
-    const settings = {
-      sessionSize: parseInt(document.getElementById('session-size').value) || 10,
-      difficulty: document.getElementById('difficulty').value,
-      analysisDepth: parseInt(document.getElementById('analysis-depth').value) || defaultDepth,
-    };
-    saveSettings(settings);
     document.getElementById('settings-modal').classList.add('hidden');
   });
 
   document.getElementById('reset-progress').addEventListener('click', () => {
-    if (confirm('Reset all training progress? This cannot be undone.')) {
+    if (confirm('Erase all training progress? This cannot be undone.')) {
       localStorage.removeItem('train_srs');
       srsState = {};
       document.getElementById('settings-modal').classList.add('hidden');
       startSession();
     }
   });
+
+  wirePresets();
 
   document.getElementById('new-session').addEventListener('click', () => {
     document.getElementById('summary-modal').classList.add('hidden');
@@ -2397,26 +2427,6 @@ async function init() {
     await autoFetchGames();
   });
 
-  // Wire analysis modal buttons
-  const startAnalysisBtn = document.getElementById('start-analysis');
-  if (startAnalysisBtn) {
-    startAnalysisBtn.addEventListener('click', () => startAnalysis(false));
-  }
-  const reanalyzeAllBtn = document.getElementById('reanalyze-all');
-  if (reanalyzeAllBtn) {
-    reanalyzeAllBtn.addEventListener('click', () => startAnalysis(true));
-  }
-  const closeAnalysisBtn = document.getElementById('close-analysis');
-  if (closeAnalysisBtn) {
-    closeAnalysisBtn.addEventListener('click', () => {
-      document.getElementById('analysis-modal').classList.add('hidden');
-    });
-  }
-  wireNavItem('nav-config', showConfig, 'config-modal');
-
-  document.getElementById('save-config').addEventListener('click', () => {
-    saveConfig();
-  });
 
   // Wire up nav-about (both modes)
   document.getElementById('nav-about').addEventListener('click', () => {
