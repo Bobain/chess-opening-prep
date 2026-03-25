@@ -27,7 +27,7 @@ fi
 # Flows marker: flow-relevant source files
 if [ ! -f "$FLOWS_MARKER" ]; then
   case "$FILE_PATH" in
-    */src/chess_self_coach/trainer.py|*/src/chess_self_coach/server.py|*/src/chess_self_coach/lichess.py|*/src/chess_self_coach/config.py|*/src/chess_self_coach/cli.py|*/pwa/app.js|*/pwa/sw.js)
+    */src/chess_self_coach/trainer.py|*/src/chess_self_coach/server.py|*/src/chess_self_coach/importer.py|*/src/chess_self_coach/config.py|*/src/chess_self_coach/cli.py|*/pwa/app.js|*/pwa/sw.js)
       touch "$FLOWS_MARKER"
       ;;
   esac

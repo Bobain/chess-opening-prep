@@ -9,6 +9,7 @@ This section documents how data and actions flow through the system — from the
 Interactive workflows visible to the player.
 
 - **Training session** — PWA quiz loop with spaced repetition
+- **Game review** — Chess.com-style game review with eval bar, score chart, move classifications
 - **Analyze selected games** — Fetch games, select for analysis, generate training positions
 - **Setup wizard** — CLI interactive configuration
 - **Config management** — CLI setup + PWA unified settings

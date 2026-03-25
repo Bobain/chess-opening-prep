@@ -83,7 +83,7 @@ chess-self-coach update
 
 The `setup` command will:
 1. Find Stockfish on your system
-2. Guide you through **Lichess token creation** (bilingual FR/EN, step by step)
+2. Guide you through **Lichess token creation** (step by step)
 3. Ask for your **chess.com username** (for importing games)
 
 ## CLI Reference
@@ -92,7 +92,7 @@ The `setup` command will:
 
 ```bash
 # Fetch your games and analyze with Stockfish
-chess-self-coach train --prepare                    # 20 games, depth 18, parallel
+chess-self-coach train --prepare                    # 10 games, depth 18, parallel
 chess-self-coach train --prepare --games 50         # more games
 chess-self-coach train --prepare --depth 12         # faster analysis
 

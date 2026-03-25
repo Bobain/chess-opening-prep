@@ -43,7 +43,7 @@ The `setup` command will:
 
 1. Check Stockfish availability
 2. Download Syzygy endgame tablebases (3-5 pieces, ~1 GB) if not already installed
-3. Verify your Lichess authentication
+3. Ask for your Lichess username and API token
 4. Ask for your chess.com username
 5. Save your personal configuration to `config.json`
 

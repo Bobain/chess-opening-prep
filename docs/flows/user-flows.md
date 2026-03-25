@@ -179,38 +179,40 @@ flowchart TD
     SF_CHECK -->|Yes| SF_VER[Check version]
     SF_VER --> SF_WARN{Matches expected?}
     SF_WARN -->|No| WARN[Warning: version mismatch]
-    SF_WARN -->|Yes| PLAT
-    WARN --> PLAT
+    SF_WARN -->|Yes| SYZ
+    WARN --> SYZ
+
+    subgraph "Syzygy tablebases"
+        SYZ[Check Syzygy tables]
+        SYZ --> SYZ_FOUND{Found?}
+        SYZ_FOUND -->|Yes| PLAT
+        SYZ_FOUND -->|No| SYZ_DL{Download ~1 GB?}
+        SYZ_DL -->|Yes| SYZ_OK[Download tables]
+        SYZ_DL -->|No| PLAT
+        SYZ_OK --> PLAT
+    end
 
     subgraph "Game platforms (need ≥ 1)"
         PLAT[Configure platforms]
-        PLAT --> LI{Lichess?}
-        LI -->|Yes| LI_TOK{Token in .env?}
-        LI_TOK -->|Yes| LI_VAL[Validate token via API]
-        LI_TOK -->|No| LI_GUIDE[Guided token creation<br/>Open browser → save .env]
-        LI_GUIDE --> LI_VAL
-        LI_VAL -->|Valid| LI_OK[Store Lichess username]
-        LI_VAL -->|Invalid| LI_REGEN[Exit: regeneration link]
-        LI -->|No| CC
-        LI_OK --> CC
+        PLAT --> LI_USER[Prompt Lichess username]
+        LI_USER --> LI_HAS{Username provided?}
+        LI_HAS -->|Yes| LI_TOK[Prompt API token]
+        LI_HAS -->|No| CC
+        LI_TOK --> CC
 
-        CC{Chess.com?}
-        CC -->|Yes| CC_USER[Prompt username → store]
-        CC -->|No| PLAT_CHECK
-        CC_USER --> PLAT_CHECK
-
-        PLAT_CHECK{At least 1 platform?}
+        CC[Prompt Chess.com username]
+        CC --> PLAT_CHECK{At least 1 platform?}
         PLAT_CHECK -->|No| PLAT_ERR[Exit: need at least one]
     end
 
-    PLAT_CHECK -->|Yes| SAVE[Write config.json]
+    PLAT_CHECK -->|Yes| SAVE[Write config.json + .env]
     SAVE --> DONE[Setup complete]
 ```
 
 ### Key details
 
 - **Stockfish search order**: config path → fallback path → En-Croissant default → `/usr/games/stockfish` → `$PATH`.
-- **Token validation**: must start with `lip_` prefix, verified against Lichess API.
+- **Token handling**: prompted via CLI input, saved to `.env` file. No API validation during setup.
 - **Idempotent**: re-running setup merges with existing config (updates players/analysis).
 
 ---
