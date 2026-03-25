@@ -1268,46 +1268,56 @@ async function startAnalysis(reanalyzeAll = false) {
  * @param {string} jobId - The job ID to track.
  */
 function showAnalysisProgress(jobId) {
-  const modal = document.getElementById('refresh-modal');
-  const stepsContainer = document.getElementById('refresh-steps');
-  const interruptBtn = document.getElementById('interrupt-refresh');
-  if (!modal || !stepsContainer) return;
+  console.log('[showAnalysisProgress] Starting job:', jobId);
 
-  modal.classList.remove('hidden');
-  stepsContainer.innerHTML = '<div class="refresh-step">Starting analysis...</div>';
-  if (interruptBtn) {
-    interruptBtn.classList.remove('hidden');
-    interruptBtn.onclick = async () => {
-      try {
-        await fetch(`/api/jobs/${jobId}/cancel`, { method: 'POST' });
-      } catch (err) {
-        console.error('[showAnalysisProgress] Cancel failed:', err);
-      }
-    };
-  }
+  // Header progress bar (non-blocking, visible across all views)
+  const headerProgress = document.getElementById('analysis-progress');
+  const progressBar = document.getElementById('analysis-progress-bar');
+  const progressText = document.getElementById('analysis-progress-text');
+  if (headerProgress) headerProgress.classList.remove('hidden');
+  if (progressBar) progressBar.value = 0;
+  if (progressText) progressText.textContent = 'Starting...';
+
+  // Close the analysis modal — user can navigate freely
+  const analysisModal = document.getElementById('analysis-modal');
+  if (analysisModal) analysisModal.classList.add('hidden');
 
   const evtSource = new EventSource(`/api/jobs/${jobId}/events`);
   evtSource.onmessage = (e) => {
     const event = JSON.parse(e.data);
     console.log('[showAnalysisProgress] Event:', event.phase, event.percent);
 
-    const stepEl = document.createElement('div');
-    stepEl.className = 'refresh-step';
-    stepEl.textContent = event.message || event.phase;
-    if (event.percent != null) {
-      stepEl.textContent += ` (${event.percent}%)`;
+    // Update header progress bar
+    if (progressBar && event.percent != null) {
+      progressBar.value = event.percent;
     }
-    stepsContainer.appendChild(stepEl);
-    stepsContainer.scrollTop = stepsContainer.scrollHeight;
+    if (progressText) {
+      if (event.current != null && event.total != null) {
+        progressText.textContent = `${event.current}/${event.total}`;
+      } else if (event.phase === 'fetch') {
+        progressText.textContent = 'Fetching...';
+      } else if (event.phase === 'derive') {
+        progressText.textContent = 'Deriving...';
+      } else {
+        progressText.textContent = `${event.percent || 0}%`;
+      }
+    }
 
     if (event.phase === 'done' || event.phase === 'error' || event.phase === 'interrupted') {
       evtSource.close();
-      if (interruptBtn) interruptBtn.classList.add('hidden');
+      // Hide header progress after a short delay
+      setTimeout(() => {
+        if (headerProgress) headerProgress.classList.add('hidden');
+      }, 2000);
+      // Refresh game list to show newly analyzed games
+      if (event.phase === 'done') {
+        loadAnalysisData();
+      }
     }
   };
   evtSource.onerror = () => {
     evtSource.close();
-    if (interruptBtn) interruptBtn.classList.add('hidden');
+    if (headerProgress) headerProgress.classList.add('hidden');
   };
 }
 

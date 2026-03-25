@@ -149,6 +149,39 @@ header h1 {
   font-size: 0.95rem;
 }
 
+#analysis-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+#analysis-progress-bar {
+  width: 80px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+#analysis-progress-bar::-webkit-progress-bar {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+
+#analysis-progress-bar::-webkit-progress-value {
+  background: var(--success);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+#analysis-progress-bar::-moz-progress-bar {
+  background: var(--success);
+  border-radius: 3px;
+}
+
 #menu-btn {
   background: none;
   border: none;
