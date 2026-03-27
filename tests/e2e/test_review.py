@@ -337,6 +337,7 @@ def test_training_via_menu(page, pwa_url):
 
     # Open menu and click Training
     page.click("#menu-btn")
+    page.wait_for_selector("#nav-menu.nav-open", timeout=5000)
     page.click("#nav-training")
 
     # Training view should be visible
