@@ -1,10 +1,6610 @@
 {
   "version": "1.0",
-  "generated": null,
+  "generated": "2026-03-27T07:45:23Z",
   "player": {
     "lichess": "bobainbobain",
     "chesscom": "Tonigor1982"
   },
-  "positions": [],
-  "analyzed_game_ids": []
+  "positions": [
+    {
+      "id": "8aa822330f8f",
+      "fen": "8/8/8/8/8/6kp/5n2/5K2 b - - 1 58",
+      "player_color": "black",
+      "player_move": "Kh2",
+      "best_move": "h2",
+      "context": "Endgame (4 pieces), playing as Black, you had a winning position. Tablebase: theoretical win, mate in 11.",
+      "score_before": "-100.00",
+      "score_after": "+0.00",
+      "score_after_best": "-100.00",
+      "cp_loss": 10000,
+      "category": "blunder",
+      "explanation": "Tablebase: the position was a theoretical win, mate in 11. Your move Kh2 turns it into a draw. The correct move was h2.",
+      "acceptable_moves": [
+        "h2"
+      ],
+      "pv": [
+        "h2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 352.8,
+        "opponent": 744.2
+      },
+      "tablebase": {
+        "before": {
+          "category": "win",
+          "dtm": 11,
+          "dtz": 1
+        },
+        "after": {
+          "category": "draw",
+          "dtm": 0,
+          "dtz": 0
+        },
+        "transition": "WIN → DRAW"
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "cd8dfbbdea83",
+      "fen": "8/8/8/8/6K1/8/8/6kq b - - 1 63",
+      "player_color": "black",
+      "player_move": "Qf3+",
+      "best_move": "Qd5",
+      "context": "Endgame (3 pieces), playing as Black, you had a winning position. Tablebase: theoretical win, mate in 9.",
+      "score_before": "-100.00",
+      "score_after": "+0.00",
+      "score_after_best": "-100.00",
+      "cp_loss": 10000,
+      "category": "blunder",
+      "explanation": "Tablebase: the position was a theoretical win, mate in 9. Your move Qf3+ turns it into a draw. The correct move was Qd5.",
+      "acceptable_moves": [
+        "Qd5"
+      ],
+      "pv": [
+        "Qd5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 388.1,
+        "opponent": 759.8
+      },
+      "tablebase": {
+        "before": {
+          "category": "win",
+          "dtm": 9,
+          "dtz": 9
+        },
+        "after": {
+          "category": "draw",
+          "dtm": 0,
+          "dtz": 0
+        },
+        "transition": "WIN → DRAW"
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "c500ea3be5bf",
+      "fen": "1r1r2k1/8/R2Nb2p/2q5/5pp1/2P5/2Q2PPP/5RK1 w - - 0 31",
+      "player_color": "white",
+      "player_move": "Ne4",
+      "best_move": "Qg6+",
+      "context": "Opening, playing as White, you had a strong advantage. Your move threw away a forced mate.",
+      "score_before": "+100.00",
+      "score_after": "+2.09",
+      "score_after_best": "+100.00",
+      "cp_loss": 9791,
+      "category": "blunder",
+      "explanation": "You played Ne4 (blunder). You had a forced mate but lost it. A better move was Qg6+. Qg6+ also gives check.",
+      "acceptable_moves": [
+        "Qg6+"
+      ],
+      "pv": [
+        "Qg6+",
+        "Kf8",
+        "Qxh6+",
+        "Kg8",
+        "Qxe6+",
+        "Kh7",
+        "Qf7+",
+        "Kh8",
+        "Qf6+",
+        "Kh7",
+        "Ne4",
+        "Qf5",
+        "Qxf5+",
+        "Kh8",
+        "Qf6+",
+        "Kg8",
+        "Qg6+",
+        "Kh8",
+        "Qh6+",
+        "Kg8",
+        "Rg6+",
+        "Kf7",
+        "Qg7+",
+        "Ke8",
+        "Nf6#"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166323355096",
+        "source": "chess.com",
+        "opponent": "toughfinger",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 605.3,
+        "opponent": 757.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "14cdcd913113",
+      "fen": "8/5Rpk/7p/2b5/8/8/q4PPP/1R4K1 w - - 1 45",
+      "player_color": "white",
+      "player_move": "g3",
+      "best_move": "Rc1",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move allowed your opponent to force checkmate.",
+      "score_before": "-3.07",
+      "score_after": "-100.00",
+      "score_after_best": "-3.07",
+      "cp_loss": 9693,
+      "category": "blunder",
+      "explanation": "You played g3 (blunder). This allowed your opponent to force checkmate. A better move was Rc1.",
+      "acceptable_moves": [
+        "Rc1"
+      ],
+      "pv": [
+        "Rc1",
+        "Qxf7",
+        "Rxc5",
+        "Qe7",
+        "Rc1",
+        "h5",
+        "h3",
+        "Qe2",
+        "Rf1",
+        "g5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 742.9,
+        "opponent": 576.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "845970d88309",
+      "fen": "r4rk1/pbq2pbp/1p4p1/2p3NN/P1B5/4P3/2Q2PP1/3R1RK1 b - - 0 22",
+      "player_color": "black",
+      "player_move": "gxh5",
+      "best_move": "Bh8",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move allowed your opponent to force checkmate.",
+      "score_before": "+3.30",
+      "score_after": "+100.00",
+      "score_after_best": "+3.30",
+      "cp_loss": 9670,
+      "category": "blunder",
+      "explanation": "You played gxh5 (blunder). This allowed your opponent to force checkmate. A better move was Bh8.",
+      "acceptable_moves": [
+        "Bh8"
+      ],
+      "pv": [
+        "Bh8",
+        "Nf4",
+        "Qe7",
+        "Bd5",
+        "Bxd5",
+        "Rxd5",
+        "Rfe8",
+        "Rfd1",
+        "Be5",
+        "Nf3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 659.2,
+        "opponent": 648.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8b093bdd7b5c",
+      "fen": "r1r3k1/pp1qpp2/2n3p1/3b2Q1/3P1BR1/P1P5/2P2P1P/2KR1B2 b - - 0 23",
+      "player_color": "black",
+      "player_move": "Be6",
+      "best_move": "Nb4",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move allowed your opponent to force checkmate.",
+      "score_before": "+4.02",
+      "score_after": "+100.00",
+      "score_after_best": "+4.02",
+      "cp_loss": 9598,
+      "category": "blunder",
+      "explanation": "You played Be6 (blunder). This allowed your opponent to force checkmate. A better move was Nb4.",
+      "acceptable_moves": [
+        "Nb4"
+      ],
+      "pv": [
+        "Nb4",
+        "axb4",
+        "Rxc3",
+        "Rg3",
+        "Bf3",
+        "Rxf3",
+        "Rxf3",
+        "Bc4",
+        "Qf5",
+        "Qxf5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 769.3,
+        "opponent": 797.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "2d7f1cb5fe13",
+      "fen": "2r3k1/p4p1p/3r2p1/2b1N3/2R5/4P3/P4PPP/2R3K1 w - - 0 29",
+      "player_color": "white",
+      "player_move": "Rxc5",
+      "best_move": "Kf1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost a decisive advantage. You had more time (13min vs 8min) and could have taken longer on this move.",
+      "score_before": "+4.71",
+      "score_after": "-5.81",
+      "score_after_best": "+4.71",
+      "cp_loss": 1052,
+      "category": "blunder",
+      "explanation": "You played Rxc5 (blunder, lost a decisive advantage). A better move was Kf1.",
+      "acceptable_moves": [
+        "Kf1"
+      ],
+      "pv": [
+        "Kf1",
+        "Rd2",
+        "Rxc5",
+        "Rxc5",
+        "Rxc5",
+        "Rxa2",
+        "g4",
+        "a5",
+        "Kg2",
+        "Kf8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265771230",
+        "source": "chess.com",
+        "opponent": "StarLight-S2",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 775.2,
+        "opponent": 498.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "90739347f972",
+      "fen": "1r2r1k1/8/R3b2p/5q2/4Npp1/2P5/2Q2PPP/4R1K1 w - - 4 33",
+      "player_color": "white",
+      "player_move": "Nd6",
+      "best_move": "Qe2",
+      "context": "Opening, playing as White, you had a strong advantage. Your move lost a decisive advantage.",
+      "score_before": "+2.85",
+      "score_after": "-6.43",
+      "score_after_best": "+2.85",
+      "cp_loss": 928,
+      "category": "blunder",
+      "explanation": "You played Nd6 (blunder, lost a decisive advantage). A better move was Qe2.",
+      "acceptable_moves": [
+        "Qe2"
+      ],
+      "pv": [
+        "Qe2",
+        "Rf8",
+        "c4",
+        "Qe5",
+        "Nf6+",
+        "Qxf6",
+        "Rxe6",
+        "Qf5",
+        "Re5",
+        "f3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166323355096",
+        "source": "chess.com",
+        "opponent": "toughfinger",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 521.9,
+        "opponent": 738.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "4929f0eb639b",
+      "fen": "r2q2k1/pp1b1ppp/8/1Pb1r3/2P5/P5P1/3P2P1/RNBQ1R1K b - - 0 17",
+      "player_color": "black",
+      "player_move": "Rh5+",
+      "best_move": "Bd4",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move lost a decisive advantage.",
+      "score_before": "-4.95",
+      "score_after": "+3.86",
+      "score_after_best": "-4.95",
+      "cp_loss": 881,
+      "category": "blunder",
+      "explanation": "You played Rh5+ (blunder, lost a decisive advantage). A better move was Bd4. Your rook on h5 is left undefended.",
+      "acceptable_moves": [
+        "Bd4"
+      ],
+      "pv": [
+        "Bd4",
+        "d3",
+        "Bxa1",
+        "Bf4",
+        "Rf5",
+        "Nd2",
+        "Bd4",
+        "Nf3",
+        "Bb6",
+        "Re1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166442353784",
+        "source": "chess.com",
+        "opponent": "Ansaar98",
+        "date": "2026.03.26",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 893.9,
+        "opponent": 952.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "08d808675685",
+      "fen": "8/1r3pkp/bRp3p1/P1Pp4/8/4P2P/5PP1/6K1 b - - 1 33",
+      "player_color": "black",
+      "player_move": "Kf6",
+      "best_move": "Ra7",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost a decisive advantage.",
+      "score_before": "-4.29",
+      "score_after": "+3.55",
+      "score_after_best": "-4.29",
+      "cp_loss": 784,
+      "category": "blunder",
+      "explanation": "You played Kf6 (blunder, lost a decisive advantage). A better move was Ra7.",
+      "acceptable_moves": [
+        "Ra7"
+      ],
+      "pv": [
+        "Ra7",
+        "Rxc6",
+        "Bb5",
+        "Rd6",
+        "Bc4",
+        "c6",
+        "Rxa5",
+        "g4",
+        "Rc5",
+        "f3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 770.1,
+        "opponent": 781.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "440fba107984",
+      "fen": "r5k1/pppn2pp/1b2Npb1/3N4/1P5P/2K5/P3R1P1/8 b - - 0 26",
+      "player_color": "black",
+      "player_move": "Rc8",
+      "best_move": "Re8",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost a decisive advantage.",
+      "score_before": "-6.24",
+      "score_after": "+1.27",
+      "score_after_best": "-6.24",
+      "cp_loss": 751,
+      "category": "blunder",
+      "explanation": "You played Rc8 (blunder, lost a decisive advantage). A better move was Re8.",
+      "acceptable_moves": [
+        "Re8"
+      ],
+      "pv": [
+        "Re8",
+        "Nxb6",
+        "Nxb6",
+        "Nd4",
+        "Rxe2",
+        "Nxe2",
+        "Bf7",
+        "Kb2",
+        "g5",
+        "g3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 317.0,
+        "opponent": 835.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "185c987008e7",
+      "fen": "2r3k1/2r2ppp/p7/1p1Rp3/1P6/2N5/P1R2PPP/6K1 b - - 0 26",
+      "player_color": "black",
+      "player_move": "Rxc3",
+      "best_move": "f5",
+      "context": "Middlegame, playing as Black, you were slightly worse. Your move lost a decisive advantage.",
+      "score_before": "+0.89",
+      "score_after": "+6.31",
+      "score_after_best": "+0.89",
+      "cp_loss": 542,
+      "category": "blunder",
+      "explanation": "You played Rxc3 (blunder, lost a decisive advantage). A better move was f5.",
+      "acceptable_moves": [
+        "f5"
+      ],
+      "pv": [
+        "f5",
+        "Rc5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166398619608",
+        "source": "chess.com",
+        "opponent": "FarshadDabest",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 623.4,
+        "opponent": 725.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "797f0950eb97",
+      "fen": "1b4k1/1P3ppp/8/8/P2q4/8/5PPP/RR4K1 w - - 0 34",
+      "player_color": "white",
+      "player_move": "a5",
+      "best_move": "Rd1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost a decisive advantage.",
+      "score_before": "+5.21",
+      "score_after": "+0.00",
+      "score_after_best": "+5.21",
+      "cp_loss": 521,
+      "category": "blunder",
+      "explanation": "You played a5 (blunder, lost a decisive advantage). A better move was Rd1.",
+      "acceptable_moves": [
+        "Rd1"
+      ],
+      "pv": [
+        "Rd1",
+        "Qb6",
+        "Rac1",
+        "f6",
+        "Rc8+",
+        "Kf7",
+        "Rxb8",
+        "Kg6",
+        "a5",
+        "Qb3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 843.9,
+        "opponent": 748.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "838d5c085366",
+      "fen": "4rnk1/p1q1rpb1/1p3npp/2p1p3/2P1N3/1P2P2P/PBQ1BPP1/R2R2K1 w - - 4 20",
+      "player_color": "white",
+      "player_move": "Rd3",
+      "best_move": "Nd6",
+      "context": "Opening, playing as White, you had a slight advantage. Your move lost a decisive advantage.",
+      "score_before": "+1.02",
+      "score_after": "-4.18",
+      "score_after_best": "+1.02",
+      "cp_loss": 520,
+      "category": "blunder",
+      "explanation": "You played Rd3 (blunder, lost a decisive advantage). A better move was Nd6.",
+      "acceptable_moves": [
+        "Nd6"
+      ],
+      "pv": [
+        "Nd6",
+        "Rd8",
+        "Nb5",
+        "Rxd1+",
+        "Rxd1",
+        "Qb8",
+        "Rd2",
+        "a6",
+        "Nc3",
+        "h5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166462966860",
+        "source": "chess.com",
+        "opponent": "adit-yehh",
+        "date": "2026.03.26",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 628.3,
+        "opponent": 848.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "ab426cf239f3",
+      "fen": "r1r3k1/pp1qppb1/2n3p1/3b2Np/3P1B1Q/P1P5/2P2PPP/2KR1BR1 b - - 1 20",
+      "player_color": "black",
+      "player_move": "Bh6",
+      "best_move": "Nxd4",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move lost significant material (5.0 pawns).",
+      "score_before": "-4.70",
+      "score_after": "+0.28",
+      "score_after_best": "-4.70",
+      "cp_loss": 498,
+      "category": "blunder",
+      "explanation": "You played Bh6 (blunder, lost 5.0 pawns). You missed capturing the pawn with Nxd4.",
+      "acceptable_moves": [
+        "Nxd4"
+      ],
+      "pv": [
+        "Nxd4",
+        "Rxd4",
+        "Bxd4",
+        "c4",
+        "Bxc4",
+        "Be5",
+        "Bxf1",
+        "Bxd4",
+        "Bd3",
+        "c3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 831.3,
+        "opponent": 792.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "bd84addffd31",
+      "fen": "r2r2k1/pp3pbp/1n3np1/2p5/2P3b1/1PN1PN2/P2BBPPP/2R2RK1 w - - 3 15",
+      "player_color": "white",
+      "player_move": "h3",
+      "best_move": "Rfd1",
+      "context": "Opening, playing as White, you had a strong advantage. Your move lost significant material (4.9 pawns).",
+      "score_before": "+2.30",
+      "score_after": "-2.64",
+      "score_after_best": "+2.30",
+      "cp_loss": 494,
+      "category": "blunder",
+      "explanation": "You played h3 (blunder, lost 4.9 pawns). A better move was Rfd1.",
+      "acceptable_moves": [
+        "Rfd1"
+      ],
+      "pv": [
+        "Rfd1",
+        "Bf5",
+        "Be1",
+        "Ne4",
+        "Nxe4",
+        "Bxe4",
+        "Nd2",
+        "Bc6",
+        "Bf3",
+        "Bxf3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166291210702",
+        "source": "chess.com",
+        "opponent": "searsher1985",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 769.7,
+        "opponent": 802.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ba0781c3a4e0",
+      "fen": "1b4k1/1P3ppp/8/3p4/8/4P3/P2q1PPP/RR4K1 w - - 1 32",
+      "player_color": "white",
+      "player_move": "a4",
+      "best_move": "Rc1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (4.8 pawns).",
+      "score_before": "+4.82",
+      "score_after": "+0.01",
+      "score_after_best": "+4.82",
+      "cp_loss": 481,
+      "category": "blunder",
+      "explanation": "You played a4 (blunder, lost 4.8 pawns). A better move was Rc1.",
+      "acceptable_moves": [
+        "Rc1"
+      ],
+      "pv": [
+        "Rc1",
+        "h5",
+        "Rc8+",
+        "Kh7",
+        "Rxb8",
+        "Qb2",
+        "Rf1",
+        "Qb6",
+        "a4",
+        "Kg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 912.7,
+        "opponent": 744.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "bfa0fde56765",
+      "fen": "r2q1rk1/1bp1bppp/p3p3/Q2pP3/8/4P3/PPP2PPP/RNB2RK1 b - - 0 12",
+      "player_color": "black",
+      "player_move": "Bc5",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move lost significant material (4.7 pawns).",
+      "score_before": "-0.59",
+      "score_after": "+4.09",
+      "score_after_best": "-0.59",
+      "cp_loss": 468,
+      "category": "blunder",
+      "explanation": "You played Bc5 (blunder, lost 4.7 pawns). A better move was f6. Your bishop on c5 is left undefended.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6",
+        "exf6",
+        "Rxf6",
+        "Nd2",
+        "e5",
+        "f4",
+        "exf4",
+        "Nf3",
+        "Rb6",
+        "c3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166305403436",
+        "source": "chess.com",
+        "opponent": "Jhonalexismina",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 851.3,
+        "opponent": 938.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "249b70907608",
+      "fen": "2R5/qP3ppk/P6p/4b3/8/8/5PPP/R5K1 w - - 5 38",
+      "player_color": "white",
+      "player_move": "b8=Q",
+      "best_move": "g3",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (4.4 pawns).",
+      "score_before": "+4.43",
+      "score_after": "+0.00",
+      "score_after_best": "+4.43",
+      "cp_loss": 443,
+      "category": "blunder",
+      "explanation": "You played b8=Q (blunder, lost 4.4 pawns). A better move was g3.",
+      "acceptable_moves": [
+        "g3"
+      ],
+      "pv": [
+        "g3",
+        "Bd6",
+        "Rd8",
+        "Bc7",
+        "Ra8",
+        "Qd4",
+        "Rb1",
+        "g5",
+        "b8=Q",
+        "Bxb8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 808.4,
+        "opponent": 719.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8eb77250ab92",
+      "fen": "2r3k1/2r2ppp/p7/1p1Rp3/nP6/2P5/P1R1NPPP/6K1 b - - 0 25",
+      "player_color": "black",
+      "player_move": "Nxc3",
+      "best_move": "f6",
+      "context": "Middlegame, playing as Black, you had a slight advantage. Your move lost significant material (4.3 pawns).",
+      "score_before": "-0.85",
+      "score_after": "+3.50",
+      "score_after_best": "-0.85",
+      "cp_loss": 435,
+      "category": "blunder",
+      "explanation": "You played Nxc3 (blunder, lost 4.3 pawns). A better move was f6.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6",
+        "g3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166398619608",
+        "source": "chess.com",
+        "opponent": "FarshadDabest",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 614.8,
+        "opponent": 717.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ff8291c1ad97",
+      "fen": "1b4k1/1P3ppp/8/8/P2p4/4P3/3q1PPP/RR4K1 w - - 0 33",
+      "player_color": "white",
+      "player_move": "exd4",
+      "best_move": "Rc1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (4.1 pawns).",
+      "score_before": "+4.14",
+      "score_after": "+0.00",
+      "score_after_best": "+4.14",
+      "cp_loss": 414,
+      "category": "blunder",
+      "explanation": "You played exd4 (blunder, lost 4.1 pawns). A better move was Rc1. Your pawn on d4 is left undefended.",
+      "acceptable_moves": [
+        "Rc1"
+      ],
+      "pv": [
+        "Rc1",
+        "f5",
+        "Rc8+",
+        "Kf7",
+        "Rxb8",
+        "Qb2",
+        "Rf1",
+        "dxe3",
+        "fxe3",
+        "Kg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 915.3,
+        "opponent": 750.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "54270f1d21c8",
+      "fen": "7k/2Q1r1p1/1p2r2p/p4p1q/P4Pn1/4P1P1/1B2R2P/4R1K1 w - - 6 31",
+      "player_color": "white",
+      "player_move": "Qc3",
+      "best_move": "Qd8+",
+      "context": "Opening, playing as White, the position was roughly equal. Your move lost significant material (4.1 pawns).",
+      "score_before": "-0.13",
+      "score_after": "-4.24",
+      "score_after_best": "-0.13",
+      "cp_loss": 411,
+      "category": "blunder",
+      "explanation": "You played Qc3 (blunder, lost 4.1 pawns). A better move was Qd8+. Qd8+ also gives check.",
+      "acceptable_moves": [
+        "Qd8+"
+      ],
+      "pv": [
+        "Qd8+",
+        "Kh7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 728.8,
+        "opponent": 767.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ea6615f4daaf",
+      "fen": "7k/ppp3pp/4bp2/4n3/1PN4P/1K6/P3R1P1/8 b - - 1 31",
+      "player_color": "black",
+      "player_move": "b5",
+      "best_move": "Bxc4+",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost significant material (4.1 pawns).",
+      "score_before": "-8.97",
+      "score_after": "-4.86",
+      "score_after_best": "-8.97",
+      "cp_loss": 411,
+      "category": "blunder",
+      "explanation": "You played b5 (blunder, lost 4.1 pawns). You missed capturing the knight with Bxc4+. Bxc4+ also gives check.",
+      "acceptable_moves": [
+        "Bxc4+"
+      ],
+      "pv": [
+        "Bxc4+",
+        "Kb2",
+        "Bxe2",
+        "Kc3",
+        "Kg8",
+        "Kd2",
+        "Bb5",
+        "h5",
+        "Kf7",
+        "Ke3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 314.4,
+        "opponent": 699.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "7848593be20b",
+      "fen": "r4rk1/1p1R2bp/4p1p1/2p1n1B1/Pp6/5N2/1P3PPP/R5K1 w - - 0 22",
+      "player_color": "white",
+      "player_move": "Nxe5",
+      "best_move": "Rxg7+",
+      "context": "Opening, playing as White, you had a slight advantage. Your move lost significant material (4.0 pawns).",
+      "score_before": "+1.47",
+      "score_after": "-2.58",
+      "score_after_best": "+1.47",
+      "cp_loss": 405,
+      "category": "blunder",
+      "explanation": "You played Nxe5 (blunder, lost 4.0 pawns). You missed capturing the bishop with Rxg7+. Rxg7+ also gives check. Your knight on e5 is left undefended.",
+      "acceptable_moves": [
+        "Rxg7+"
+      ],
+      "pv": [
+        "Rxg7+"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 701.9,
+        "opponent": 534.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "13fcc0ede26c",
+      "fen": "r4rk1/ppB1ppbp/2n1bnp1/8/3q4/2NP1NQ1/PPP2PPP/2KR1B1R b - - 2 11",
+      "player_color": "black",
+      "player_move": "Qb4",
+      "best_move": "Qd7",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move lost significant material (3.5 pawns).",
+      "score_before": "-2.52",
+      "score_after": "+0.97",
+      "score_after_best": "-2.52",
+      "cp_loss": 349,
+      "category": "blunder",
+      "explanation": "You played Qb4 (blunder, lost 3.5 pawns). A better move was Qd7.",
+      "acceptable_moves": [
+        "Qd7"
+      ],
+      "pv": [
+        "Qd7",
+        "Bf4",
+        "Rfc8",
+        "Qh4",
+        "h5",
+        "d4",
+        "Nb4",
+        "Bd3",
+        "Rxc3",
+        "bxc3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 877.8,
+        "opponent": 911.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8951c363e33f",
+      "fen": "2r3k1/p4p1p/1b1r2p1/2p1N3/2R5/1N2P3/P4PPP/2R3K1 w - - 2 28",
+      "player_color": "white",
+      "player_move": "Nxc5",
+      "best_move": "Kf1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (3.3 pawns). You had more time (13min vs 8min) and could have taken longer on this move.",
+      "score_before": "+4.94",
+      "score_after": "+1.66",
+      "score_after_best": "+4.94",
+      "cp_loss": 328,
+      "category": "blunder",
+      "explanation": "You played Nxc5 (blunder, lost 3.3 pawns). A better move was Kf1.",
+      "acceptable_moves": [
+        "Kf1"
+      ],
+      "pv": [
+        "Kf1",
+        "Rd5",
+        "Nf3",
+        "h5",
+        "Ke2",
+        "Kg7",
+        "h3",
+        "Rb8",
+        "R4c2",
+        "f5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265771230",
+        "source": "chess.com",
+        "opponent": "StarLight-S2",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 766.9,
+        "opponent": 489.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3d475ec5a198",
+      "fen": "6k1/1p6/4p1p1/2p4p/Ppr5/4B1P1/1P2KP2/R5b1 w - - 4 31",
+      "player_color": "white",
+      "player_move": "b3",
+      "best_move": "Rxg1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (3.0 pawns). You had more time (11min vs 6min) and could have taken longer on this move.",
+      "score_before": "+3.42",
+      "score_after": "+0.44",
+      "score_after_best": "+3.42",
+      "cp_loss": 298,
+      "category": "blunder",
+      "explanation": "You played b3 (blunder, lost 3.0 pawns). You missed capturing the bishop with Rxg1.",
+      "acceptable_moves": [
+        "Rxg1"
+      ],
+      "pv": [
+        "Rxg1",
+        "Rc2+",
+        "Kd3",
+        "Rxb2",
+        "Bxc5",
+        "Ra2",
+        "Bxb4",
+        "Rxa4",
+        "Bd2",
+        "b5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 667.8,
+        "opponent": 362.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "7e310ea2045e",
+      "fen": "r4rk1/pbq2pbp/1p3np1/2p3NP/P1B5/4P1N1/2Q2PP1/3R1RK1 b - - 0 21",
+      "player_color": "black",
+      "player_move": "Nxh5",
+      "best_move": "Qe5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move lost significant material (3.0 pawns).",
+      "score_before": "+0.11",
+      "score_after": "+3.06",
+      "score_after_best": "+0.11",
+      "cp_loss": 295,
+      "category": "blunder",
+      "explanation": "You played Nxh5 (blunder, lost 3.0 pawns). A better move was Qe5.",
+      "acceptable_moves": [
+        "Qe5"
+      ],
+      "pv": [
+        "Qe5",
+        "Nf3",
+        "Be4",
+        "Nxe4",
+        "Qxe4",
+        "Qxe4",
+        "Nxe4",
+        "Rd7",
+        "a6",
+        "h6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 650.6,
+        "opponent": 641.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "55f3f2fb2c6e",
+      "fen": "r1r3k1/pp1qpp2/2n3pb/3b2Np/3P1BPQ/P1P5/2P2P1P/2KR1BR1 b - - 0 21",
+      "player_color": "black",
+      "player_move": "Bxg5",
+      "best_move": "Ne5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move lost significant material (2.9 pawns).",
+      "score_before": "+0.00",
+      "score_after": "+2.94",
+      "score_after_best": "+0.00",
+      "cp_loss": 294,
+      "category": "blunder",
+      "explanation": "You played Bxg5 (blunder, lost 2.9 pawns). A better move was Ne5. Your bishop on g5 is left undefended.",
+      "acceptable_moves": [
+        "Ne5"
+      ],
+      "pv": [
+        "Ne5",
+        "dxe5",
+        "Rxc3",
+        "gxh5",
+        "Qa4",
+        "Bd3",
+        "Rac8",
+        "Kd2",
+        "Rxc2+",
+        "Ke1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 802.3,
+        "opponent": 789.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "edd090df0a6c",
+      "fen": "1bR5/q4ppk/P6p/8/8/8/5PPP/R5K1 w - - 0 39",
+      "player_color": "white",
+      "player_move": "Rcc1",
+      "best_move": "Rxb8",
+      "context": "Middlegame, playing as White, the position was roughly equal. Your move lost significant material (2.8 pawns).",
+      "score_before": "+0.00",
+      "score_after": "-2.78",
+      "score_after_best": "+0.00",
+      "cp_loss": 278,
+      "category": "blunder",
+      "explanation": "You played Rcc1 (blunder, lost 2.8 pawns). You missed capturing the bishop with Rxb8.",
+      "acceptable_moves": [
+        "Rxb8"
+      ],
+      "pv": [
+        "Rxb8",
+        "Qxb8",
+        "a7",
+        "Qa8",
+        "f3",
+        "h5",
+        "h4",
+        "f6",
+        "Kf2",
+        "Kg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 755.5,
+        "opponent": 690.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "829ada8241de",
+      "fen": "2r3k1/pppn2pp/1b2Npb1/3N4/1P5P/1K6/P3R1P1/8 b - - 2 27",
+      "player_color": "black",
+      "player_move": "Bf7",
+      "best_move": "Re8",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost significant material (2.6 pawns).",
+      "score_before": "-6.93",
+      "score_after": "-4.33",
+      "score_after_best": "-6.93",
+      "cp_loss": 260,
+      "category": "blunder",
+      "explanation": "You played Bf7 (blunder, lost 2.6 pawns). A better move was Re8.",
+      "acceptable_moves": [
+        "Re8"
+      ],
+      "pv": [
+        "Re8",
+        "Ndf4",
+        "Bf7",
+        "Kc3",
+        "Nf8",
+        "Nxf8",
+        "Rxe2",
+        "Nxe2",
+        "Kxf8",
+        "a3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 325.2,
+        "opponent": 823.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a0051cb18f9f",
+      "fen": "2rq1rk1/1b2npbp/p3p1p1/1pppP3/3P4/P1PB1N1P/1PQN1PP1/R4RK1 b - - 1 18",
+      "player_color": "black",
+      "player_move": "c4",
+      "best_move": "cxd4",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move lost significant material (2.6 pawns).",
+      "score_before": "-2.55",
+      "score_after": "+0.01",
+      "score_after_best": "-2.55",
+      "cp_loss": 256,
+      "category": "blunder",
+      "explanation": "You played c4 (blunder, lost 2.6 pawns). You missed capturing the pawn with cxd4.",
+      "acceptable_moves": [
+        "cxd4"
+      ],
+      "pv": [
+        "cxd4",
+        "Nxd4",
+        "Bxe5",
+        "Qd1",
+        "Qc7",
+        "Nc2",
+        "Bh2+",
+        "Kh1",
+        "Bf4",
+        "a4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 795.3,
+        "opponent": 906.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ca16d1849736",
+      "fen": "r1b1r2k/1p4p1/4Pnqp/p4p2/P4P2/BB2P1P1/2Q4P/R4RK1 w - - 1 24",
+      "player_color": "white",
+      "player_move": "Rae1",
+      "best_move": "e7",
+      "context": "Opening, playing as White, you had a strong advantage. Your move lost significant material (2.5 pawns).",
+      "score_before": "+2.01",
+      "score_after": "-0.53",
+      "score_after_best": "+2.01",
+      "cp_loss": 254,
+      "category": "blunder",
+      "explanation": "You played Rae1 (blunder, lost 2.5 pawns). A better move was e7.",
+      "acceptable_moves": [
+        "e7"
+      ],
+      "pv": [
+        "e7",
+        "Bd7",
+        "Qa2",
+        "Qg4",
+        "Rac1",
+        "Rac8",
+        "Rxc8",
+        "Rxc8",
+        "Qd2",
+        "Qh5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 847.1,
+        "opponent": 880.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "24b78e1fc428",
+      "fen": "r1b2r1k/2qn2p1/pp2p3/2p1P1B1/P2P1p2/2PB1P2/2Q3PP/R4RK1 w - - 0 21",
+      "player_color": "white",
+      "player_move": "Qb3",
+      "best_move": "Qf2",
+      "context": "Opening, playing as White, you had a strong advantage. Your move lost significant material (2.4 pawns).",
+      "score_before": "+6.10",
+      "score_after": "+3.66",
+      "score_after_best": "+6.10",
+      "cp_loss": 244,
+      "category": "blunder",
+      "explanation": "You played Qb3 (blunder, lost 2.4 pawns). A better move was Qf2.",
+      "acceptable_moves": [
+        "Qf2"
+      ],
+      "pv": [
+        "Qf2",
+        "Kg8",
+        "Qh4",
+        "Rf5",
+        "Bxf5",
+        "exf5",
+        "e6",
+        "cxd4",
+        "Bxf4",
+        "Qc6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166376790990",
+        "source": "chess.com",
+        "opponent": "Fader_Movitz",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 620.4,
+        "opponent": 483.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "90b628911875",
+      "fen": "rn2k2r/1p1b1pbp/1qp1p1p1/p3P1B1/PnBP4/1QN2N2/1P3PPP/R4RK1 w kq - 0 14",
+      "player_color": "white",
+      "player_move": "Na2",
+      "best_move": "Ne4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move lost significant material (2.4 pawns).",
+      "score_before": "+4.11",
+      "score_after": "+1.75",
+      "score_after_best": "+4.11",
+      "cp_loss": 236,
+      "category": "blunder",
+      "explanation": "You played Na2 (blunder, lost 2.4 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4",
+        "Qc7",
+        "Nd6+",
+        "Kf8",
+        "Bd2",
+        "Nd5",
+        "Nxb7",
+        "Bc8",
+        "Nxa5",
+        "Kg8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 772.6,
+        "opponent": 632.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "74ca32795364",
+      "fen": "7k/p1p3pp/4bp2/1p2n3/1PN4P/1K6/P2R2P1/8 b - - 1 32",
+      "player_color": "black",
+      "player_move": "bxc4+",
+      "best_move": "h5",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost significant material (2.3 pawns).",
+      "score_before": "-4.91",
+      "score_after": "-2.62",
+      "score_after_best": "-4.91",
+      "cp_loss": 229,
+      "category": "blunder",
+      "explanation": "You played bxc4+ (blunder, lost 2.3 pawns). A better move was h5.",
+      "acceptable_moves": [
+        "h5"
+      ],
+      "pv": [
+        "h5",
+        "Rd8+",
+        "Kh7",
+        "Ra8",
+        "Bxc4+",
+        "Kb2",
+        "c6",
+        "Rxa7",
+        "Bd5",
+        "g3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 316.8,
+        "opponent": 701.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8191f4dd14a4",
+      "fen": "6k1/3n1pbp/RnB3p1/1Np5/2P5/1r2P2P/5PP1/6K1 w - - 0 24",
+      "player_color": "white",
+      "player_move": "Nd6",
+      "best_move": "Kh2",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move lost significant material (2.2 pawns).",
+      "score_before": "-3.52",
+      "score_after": "-5.77",
+      "score_after_best": "-3.52",
+      "cp_loss": 225,
+      "category": "blunder",
+      "explanation": "You played Nd6 (blunder, lost 2.2 pawns). A better move was Kh2.",
+      "acceptable_moves": [
+        "Kh2"
+      ],
+      "pv": [
+        "Kh2",
+        "Be5+",
+        "f4",
+        "Bb8",
+        "Ra3",
+        "Rxa3",
+        "Nxa3",
+        "Kf8",
+        "g4",
+        "Nf6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166291210702",
+        "source": "chess.com",
+        "opponent": "searsher1985",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 596.3,
+        "opponent": 643.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "98a9e901321b",
+      "fen": "6k1/qP3pp1/P6p/4b3/8/8/5PPP/R1R3K1 w - - 3 37",
+      "player_color": "white",
+      "player_move": "Rc8+",
+      "best_move": "Ra5",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move lost significant material (2.2 pawns).",
+      "score_before": "+6.02",
+      "score_after": "+3.77",
+      "score_after_best": "+6.02",
+      "cp_loss": 225,
+      "category": "blunder",
+      "explanation": "You played Rc8+ (blunder, lost 2.2 pawns). A better move was Ra5.",
+      "acceptable_moves": [
+        "Ra5"
+      ],
+      "pv": [
+        "Ra5",
+        "Bf4",
+        "Rc4",
+        "Bd6",
+        "Rc6",
+        "Bf4",
+        "g3",
+        "Bb8",
+        "Rc8+",
+        "Kh7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 801.7,
+        "opponent": 741.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "cc3b4dbe80be",
+      "fen": "2r3k1/2r2ppp/p3p3/1p1p4/nP6/2PR4/P1R1NPPP/6K1 b - - 7 24",
+      "player_color": "black",
+      "player_move": "e5",
+      "best_move": "g5",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move lost significant material (2.2 pawns).",
+      "score_before": "-3.18",
+      "score_after": "-0.95",
+      "score_after_best": "-3.18",
+      "cp_loss": 223,
+      "category": "blunder",
+      "explanation": "You played e5 (blunder, lost 2.2 pawns). A better move was g5.",
+      "acceptable_moves": [
+        "g5"
+      ],
+      "pv": [
+        "g5",
+        "Kf1",
+        "Rc4",
+        "Rc1",
+        "Kg7",
+        "Ke1",
+        "h5",
+        "Rd4",
+        "R4c7",
+        "Kd2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166398619608",
+        "source": "chess.com",
+        "opponent": "FarshadDabest",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 610.5,
+        "opponent": 713.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "f0b9e0b0c780",
+      "fen": "r2q1rk1/1pp1bppp/p7/3Bn2b/4P3/P4N2/1P3PPP/R1BQR1K1 w - - 1 14",
+      "player_color": "white",
+      "player_move": "Re3",
+      "best_move": "Bxb7",
+      "context": "Opening, playing as White, the position was roughly equal. Your move lost significant material (2.2 pawns).",
+      "score_before": "+0.06",
+      "score_after": "-2.15",
+      "score_after_best": "+0.06",
+      "cp_loss": 221,
+      "category": "blunder",
+      "explanation": "You played Re3 (blunder, lost 2.2 pawns). You missed capturing the pawn with Bxb7.",
+      "acceptable_moves": [
+        "Bxb7"
+      ],
+      "pv": [
+        "Bxb7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166446936234",
+        "source": "chess.com",
+        "opponent": "PerritoLoco12",
+        "date": "2026.03.26",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 824.9,
+        "opponent": 887.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "efa913e2e6e6",
+      "fen": "r2qr1k1/pb3pbp/1p3np1/2pp4/P1P4P/3BPNN1/2Q2PP1/3R1RK1 b - - 1 18",
+      "player_color": "black",
+      "player_move": "dxc4",
+      "best_move": "d4",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move lost significant material (2.2 pawns).",
+      "score_before": "-2.25",
+      "score_after": "-0.07",
+      "score_after_best": "-2.25",
+      "cp_loss": 218,
+      "category": "blunder",
+      "explanation": "You played dxc4 (blunder, lost 2.2 pawns). A better move was d4. Your pawn on c4 is left undefended.",
+      "acceptable_moves": [
+        "d4"
+      ],
+      "pv": [
+        "d4",
+        "exd4",
+        "cxd4",
+        "h5",
+        "Rc8",
+        "Rfe1",
+        "Rxe1+",
+        "Rxe1",
+        "Rc5",
+        "hxg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 654.6,
+        "opponent": 692.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "718141815dd3",
+      "fen": "r5k1/1ppqrp2/p6p/n4p2/3P4/P1N1P3/1PQ2PPP/3R1RK1 w - - 2 20",
+      "player_color": "white",
+      "player_move": "e4",
+      "best_move": "Ne2",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 2.0 pawns. You had more time (12min vs 5min) and could have taken longer on this move.",
+      "score_before": "+4.01",
+      "score_after": "+2.05",
+      "score_after_best": "+4.01",
+      "cp_loss": 196,
+      "category": "mistake",
+      "explanation": "You played e4 (mistake, lost 2.0 pawns). A better move was Ne2.",
+      "acceptable_moves": [
+        "Ne2"
+      ],
+      "pv": [
+        "Ne2",
+        "b5",
+        "Ng3",
+        "Nc4",
+        "Nxf5",
+        "Re6",
+        "d5",
+        "Rg6",
+        "e4",
+        "a5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166408702408",
+        "source": "chess.com",
+        "opponent": "mahmutyardim",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 694.8,
+        "opponent": 278.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "1b3fd56323fc",
+      "fen": "r3r1k1/pp1b1ppp/6n1/8/3NPq2/1P5P/P2NQPP1/2R1R1K1 w - - 5 20",
+      "player_color": "white",
+      "player_move": "f3",
+      "best_move": "Rcd1",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.9 pawns.",
+      "score_before": "+1.35",
+      "score_after": "-0.60",
+      "score_after_best": "+1.35",
+      "cp_loss": 195,
+      "category": "mistake",
+      "explanation": "You played f3 (mistake, lost 1.9 pawns). A better move was Rcd1.",
+      "acceptable_moves": [
+        "Rcd1"
+      ],
+      "pv": [
+        "Rcd1",
+        "Rad8",
+        "Nf1",
+        "Qf6",
+        "Qe3",
+        "h5",
+        "Ng3",
+        "h4",
+        "Nge2",
+        "a6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 582.0,
+        "opponent": 733.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "16e40178804d",
+      "fen": "r4rk1/1p4bp/2n1p1p1/2p1P1B1/Pp6/5N2/1P3PPP/R2R2K1 w - - 2 21",
+      "player_color": "white",
+      "player_move": "Rd7",
+      "best_move": "Bf6",
+      "context": "Opening, playing as White, the position was roughly equal. Your move cost about 1.9 pawns.",
+      "score_before": "-0.45",
+      "score_after": "-2.31",
+      "score_after_best": "-0.45",
+      "cp_loss": 186,
+      "category": "mistake",
+      "explanation": "You played Rd7 (mistake, lost 1.9 pawns). A better move was Bf6.",
+      "acceptable_moves": [
+        "Bf6"
+      ],
+      "pv": [
+        "Bf6",
+        "Bxf6",
+        "exf6",
+        "Rxf6",
+        "h4",
+        "c4",
+        "Rac1",
+        "Na5",
+        "Rd6",
+        "Ra6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 704.2,
+        "opponent": 531.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "09abf7c9fb55",
+      "fen": "r1b1r1k1/pp3ppp/5n2/2b5/3pPq2/1P1Q1N1P/PB3PP1/RN2R1K1 w - - 1 15",
+      "player_color": "white",
+      "player_move": "Nbd2",
+      "best_move": "e5",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.8 pawns.",
+      "score_before": "+2.40",
+      "score_after": "+0.56",
+      "score_after_best": "+2.40",
+      "cp_loss": 184,
+      "category": "mistake",
+      "explanation": "You played Nbd2 (mistake, lost 1.8 pawns). A better move was e5.",
+      "acceptable_moves": [
+        "e5"
+      ],
+      "pv": [
+        "e5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 830.7,
+        "opponent": 790.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ee40a7f48661",
+      "fen": "3r2k1/1p5p/4p1p1/2p5/Pp6/8/1P3PPb/R1B2K2 w - - 0 26",
+      "player_color": "white",
+      "player_move": "g3",
+      "best_move": "Be3",
+      "context": "Middlegame, playing as White, you were slightly worse. Your move cost about 1.8 pawns. You had more time (12min vs 8min) and could have taken longer on this move.",
+      "score_before": "-0.73",
+      "score_after": "-2.55",
+      "score_after_best": "-0.73",
+      "cp_loss": 182,
+      "category": "mistake",
+      "explanation": "You played g3 (mistake, lost 1.8 pawns). A better move was Be3.",
+      "acceptable_moves": [
+        "Be3"
+      ],
+      "pv": [
+        "Be3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 708.3,
+        "opponent": 469.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "1e3e69859c31",
+      "fen": "r1b2rk1/pp3ppp/1B2pn2/5n2/2B2q2/8/PPQ1NPPP/R3R1K1 b - - 2 16",
+      "player_color": "black",
+      "player_move": "Qe4",
+      "best_move": "Qd6",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move cost about 1.8 pawns.",
+      "score_before": "-1.99",
+      "score_after": "-0.20",
+      "score_after_best": "-1.99",
+      "cp_loss": 179,
+      "category": "mistake",
+      "explanation": "You played Qe4 (mistake, lost 1.8 pawns). A better move was Qd6.",
+      "acceptable_moves": [
+        "Qd6"
+      ],
+      "pv": [
+        "Qd6",
+        "Ba5",
+        "Ng4",
+        "Ng3",
+        "Nxg3",
+        "hxg3",
+        "Qc5",
+        "Re4",
+        "Nxf2",
+        "Qxf2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166222880876",
+        "source": "chess.com",
+        "opponent": "SohDaBarber",
+        "date": "2026.03.21",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 664.8,
+        "opponent": 713.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "7928e6b6e712",
+      "fen": "r4rk1/p1p2ppp/1p3n2/3q1b2/3Pn3/P3PN2/1B2BPPP/R2Q1RK1 w - - 0 14",
+      "player_color": "white",
+      "player_move": "Rc1",
+      "best_move": "Ne5",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.7 pawns.",
+      "score_before": "+2.80",
+      "score_after": "+1.06",
+      "score_after_best": "+2.80",
+      "cp_loss": 174,
+      "category": "mistake",
+      "explanation": "You played Rc1 (mistake, lost 1.7 pawns). A better move was Ne5.",
+      "acceptable_moves": [
+        "Ne5"
+      ],
+      "pv": [
+        "Ne5",
+        "Nd6",
+        "f3",
+        "Rad8",
+        "e4",
+        "Nfxe4",
+        "fxe4",
+        "Bxe4",
+        "Rf2",
+        "f6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267448056",
+        "source": "chess.com",
+        "opponent": "T1602T",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 951.7,
+        "opponent": 902.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "e640b0dfbcf6",
+      "fen": "r2r2k1/pp1n1pbp/4bnp1/2p5/2P5/2N1PN2/PP2BPPP/R1B2RK1 w - - 0 12",
+      "player_color": "white",
+      "player_move": "Bd2",
+      "best_move": "Ng5",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.7 pawns.",
+      "score_before": "+1.69",
+      "score_after": "-0.04",
+      "score_after_best": "+1.69",
+      "cp_loss": 173,
+      "category": "mistake",
+      "explanation": "You played Bd2 (mistake, lost 1.7 pawns). A better move was Ng5.",
+      "acceptable_moves": [
+        "Ng5"
+      ],
+      "pv": [
+        "Ng5",
+        "Nf8",
+        "Nxe6",
+        "Nxe6",
+        "Rb1",
+        "Rd7",
+        "Rd1",
+        "Rxd1+",
+        "Bxd1",
+        "Rd8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166291210702",
+        "source": "chess.com",
+        "opponent": "searsher1985",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 772.6,
+        "opponent": 887.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a8be0680c1c0",
+      "fen": "rn3rk1/1p1b1pbp/1q2p1p1/2pPP1B1/PpB5/1Q3N2/1P3PPP/R4RK1 w - - 1 17",
+      "player_color": "white",
+      "player_move": "dxe6",
+      "best_move": "a5",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.7 pawns.",
+      "score_before": "+2.39",
+      "score_after": "+0.70",
+      "score_after_best": "+2.39",
+      "cp_loss": 169,
+      "category": "mistake",
+      "explanation": "You played dxe6 (mistake, lost 1.7 pawns). A better move was a5.",
+      "acceptable_moves": [
+        "a5"
+      ],
+      "pv": [
+        "a5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 755.6,
+        "opponent": 534.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "f41ca17347fd",
+      "fen": "r1bqkb1r/1ppn1ppp/p3pn2/3p4/Q2P4/4PN2/PPP2PPP/RNB1KB1R b KQkq - 1 6",
+      "player_color": "black",
+      "player_move": "b5",
+      "best_move": "Bd6",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move cost about 1.7 pawns.",
+      "score_before": "-0.93",
+      "score_after": "+0.75",
+      "score_after_best": "-0.93",
+      "cp_loss": 168,
+      "category": "mistake",
+      "explanation": "You played b5 (mistake, lost 1.7 pawns). A better move was Bd6.",
+      "acceptable_moves": [
+        "Bd6"
+      ],
+      "pv": [
+        "Bd6",
+        "c4",
+        "dxc4",
+        "Bxc4",
+        "O-O",
+        "Qd1",
+        "b5",
+        "Be2",
+        "c5",
+        "a4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166305403436",
+        "source": "chess.com",
+        "opponent": "Jhonalexismina",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 906.8,
+        "opponent": 951.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3903e3964434",
+      "fen": "r4rk1/p4ppp/5n2/2pq1b2/4n3/P3PN2/1B2BPPP/2RQ1RK1 w - - 0 16",
+      "player_color": "white",
+      "player_move": "Bc4",
+      "best_move": "Bxf6",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.6 pawns.",
+      "score_before": "+2.31",
+      "score_after": "+0.66",
+      "score_after_best": "+2.31",
+      "cp_loss": 165,
+      "category": "mistake",
+      "explanation": "You played Bc4 (mistake, lost 1.6 pawns). You missed capturing the knight with Bxf6.",
+      "acceptable_moves": [
+        "Bxf6"
+      ],
+      "pv": [
+        "Bxf6",
+        "Qxd1",
+        "Rfxd1",
+        "gxf6",
+        "Nh4",
+        "Be6",
+        "f3",
+        "Ng5",
+        "Rxc5",
+        "Rfb8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267448056",
+        "source": "chess.com",
+        "opponent": "T1602T",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 964.1,
+        "opponent": 891.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "1d8733adb300",
+      "fen": "r2q1rk1/1pp1bppp/p7/3B3b/4P3/P3Rn2/1P3PPP/R1BQ2K1 w - - 0 15",
+      "player_color": "white",
+      "player_move": "Rxf3",
+      "best_move": "gxf3",
+      "context": "Opening, playing as White, you were slightly worse. Your move cost about 1.6 pawns.",
+      "score_before": "-1.30",
+      "score_after": "-2.95",
+      "score_after_best": "-1.30",
+      "cp_loss": 165,
+      "category": "mistake",
+      "explanation": "You played Rxf3 (mistake, lost 1.6 pawns). You missed capturing the knight with gxf3.",
+      "acceptable_moves": [
+        "gxf3"
+      ],
+      "pv": [
+        "gxf3",
+        "c6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166446936234",
+        "source": "chess.com",
+        "opponent": "PerritoLoco12",
+        "date": "2026.03.26",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 831.7,
+        "opponent": 884.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "bb7b23dcafd8",
+      "fen": "rnb3k1/1p3rp1/2p1p1qp/p4p2/P2P1P2/1BP1P3/1BQ3PP/R4RK1 w - - 2 18",
+      "player_color": "white",
+      "player_move": "g3",
+      "best_move": "Rf3",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.6 pawns.",
+      "score_before": "+2.20",
+      "score_after": "+0.56",
+      "score_after_best": "+2.20",
+      "cp_loss": 164,
+      "category": "mistake",
+      "explanation": "You played g3 (mistake, lost 1.6 pawns). A better move was Rf3.",
+      "acceptable_moves": [
+        "Rf3"
+      ],
+      "pv": [
+        "Rf3",
+        "Nd7",
+        "Rg3",
+        "Qh5",
+        "Bxe6",
+        "Nf6",
+        "Bxf7+",
+        "Qxf7",
+        "c4",
+        "Ne4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 882.7,
+        "opponent": 871.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3496d5e69be0",
+      "fen": "r2qk2r/ppp1ppbp/2n2np1/8/5Bb1/2NP2Q1/PPP2PPP/R3KBNR b KQkq - 2 8",
+      "player_color": "black",
+      "player_move": "Be6",
+      "best_move": "Nd4",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move cost about 1.6 pawns.",
+      "score_before": "-3.32",
+      "score_after": "-1.76",
+      "score_after_best": "-3.32",
+      "cp_loss": 156,
+      "category": "mistake",
+      "explanation": "You played Be6 (mistake, lost 1.6 pawns). A better move was Nd4.",
+      "acceptable_moves": [
+        "Nd4"
+      ],
+      "pv": [
+        "Nd4",
+        "Bg5",
+        "Nxc2+",
+        "Kd2",
+        "Nxa1",
+        "Bxf6",
+        "exf6",
+        "Qxg4",
+        "O-O",
+        "Qf4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 894.2,
+        "opponent": 928.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8fc30148deb1",
+      "fen": "6k1/1p6/4p1p1/2p4p/Pp6/1P2B1P1/1r3PKb/R7 w - - 5 34",
+      "player_color": "white",
+      "player_move": "Bxc5",
+      "best_move": "Kxh2",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move cost about 1.6 pawns. You had more time (11min vs 6min) and could have taken longer on this move.",
+      "score_before": "+3.82",
+      "score_after": "+2.27",
+      "score_after_best": "+3.82",
+      "cp_loss": 155,
+      "category": "mistake",
+      "explanation": "You played Bxc5 (mistake, lost 1.6 pawns). You missed capturing the bishop with Kxh2.",
+      "acceptable_moves": [
+        "Kxh2"
+      ],
+      "pv": [
+        "Kxh2",
+        "b6",
+        "a5",
+        "bxa5",
+        "Rxa5",
+        "Rxb3",
+        "Rxc5",
+        "Kf7",
+        "Bg5",
+        "Ke8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 651.0,
+        "opponent": 351.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "522023da8cfd",
+      "fen": "6k1/1p5p/4p1p1/2p5/Pp6/6P1/1P3PK1/R1Br2b1 w - - 3 28",
+      "player_color": "white",
+      "player_move": "Kf3",
+      "best_move": "b3",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move cost about 1.5 pawns. You had more time (12min vs 7min) and could have taken longer on this move.",
+      "score_before": "-3.63",
+      "score_after": "-5.16",
+      "score_after_best": "-3.63",
+      "cp_loss": 153,
+      "category": "mistake",
+      "explanation": "You played Kf3 (mistake, lost 1.5 pawns). A better move was b3.",
+      "acceptable_moves": [
+        "b3"
+      ],
+      "pv": [
+        "b3",
+        "Re1",
+        "a5",
+        "Kf7",
+        "Bb2",
+        "Re2",
+        "Kxg1",
+        "Rxb2",
+        "Rc1",
+        "Rxb3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 692.5,
+        "opponent": 405.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "18cd8583b5d5",
+      "fen": "5bk1/5ppp/8/3pq3/1P6/4P3/P2B1PPP/R1R3K1 w - - 0 28",
+      "player_color": "white",
+      "player_move": "b5",
+      "best_move": "a4",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move cost about 1.5 pawns.",
+      "score_before": "+6.17",
+      "score_after": "+4.64",
+      "score_after_best": "+6.17",
+      "cp_loss": 153,
+      "category": "mistake",
+      "explanation": "You played b5 (mistake, lost 1.5 pawns). A better move was a4.",
+      "acceptable_moves": [
+        "a4"
+      ],
+      "pv": [
+        "a4",
+        "Qe8",
+        "a5",
+        "Bd6",
+        "a6",
+        "Bb8",
+        "Bc3",
+        "h6",
+        "Bd4",
+        "Kh7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 900.7,
+        "opponent": 802.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "23479e92cae8",
+      "fen": "r4rk1/pp1qppbp/2n1b1p1/8/3P1B2/P1P2NQ1/2P2PPP/2KR1B1R b - - 0 17",
+      "player_color": "black",
+      "player_move": "Bd5",
+      "best_move": "Na5",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move cost about 1.5 pawns.",
+      "score_before": "-1.64",
+      "score_after": "-0.12",
+      "score_after_best": "-1.64",
+      "cp_loss": 152,
+      "category": "mistake",
+      "explanation": "You played Bd5 (mistake, lost 1.5 pawns). A better move was Na5.",
+      "acceptable_moves": [
+        "Na5"
+      ],
+      "pv": [
+        "Na5",
+        "Qg5",
+        "Bf5",
+        "Bd3",
+        "e6",
+        "h4",
+        "f6",
+        "Qg3",
+        "Qa4",
+        "Kd2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 826.1,
+        "opponent": 828.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a70030c0eb53",
+      "fen": "7k/p1pb3p/5p2/K3n1P1/1Pp5/8/P2R2P1/8 b - - 0 35",
+      "player_color": "black",
+      "player_move": "fxg5",
+      "best_move": "c3",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move cost about 1.5 pawns.",
+      "score_before": "-5.49",
+      "score_after": "-3.97",
+      "score_after_best": "-5.49",
+      "cp_loss": 152,
+      "category": "mistake",
+      "explanation": "You played fxg5 (mistake, lost 1.5 pawns). A better move was c3.",
+      "acceptable_moves": [
+        "c3"
+      ],
+      "pv": [
+        "c3",
+        "Rd1",
+        "c2",
+        "Rc1",
+        "fxg5",
+        "g3",
+        "Bf5",
+        "g4",
+        "Bd3",
+        "Re1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 306.7,
+        "opponent": 719.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "508e496c5806",
+      "fen": "rnbqkb1r/ppp2ppp/5n2/3p4/1P1P4/P4N1P/2P1P1P1/RNBQKB1R b KQkq - 0 6",
+      "player_color": "black",
+      "player_move": "g6",
+      "best_move": "Bd6",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move cost about 1.5 pawns.",
+      "score_before": "-2.50",
+      "score_after": "-0.99",
+      "score_after_best": "-2.50",
+      "cp_loss": 151,
+      "category": "mistake",
+      "explanation": "You played g6 (mistake, lost 1.5 pawns). A better move was Bd6.",
+      "acceptable_moves": [
+        "Bd6"
+      ],
+      "pv": [
+        "Bd6",
+        "Be3",
+        "Ne4",
+        "Bf2",
+        "a5",
+        "b5",
+        "Qe7",
+        "Qc1",
+        "Nd7",
+        "c4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166334588890",
+        "source": "chess.com",
+        "opponent": "Xpolash",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 894.5,
+        "opponent": 931.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "14449d6d6e55",
+      "fen": "r1bq1rk1/p2n1pbp/2p1pnp1/2Pp4/P2P4/2BBPN1P/5PP1/RN1Q1RK1 b - - 0 13",
+      "player_color": "black",
+      "player_move": "Bb7",
+      "best_move": "Ne4",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move cost about 1.5 pawns.",
+      "score_before": "-0.37",
+      "score_after": "+1.14",
+      "score_after_best": "-0.37",
+      "cp_loss": 151,
+      "category": "mistake",
+      "explanation": "You played Bb7 (mistake, lost 1.5 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4",
+        "Qc2",
+        "Nxc3",
+        "Nxc3",
+        "e5",
+        "Nxe5",
+        "Nxe5",
+        "dxe5",
+        "Bxe5",
+        "Rab1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 855.1,
+        "opponent": 978.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "f494f3b536ed",
+      "fen": "5bk1/q4ppp/4p3/3p4/3P4/1P2P3/P4PPP/R1B2RK1 w - - 0 24",
+      "player_color": "white",
+      "player_move": "Bd2",
+      "best_move": "a4",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move cost about 1.5 pawns.",
+      "score_before": "+4.83",
+      "score_after": "+3.36",
+      "score_after_best": "+4.83",
+      "cp_loss": 147,
+      "category": "mistake",
+      "explanation": "You played Bd2 (mistake, lost 1.5 pawns). A better move was a4.",
+      "acceptable_moves": [
+        "a4"
+      ],
+      "pv": [
+        "a4",
+        "h5",
+        "Ba3",
+        "h4",
+        "Bxf8",
+        "Kxf8",
+        "a5",
+        "e5",
+        "a6",
+        "exd4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 903.7,
+        "opponent": 780.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "e1b071cc1821",
+      "fen": "rnb1r1k1/1p4p1/2p1p1qp/p4p2/P2P1P2/BBP1P1P1/2Q4P/R4RK1 w - - 3 20",
+      "player_color": "white",
+      "player_move": "c4",
+      "best_move": "e4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.4 pawns.",
+      "score_before": "+2.43",
+      "score_after": "+0.98",
+      "score_after_best": "+2.43",
+      "cp_loss": 145,
+      "category": "mistake",
+      "explanation": "You played c4 (mistake, lost 1.4 pawns). A better move was e4.",
+      "acceptable_moves": [
+        "e4"
+      ],
+      "pv": [
+        "e4",
+        "Kh8",
+        "Rae1",
+        "Bd7",
+        "Qa2",
+        "Qf6",
+        "Bd6",
+        "c5",
+        "exf5",
+        "exf5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 864.1,
+        "opponent": 876.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "9f719f5fde62",
+      "fen": "rnb2rk1/1p3np1/2p1pq1p/p3Np2/P2P1P2/1BP1P3/2Q3PP/R1B2RK1 w - - 1 16",
+      "player_color": "white",
+      "player_move": "Nxf7",
+      "best_move": "Ba3",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.4 pawns.",
+      "score_before": "+4.02",
+      "score_after": "+2.59",
+      "score_after_best": "+4.02",
+      "cp_loss": 143,
+      "category": "mistake",
+      "explanation": "You played Nxf7 (mistake, lost 1.4 pawns). A better move was Ba3. Your knight on f7 is left undefended.",
+      "acceptable_moves": [
+        "Ba3"
+      ],
+      "pv": [
+        "Ba3",
+        "c5",
+        "Bxc5",
+        "Re8",
+        "e4",
+        "Nd7",
+        "Ba3",
+        "Ndxe5",
+        "fxe5",
+        "Qg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 877.6,
+        "opponent": 903.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "224ebfa2e5d6",
+      "fen": "r1b2r1k/2qn2p1/ppp1p3/4P1B1/P2P1p2/2PB4/2Q2PPP/R4RK1 w - - 0 20",
+      "player_color": "white",
+      "player_move": "f3",
+      "best_move": "Qe2",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.4 pawns.",
+      "score_before": "+5.90",
+      "score_after": "+4.48",
+      "score_after_best": "+5.90",
+      "cp_loss": 142,
+      "category": "mistake",
+      "explanation": "You played f3 (mistake, lost 1.4 pawns). A better move was Qe2.",
+      "acceptable_moves": [
+        "Qe2"
+      ],
+      "pv": [
+        "Qe2",
+        "Kg8",
+        "Qh5",
+        "Rf5",
+        "Bxf5",
+        "exf5",
+        "e6",
+        "Nf6",
+        "Bxf6",
+        "Bxe6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166376790990",
+        "source": "chess.com",
+        "opponent": "Fader_Movitz",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 638.5,
+        "opponent": 564.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "7e7cb5c0abf3",
+      "fen": "2rq1rk1/1bp1npbp/p3p1p1/1p1pP3/3P4/P1P2N1P/1P1NBPP1/R2Q1RK1 b - - 6 15",
+      "player_color": "black",
+      "player_move": "Nf5",
+      "best_move": "c5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move cost about 1.4 pawns.",
+      "score_before": "+0.48",
+      "score_after": "+1.89",
+      "score_after_best": "+0.48",
+      "cp_loss": 141,
+      "category": "mistake",
+      "explanation": "You played Nf5 (mistake, lost 1.4 pawns). A better move was c5.",
+      "acceptable_moves": [
+        "c5"
+      ],
+      "pv": [
+        "c5",
+        "Re1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 829.3,
+        "opponent": 931.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "f068533b7cc6",
+      "fen": "r2q1rk1/ppp1bppp/2n1pn2/7b/2BP4/P1N1PN2/1P3PPP/R1BQR1K1 w - - 5 10",
+      "player_color": "white",
+      "player_move": "e4",
+      "best_move": "Be2",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.4 pawns.",
+      "score_before": "+0.53",
+      "score_after": "-0.85",
+      "score_after_best": "+0.53",
+      "cp_loss": 138,
+      "category": "mistake",
+      "explanation": "You played e4 (mistake, lost 1.4 pawns). A better move was Be2.",
+      "acceptable_moves": [
+        "Be2"
+      ],
+      "pv": [
+        "Be2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166446936234",
+        "source": "chess.com",
+        "opponent": "PerritoLoco12",
+        "date": "2026.03.26",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 857.8,
+        "opponent": 903.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "03e00c7b3ab5",
+      "fen": "rn2k2r/1p1b1pbp/1q2p1p1/p1p1P1B1/PnBP4/1Q3N2/NP3PPP/R4RK1 w kq - 0 15",
+      "player_color": "white",
+      "player_move": "Nxb4",
+      "best_move": "Rfd1",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.3 pawns.",
+      "score_before": "+2.03",
+      "score_after": "+0.69",
+      "score_after_best": "+2.03",
+      "cp_loss": 134,
+      "category": "mistake",
+      "explanation": "You played Nxb4 (mistake, lost 1.3 pawns). A better move was Rfd1.",
+      "acceptable_moves": [
+        "Rfd1"
+      ],
+      "pv": [
+        "Rfd1",
+        "cxd4",
+        "Rxd4",
+        "O-O",
+        "Rad1",
+        "Qc7",
+        "Nxb4",
+        "axb4",
+        "Bb5",
+        "Be8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 759.0,
+        "opponent": 603.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "455c83e3bd63",
+      "fen": "r4rk1/1p1R3p/4p1p1/2p1b1B1/Pp6/8/1P3PPP/R5K1 w - - 0 23",
+      "player_color": "white",
+      "player_move": "Bc1",
+      "best_move": "Rd2",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move cost about 1.3 pawns.",
+      "score_before": "-2.72",
+      "score_after": "-4.04",
+      "score_after_best": "-2.72",
+      "cp_loss": 132,
+      "category": "mistake",
+      "explanation": "You played Bc1 (mistake, lost 1.3 pawns). A better move was Rd2.",
+      "acceptable_moves": [
+        "Rd2"
+      ],
+      "pv": [
+        "Rd2",
+        "Bd4",
+        "Be3",
+        "e5",
+        "g4",
+        "b6",
+        "Kg2",
+        "Ra5",
+        "Re1",
+        "Rxa4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 704.4,
+        "opponent": 506.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6fbc3dee457a",
+      "fen": "r3r1k1/p1Rb1ppp/1p6/4n3/3NP3/1P2KP1P/P2N2P1/4R3 w - - 0 26",
+      "player_color": "white",
+      "player_move": "Rec1",
+      "best_move": "f4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.3 pawns.",
+      "score_before": "+5.08",
+      "score_after": "+3.76",
+      "score_after_best": "+5.08",
+      "cp_loss": 132,
+      "category": "mistake",
+      "explanation": "You played Rec1 (mistake, lost 1.3 pawns). A better move was f4.",
+      "acceptable_moves": [
+        "f4"
+      ],
+      "pv": [
+        "f4",
+        "Rad8",
+        "fxe5",
+        "Rxe5",
+        "Nc4",
+        "Rc5",
+        "Rxc5",
+        "bxc5",
+        "Ne2",
+        "Bc6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 453.1,
+        "opponent": 632.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3b20497c4643",
+      "fen": "r3r1k1/p1Rb1pp1/1p5p/4n3/3NP3/1P2KP1P/P2N2P1/2R5 w - - 0 27",
+      "player_color": "white",
+      "player_move": "Nc4",
+      "best_move": "f4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.3 pawns.",
+      "score_before": "+5.24",
+      "score_after": "+3.94",
+      "score_after_best": "+5.24",
+      "cp_loss": 130,
+      "category": "mistake",
+      "explanation": "You played Nc4 (mistake, lost 1.3 pawns). A better move was f4.",
+      "acceptable_moves": [
+        "f4"
+      ],
+      "pv": [
+        "f4",
+        "Rad8",
+        "fxe5",
+        "Rxe5",
+        "N2f3",
+        "Ra5",
+        "a4",
+        "h5",
+        "Nc6",
+        "Bxc6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 418.9,
+        "opponent": 640.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "dc86b1277562",
+      "fen": "rn2k2r/1p1b1pbp/pqp1p1p1/3nP1B1/P1BP4/2N2N2/1P3PPP/R2Q1RK1 w kq - 4 12",
+      "player_color": "white",
+      "player_move": "Qc2",
+      "best_move": "Ne4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.3 pawns.",
+      "score_before": "+3.41",
+      "score_after": "+2.13",
+      "score_after_best": "+3.41",
+      "cp_loss": 128,
+      "category": "mistake",
+      "explanation": "You played Qc2 (mistake, lost 1.3 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4",
+        "h6",
+        "Nd6+",
+        "Kf8",
+        "Bd2",
+        "Kg8",
+        "a5",
+        "Qc7",
+        "Rc1",
+        "b5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 816.5,
+        "opponent": 712.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "0835b812aaa8",
+      "fen": "r5k1/1ppqrp2/p6p/n7/3PPp2/P1N5/1PQ2PPP/3R1RK1 w - - 0 21",
+      "player_color": "white",
+      "player_move": "f3",
+      "best_move": "Nd5",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.3 pawns. You had more time (12min vs 5min) and could have taken longer on this move.",
+      "score_before": "+5.01",
+      "score_after": "+3.73",
+      "score_after_best": "+5.01",
+      "cp_loss": 128,
+      "category": "mistake",
+      "explanation": "You played f3 (mistake, lost 1.3 pawns). A better move was Nd5.",
+      "acceptable_moves": [
+        "Nd5"
+      ],
+      "pv": [
+        "Nd5",
+        "Qd6",
+        "Nxe7+",
+        "Qxe7",
+        "Rfe1",
+        "Qg5",
+        "Qxc7",
+        "Nc6",
+        "g3",
+        "f3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166408702408",
+        "source": "chess.com",
+        "opponent": "mahmutyardim",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 699.3,
+        "opponent": 277.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "72ffaf3d4656",
+      "fen": "r1b2rk1/ppq2ppp/2n2n2/2b5/3p4/1P1BPN1P/P4PP1/RNBQ1RK1 w - - 0 11",
+      "player_color": "white",
+      "player_move": "e4",
+      "best_move": "exd4",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.2 pawns.",
+      "score_before": "+0.80",
+      "score_after": "-0.44",
+      "score_after_best": "+0.80",
+      "cp_loss": 124,
+      "category": "mistake",
+      "explanation": "You played e4 (mistake, lost 1.2 pawns). You missed capturing the pawn with exd4.",
+      "acceptable_moves": [
+        "exd4"
+      ],
+      "pv": [
+        "exd4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 867.1,
+        "opponent": 924.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "2368872480a2",
+      "fen": "rn1qk2r/1p1b1pbp/p1p1p1p1/3nP3/P1BP4/2N2N2/1P3PPP/R1BQ1RK1 w kq - 2 11",
+      "player_color": "white",
+      "player_move": "Bg5",
+      "best_move": "Ne4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.2 pawns.",
+      "score_before": "+3.54",
+      "score_after": "+2.36",
+      "score_after_best": "+3.54",
+      "cp_loss": 118,
+      "category": "mistake",
+      "explanation": "You played Bg5 (mistake, lost 1.2 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4",
+        "O-O",
+        "Bg5",
+        "Qc8",
+        "Qd2",
+        "c5",
+        "Bxd5",
+        "exd5",
+        "Nf6+",
+        "Kh8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 862.9,
+        "opponent": 746.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a040334160ba",
+      "fen": "r3r1k1/pp1b1ppp/8/8/3NPq1n/1P3P1P/P2NQ1P1/2R1R1K1 w - - 1 21",
+      "player_color": "white",
+      "player_move": "Qe3",
+      "best_move": "Qf2",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.2 pawns.",
+      "score_before": "+1.37",
+      "score_after": "+0.19",
+      "score_after_best": "+1.37",
+      "cp_loss": 118,
+      "category": "mistake",
+      "explanation": "You played Qe3 (mistake, lost 1.2 pawns). A better move was Qf2.",
+      "acceptable_moves": [
+        "Qf2"
+      ],
+      "pv": [
+        "Qf2",
+        "Ng6",
+        "Nf1",
+        "Rad8",
+        "Ne2",
+        "Qf6",
+        "Nfg3",
+        "Bb5",
+        "Qxa7",
+        "Bxe2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 465.4,
+        "opponent": 665.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a9e7c1c48fbf",
+      "fen": "rn2k3/pppb1ppp/1b6/3N2N1/8/2K4P/PP4P1/3R4 b - - 0 20",
+      "player_color": "black",
+      "player_move": "Bf5",
+      "best_move": "h6",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move cost about 1.2 pawns.",
+      "score_before": "-6.03",
+      "score_after": "-4.86",
+      "score_after_best": "-6.03",
+      "cp_loss": 117,
+      "category": "mistake",
+      "explanation": "You played Bf5 (mistake, lost 1.2 pawns). A better move was h6.",
+      "acceptable_moves": [
+        "h6"
+      ],
+      "pv": [
+        "h6",
+        "Ne4",
+        "Nc6",
+        "Nc5",
+        "Bxc5",
+        "Nxc7+",
+        "Ke7",
+        "Nxa8",
+        "Bb4+",
+        "Kc4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166160698244",
+        "source": "chess.com",
+        "opponent": "Soldier_XVII",
+        "date": "2026.03.19",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 550.2,
+        "opponent": 890.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "cd50016843c3",
+      "fen": "r2q1rk1/1bp1npbp/p3p1p1/1p1pP3/3P4/P1P2N1P/1P1NBPP1/R1Q2RK1 b - - 4 14",
+      "player_color": "black",
+      "player_move": "Rc8",
+      "best_move": "c5",
+      "context": "Opening, playing as Black, you were slightly worse. Your move cost about 1.2 pawns.",
+      "score_before": "+0.98",
+      "score_after": "+2.14",
+      "score_after_best": "+0.98",
+      "cp_loss": 116,
+      "category": "mistake",
+      "explanation": "You played Rc8 (mistake, lost 1.2 pawns). A better move was c5.",
+      "acceptable_moves": [
+        "c5"
+      ],
+      "pv": [
+        "c5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 874.3,
+        "opponent": 947.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "4b68eb3d0225",
+      "fen": "r4rk1/ppBqppbp/2n1bnp1/8/3P4/P1N2NQ1/1PP2PPP/2KR1B1R b - - 0 15",
+      "player_color": "black",
+      "player_move": "Nd5",
+      "best_move": "Nh5",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move cost about 1.1 pawns.",
+      "score_before": "-2.48",
+      "score_after": "-1.33",
+      "score_after_best": "-2.48",
+      "cp_loss": 115,
+      "category": "mistake",
+      "explanation": "You played Nd5 (mistake, lost 1.1 pawns). A better move was Nh5.",
+      "acceptable_moves": [
+        "Nh5"
+      ],
+      "pv": [
+        "Nh5",
+        "Qg5",
+        "Qxc7",
+        "d5",
+        "Bxc3",
+        "bxc3",
+        "Qa5",
+        "dxc6",
+        "Qxa3+",
+        "Kd2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 835.2,
+        "opponent": 843.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "c2b71e17f865",
+      "fen": "5bk1/r4ppp/1q2p3/3p4/Q2P4/1P2P3/P4PPP/R1B2RK1 w - - 5 23",
+      "player_color": "white",
+      "player_move": "Qxa7",
+      "best_move": "Qe8",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move cost about 1.1 pawns.",
+      "score_before": "+5.54",
+      "score_after": "+4.44",
+      "score_after_best": "+5.54",
+      "cp_loss": 110,
+      "category": "mistake",
+      "explanation": "You played Qxa7 (mistake, lost 1.1 pawns). A better move was Qe8. Your queen on a7 is left undefended.",
+      "acceptable_moves": [
+        "Qe8"
+      ],
+      "pv": [
+        "Qe8",
+        "Qb7",
+        "Qd8",
+        "h6",
+        "Qh4",
+        "Ra6",
+        "Qh5",
+        "Rc6",
+        "Qd1",
+        "e5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 895.0,
+        "opponent": 816.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "5904ca67c2bc",
+      "fen": "r4rk1/pq3ppp/5n2/2p1Nb2/2B1n3/P3P3/1B3PPP/2RQ1RK1 w - - 4 18",
+      "player_color": "white",
+      "player_move": "Qf3",
+      "best_move": "Ba1",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.1 pawns.",
+      "score_before": "+1.38",
+      "score_after": "+0.28",
+      "score_after_best": "+1.38",
+      "cp_loss": 110,
+      "category": "mistake",
+      "explanation": "You played Qf3 (mistake, lost 1.1 pawns). A better move was Ba1.",
+      "acceptable_moves": [
+        "Ba1"
+      ],
+      "pv": [
+        "Ba1",
+        "Qe7",
+        "Re1",
+        "Rac8",
+        "Ba6",
+        "Rc7",
+        "f3",
+        "Nd6",
+        "e4",
+        "Be6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267448056",
+        "source": "chess.com",
+        "opponent": "T1602T",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 930.3,
+        "opponent": 843.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ef03eeb5301f",
+      "fen": "r1q1r1k1/1b1n1pbp/p1p1pnp1/P1Pp4/3P4/N1BBPN1P/4QPP1/1R3RK1 b - - 5 17",
+      "player_color": "black",
+      "player_move": "Nb8",
+      "best_move": "Qc7",
+      "context": "Opening, playing as Black, you were slightly worse. Your move cost about 1.1 pawns.",
+      "score_before": "+1.68",
+      "score_after": "+2.76",
+      "score_after_best": "+1.68",
+      "cp_loss": 108,
+      "category": "mistake",
+      "explanation": "You played Nb8 (mistake, lost 1.1 pawns). A better move was Qc7.",
+      "acceptable_moves": [
+        "Qc7"
+      ],
+      "pv": [
+        "Qc7",
+        "Qb2",
+        "Reb8",
+        "Nc2",
+        "Bf8",
+        "Nb4",
+        "e5",
+        "dxe5",
+        "Ne4",
+        "Bxe4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 788.2,
+        "opponent": 918.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "c8f558e528f7",
+      "fen": "5bk1/5ppp/8/1P1p4/8/4P3/Pq1B1PPP/R1R3K1 w - - 1 29",
+      "player_color": "white",
+      "player_move": "Rcb1",
+      "best_move": "Bc3",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move cost about 1.1 pawns.",
+      "score_before": "+4.97",
+      "score_after": "+3.91",
+      "score_after_best": "+4.97",
+      "cp_loss": 106,
+      "category": "mistake",
+      "explanation": "You played Rcb1 (mistake, lost 1.1 pawns). A better move was Bc3.",
+      "acceptable_moves": [
+        "Bc3"
+      ],
+      "pv": [
+        "Bc3",
+        "Qxb5",
+        "a4",
+        "Qa6",
+        "Bd4",
+        "h5",
+        "Rcb1",
+        "Qa5",
+        "Rb5",
+        "Qa6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 888.4,
+        "opponent": 803.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "e931f378e91f",
+      "fen": "r4rk1/pq3ppp/4bn2/2p1N3/2B1n3/P3PQ2/1B3PPP/2R2RK1 w - - 6 19",
+      "player_color": "white",
+      "player_move": "Bd3",
+      "best_move": "Bxe6",
+      "context": "Opening, playing as White, you had a slight advantage. Your move cost about 1.1 pawns.",
+      "score_before": "+0.90",
+      "score_after": "-0.16",
+      "score_after_best": "+0.90",
+      "cp_loss": 106,
+      "category": "mistake",
+      "explanation": "You played Bd3 (mistake, lost 1.1 pawns). You missed capturing the bishop with Bxe6.",
+      "acceptable_moves": [
+        "Bxe6"
+      ],
+      "pv": [
+        "Bxe6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267448056",
+        "source": "chess.com",
+        "opponent": "T1602T",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 934.1,
+        "opponent": 837.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "13bdc85def6c",
+      "fen": "rnbqkbnr/ppp2ppp/8/3p4/1P1PpP2/7P/P1P1P1P1/RNBQKBNR b KQkq f3 0 4",
+      "player_color": "black",
+      "player_move": "exf3",
+      "best_move": "Qh4+",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move cost about 1.0 pawns.",
+      "score_before": "-3.47",
+      "score_after": "-2.44",
+      "score_after_best": "-3.47",
+      "cp_loss": 103,
+      "category": "mistake",
+      "explanation": "You played exf3 (mistake, lost 1.0 pawns). A better move was Qh4+. Qh4+ also gives check. Your pawn on f3 is left undefended.",
+      "acceptable_moves": [
+        "Qh4+"
+      ],
+      "pv": [
+        "Qh4+",
+        "Kd2",
+        "Bxb4+",
+        "c3",
+        "Qf2",
+        "cxb4",
+        "Qxd4+",
+        "Kc2",
+        "Qxa1",
+        "Bb2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166334588890",
+        "source": "chess.com",
+        "opponent": "Xpolash",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 908.8,
+        "opponent": 923.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "5c7a77eacf2d",
+      "fen": "rnb2rk1/1p4p1/2p1pq1p/p3Npn1/P2P4/1BP1PP2/2Q3PP/R1B2RK1 w - - 1 15",
+      "player_color": "white",
+      "player_move": "f4",
+      "best_move": "Ba3",
+      "context": "Opening, playing as White, you had a strong advantage. Your move cost about 1.0 pawns.",
+      "score_before": "+3.47",
+      "score_after": "+2.47",
+      "score_after_best": "+3.47",
+      "cp_loss": 100,
+      "category": "mistake",
+      "explanation": "You played f4 (mistake, lost 1 pawn). A better move was Ba3.",
+      "acceptable_moves": [
+        "Ba3"
+      ],
+      "pv": [
+        "Ba3",
+        "Rd8",
+        "e4",
+        "f4",
+        "Nc4",
+        "Qg6",
+        "h4",
+        "Nf7",
+        "Nb6",
+        "Ra6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 875.7,
+        "opponent": 903.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "b45d175829dd",
+      "fen": "8/q4ppk/P6p/2b5/8/8/1R3PPP/1R4K1 w - - 8 43",
+      "player_color": "white",
+      "player_move": "Rb7",
+      "best_move": "Ra2",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move was inaccurate (1.0 pawns).",
+      "score_before": "-3.38",
+      "score_after": "-4.36",
+      "score_after_best": "-3.38",
+      "cp_loss": 98,
+      "category": "inaccuracy",
+      "explanation": "You played Rb7 (inaccuracy, lost 1.0 pawns). A better move was Ra2.",
+      "acceptable_moves": [
+        "Ra2"
+      ],
+      "pv": [
+        "Ra2",
+        "Qd7",
+        "h3",
+        "Qe6",
+        "Rbb2",
+        "Ba7",
+        "Ra1",
+        "Qe5",
+        "Raa2",
+        "Qe1+"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 739.9,
+        "opponent": 622.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "dd85c997cab7",
+      "fen": "4r1k1/p1qnrpb1/1p3npp/2p1p3/2P1N3/1P1BP2P/PBQ2PP1/R2R2K1 w - - 2 19",
+      "player_color": "white",
+      "player_move": "Be2",
+      "best_move": "Nc3",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (1.0 pawns).",
+      "score_before": "+0.98",
+      "score_after": "+0.00",
+      "score_after_best": "+0.98",
+      "cp_loss": 98,
+      "category": "inaccuracy",
+      "explanation": "You played Be2 (inaccuracy, lost 1.0 pawns). A better move was Nc3.",
+      "acceptable_moves": [
+        "Nc3"
+      ],
+      "pv": [
+        "Nc3",
+        "e4",
+        "Be2",
+        "Rd8",
+        "Nb5",
+        "Qb8",
+        "Rd2",
+        "Nf8",
+        "Rxd8",
+        "Qxd8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166462966860",
+        "source": "chess.com",
+        "opponent": "adit-yehh",
+        "date": "2026.03.26",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 659.1,
+        "opponent": 855.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "0cdaa0becb54",
+      "fen": "r2qk2r/pb1nbppp/1pp1pn2/3p4/P1PP4/2NBPN2/1PQ2PPP/R1B2RK1 b kq - 2 9",
+      "player_color": "black",
+      "player_move": "g6",
+      "best_move": "dxc4",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (1.0 pawns).",
+      "score_before": "-0.05",
+      "score_after": "+0.92",
+      "score_after_best": "-0.05",
+      "cp_loss": 97,
+      "category": "inaccuracy",
+      "explanation": "You played g6 (inaccuracy, lost 1.0 pawns). You missed capturing the pawn with dxc4.",
+      "acceptable_moves": [
+        "dxc4"
+      ],
+      "pv": [
+        "dxc4",
+        "Bxc4",
+        "c5",
+        "Rd1",
+        "O-O",
+        "d5",
+        "exd5",
+        "Nxd5",
+        "Bxd5",
+        "Bxd5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 776.8,
+        "opponent": 869.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "9431d3ea48b3",
+      "fen": "6k1/RB3pbp/1n3np1/1Np5/2P5/1P1rP2P/5PP1/6K1 w - - 1 22",
+      "player_color": "white",
+      "player_move": "Ra6",
+      "best_move": "Ra3",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move was inaccurate (1.0 pawns).",
+      "score_before": "-2.39",
+      "score_after": "-3.36",
+      "score_after_best": "-2.39",
+      "cp_loss": 97,
+      "category": "inaccuracy",
+      "explanation": "You played Ra6 (inaccuracy, lost 1.0 pawns). A better move was Ra3.",
+      "acceptable_moves": [
+        "Ra3"
+      ],
+      "pv": [
+        "Ra3",
+        "Rd1+",
+        "Kh2",
+        "h5",
+        "g3",
+        "Nbd7",
+        "Kg2",
+        "Ne5",
+        "Nc3",
+        "Rd3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166291210702",
+        "source": "chess.com",
+        "opponent": "searsher1985",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 651.5,
+        "opponent": 653.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "cb0376e1416d",
+      "fen": "r1bqkb1r/2pn1ppp/p3pn2/Qp1p4/3P4/4PN2/PPP2PPP/RNB1KB1R b KQkq - 1 7",
+      "player_color": "black",
+      "player_move": "Be7",
+      "best_move": "Bb7",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move was inaccurate (0.9 pawns).",
+      "score_before": "-0.95",
+      "score_after": "+0.00",
+      "score_after_best": "-0.95",
+      "cp_loss": 95,
+      "category": "inaccuracy",
+      "explanation": "You played Be7 (inaccuracy, lost 0.9 pawns). A better move was Bb7.",
+      "acceptable_moves": [
+        "Bb7"
+      ],
+      "pv": [
+        "Bb7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166305403436",
+        "source": "chess.com",
+        "opponent": "Jhonalexismina",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 909.4,
+        "opponent": 957.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ecd812867cc6",
+      "fen": "1nq3k1/rbrn1pbp/p1p1p1p1/P1Pp4/3P4/1RBBPN1P/2N1QPP1/1R4K1 b - - 15 22",
+      "player_color": "black",
+      "player_move": "Qe8",
+      "best_move": "e5",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+2.29",
+      "score_after": "+3.23",
+      "score_after_best": "+2.29",
+      "cp_loss": 94,
+      "category": "inaccuracy",
+      "explanation": "You played Qe8 (inaccuracy, lost 0.9 pawns). A better move was e5.",
+      "acceptable_moves": [
+        "e5"
+      ],
+      "pv": [
+        "e5",
+        "Nxe5",
+        "Nxe5",
+        "dxe5",
+        "Nd7",
+        "Bd4",
+        "Bxe5",
+        "Qd2",
+        "Bf6",
+        "Qc3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 752.9,
+        "opponent": 927.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "4607d857b807",
+      "fen": "5rk1/1p4pp/p1p5/4br2/1P6/P3BB2/5PPP/1R4K1 w - - 1 23",
+      "player_color": "white",
+      "player_move": "a4",
+      "best_move": "Bg4",
+      "context": "Middlegame, playing as White, you were slightly worse. Your move was inaccurate (0.9 pawns).",
+      "score_before": "-1.37",
+      "score_after": "-2.31",
+      "score_after_best": "-1.37",
+      "cp_loss": 94,
+      "category": "inaccuracy",
+      "explanation": "You played a4 (inaccuracy, lost 0.9 pawns). A better move was Bg4.",
+      "acceptable_moves": [
+        "Bg4"
+      ],
+      "pv": [
+        "Bg4",
+        "R5f6",
+        "g3",
+        "Re8",
+        "Bc5",
+        "Bd6",
+        "Bd4",
+        "Rf7",
+        "Be3",
+        "Be5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166446936234",
+        "source": "chess.com",
+        "opponent": "PerritoLoco12",
+        "date": "2026.03.26",
+        "result": "1/2-1/2",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 734.2,
+        "opponent": 885.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "3db51a1f7917",
+      "fen": "1n2q1k1/rbrn1pbp/p1p3p1/P1PpP3/1N6/1RBBPN1P/4QPP1/1R4K1 b - - 0 24",
+      "player_color": "black",
+      "player_move": "Nxe5",
+      "best_move": "Nxc5",
+      "context": "Opening, playing as Black, you were slightly worse. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+1.26",
+      "score_after": "+2.19",
+      "score_after_best": "+1.26",
+      "cp_loss": 93,
+      "category": "inaccuracy",
+      "explanation": "You played Nxe5 (inaccuracy, lost 0.9 pawns). You missed capturing the pawn with Nxc5.",
+      "acceptable_moves": [
+        "Nxc5"
+      ],
+      "pv": [
+        "Nxc5",
+        "Bd4",
+        "Nxb3",
+        "Bxa7",
+        "c5",
+        "Bb6",
+        "Rc8",
+        "Nxa6",
+        "Bxa6",
+        "Bxa6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 737.6,
+        "opponent": 902.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "cc2e964c7f11",
+      "fen": "1b4k1/qP3pp1/P6p/8/8/8/5PPP/RR4K1 w - - 1 36",
+      "player_color": "white",
+      "player_move": "Rc1",
+      "best_move": "Re1",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+3.26",
+      "score_after": "+2.34",
+      "score_after_best": "+3.26",
+      "cp_loss": 92,
+      "category": "inaccuracy",
+      "explanation": "You played Rc1 (inaccuracy, lost 0.9 pawns). A better move was Re1.",
+      "acceptable_moves": [
+        "Re1"
+      ],
+      "pv": [
+        "Re1",
+        "Kh7",
+        "Re8",
+        "Bd6",
+        "g3",
+        "f5",
+        "Rd8",
+        "Bc7",
+        "Rc8",
+        "Bd6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 808.6,
+        "opponent": 733.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "5672924e0906",
+      "fen": "r3r1k1/p1R2pp1/1p2b2p/8/2RNP3/1P2KP1P/P5P1/8 w - - 1 29",
+      "player_color": "white",
+      "player_move": "Nxe6",
+      "best_move": "R4c6",
+      "context": "Middlegame, playing as White, you had a strong advantage. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+4.23",
+      "score_after": "+3.32",
+      "score_after_best": "+4.23",
+      "cp_loss": 91,
+      "category": "inaccuracy",
+      "explanation": "You played Nxe6 (inaccuracy, lost 0.9 pawns). A better move was R4c6. Your knight on e6 is left undefended.",
+      "acceptable_moves": [
+        "R4c6"
+      ],
+      "pv": [
+        "R4c6",
+        "Kh7",
+        "h4",
+        "a5",
+        "Rxb6",
+        "a4",
+        "Nxe6",
+        "axb3",
+        "axb3",
+        "fxe6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 413.6,
+        "opponent": 571.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "4009cba77ade",
+      "fen": "2rq1rk1/1bp2pbp/p3p1p1/1p1pPn2/3P4/P1PB1N1P/1P1N1PP1/R2Q1RK1 b - - 8 16",
+      "player_color": "black",
+      "player_move": "Ne7",
+      "best_move": "c5",
+      "context": "Opening, playing as Black, you were slightly worse. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+1.41",
+      "score_after": "+2.31",
+      "score_after_best": "+1.41",
+      "cp_loss": 90,
+      "category": "inaccuracy",
+      "explanation": "You played Ne7 (inaccuracy, lost 0.9 pawns). A better move was c5.",
+      "acceptable_moves": [
+        "c5"
+      ],
+      "pv": [
+        "c5",
+        "Bxf5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 830.1,
+        "opponent": 921.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "bf2a542ee67d",
+      "fen": "r1bq1rk1/2p1npbp/p3p1p1/1p1pP3/3P4/P1P2N1P/1P2BPP1/RNQ2RK1 b - - 2 13",
+      "player_color": "black",
+      "player_move": "Bb7",
+      "best_move": "c5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.9 pawns).",
+      "score_before": "+0.08",
+      "score_after": "+0.96",
+      "score_after_best": "+0.08",
+      "cp_loss": 88,
+      "category": "inaccuracy",
+      "explanation": "You played Bb7 (inaccuracy, lost 0.9 pawns). A better move was c5.",
+      "acceptable_moves": [
+        "c5"
+      ],
+      "pv": [
+        "c5",
+        "Nbd2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 872.0,
+        "opponent": 940.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8872b0d6e250",
+      "fen": "r2q1rk1/ppB1ppbp/2n1bnp1/8/8/2NP2Q1/PPP2PPP/2KR1BNR b - - 0 10",
+      "player_color": "black",
+      "player_move": "Qd4",
+      "best_move": "Qd7",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move was inaccurate (0.8 pawns).",
+      "score_before": "-2.81",
+      "score_after": "-1.96",
+      "score_after_best": "-2.81",
+      "cp_loss": 85,
+      "category": "inaccuracy",
+      "explanation": "You played Qd4 (inaccuracy, lost 0.8 pawns). A better move was Qd7.",
+      "acceptable_moves": [
+        "Qd7"
+      ],
+      "pv": [
+        "Qd7",
+        "d4",
+        "Nh5",
+        "Qe3",
+        "Bxd4",
+        "Rxd4",
+        "Nxd4",
+        "Be5",
+        "Rad8",
+        "Bd3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 881.0,
+        "opponent": 925.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a13725266f27",
+      "fen": "r1b1r1k1/1p1n2p1/2p1p1qp/p4p2/P1PP1P2/BB2P1P1/2Q4P/R4RK1 w - - 1 21",
+      "player_color": "white",
+      "player_move": "d5",
+      "best_move": "Qg2",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+0.92",
+      "score_after": "+0.08",
+      "score_after_best": "+0.92",
+      "cp_loss": 84,
+      "category": "inaccuracy",
+      "explanation": "You played d5 (inaccuracy, lost 0.8 pawns). A better move was Qg2.",
+      "acceptable_moves": [
+        "Qg2"
+      ],
+      "pv": [
+        "Qg2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 865.9,
+        "opponent": 882.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6299354181d5",
+      "fen": "r1bq1rk1/pp3ppp/2n2n2/2bp4/8/3BPN2/PP3PPP/RNBQ1RK1 w - - 5 9",
+      "player_color": "white",
+      "player_move": "b3",
+      "best_move": "h3",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.8 pawns).",
+      "score_before": "-0.10",
+      "score_after": "-0.93",
+      "score_after_best": "-0.10",
+      "cp_loss": 83,
+      "category": "inaccuracy",
+      "explanation": "You played b3 (inaccuracy, lost 0.8 pawns). A better move was h3.",
+      "acceptable_moves": [
+        "h3"
+      ],
+      "pv": [
+        "h3",
+        "Qe7",
+        "a3",
+        "Ne5",
+        "Nxe5",
+        "Qxe5",
+        "Nd2",
+        "Re8",
+        "Qa4",
+        "a6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 920.0,
+        "opponent": 933.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "87042ff38f53",
+      "fen": "r1b2r1k/1pqnb1p1/p1p1p3/4Pp2/P2PB3/2P2N2/2QB1PPP/R4RK1 w - f6 0 17",
+      "player_color": "white",
+      "player_move": "Bd3",
+      "best_move": "exf6",
+      "context": "Opening, playing as White, you had a strong advantage. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+3.86",
+      "score_after": "+3.04",
+      "score_after_best": "+3.86",
+      "cp_loss": 82,
+      "category": "inaccuracy",
+      "explanation": "You played Bd3 (inaccuracy, lost 0.8 pawns). exf6 wins a pawn (en passant).",
+      "acceptable_moves": [
+        "exf6"
+      ],
+      "pv": [
+        "exf6",
+        "Nxf6",
+        "Ne5",
+        "Nxe4",
+        "Qxe4",
+        "Kg8",
+        "Ng6",
+        "Re8",
+        "Bf4",
+        "e5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166376790990",
+        "source": "chess.com",
+        "opponent": "Fader_Movitz",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 814.6,
+        "opponent": 568.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "90ad19769f79",
+      "fen": "r1bq1rk1/1pp2pbp/p1n1p1p1/3pP3/3P4/2P1QN1P/PP2BPP1/RN3RK1 b - - 1 11",
+      "player_color": "black",
+      "player_move": "b5",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+0.39",
+      "score_after": "+1.19",
+      "score_after_best": "+0.39",
+      "cp_loss": 80,
+      "category": "inaccuracy",
+      "explanation": "You played b5 (inaccuracy, lost 0.8 pawns). A better move was f6.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 875.1,
+        "opponent": 926.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "7e8f031a38f1",
+      "fen": "r2q1rk1/pb1n1pbp/2p1pnp1/P1Pp4/3P4/2BBPN1P/5PP1/RN1Q1RK1 b - - 0 14",
+      "player_color": "black",
+      "player_move": "a6",
+      "best_move": "Ne4",
+      "context": "Opening, playing as Black, you were slightly worse. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+1.04",
+      "score_after": "+1.81",
+      "score_after_best": "+1.04",
+      "cp_loss": 77,
+      "category": "inaccuracy",
+      "explanation": "You played a6 (inaccuracy, lost 0.8 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 861.9,
+        "opponent": 940.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "c69030c3d029",
+      "fen": "r1r3k1/pp1qpp2/2n3p1/3b2Qp/3P1BP1/P1P5/2P2P1P/2KR1BR1 b - - 0 22",
+      "player_color": "black",
+      "player_move": "hxg4",
+      "best_move": "h4",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+3.15",
+      "score_after": "+3.91",
+      "score_after_best": "+3.15",
+      "cp_loss": 76,
+      "category": "inaccuracy",
+      "explanation": "You played hxg4 (inaccuracy, lost 0.8 pawns). A better move was h4.",
+      "acceptable_moves": [
+        "h4"
+      ],
+      "pv": [
+        "h4",
+        "Bd3",
+        "e5",
+        "dxe5",
+        "Qd8",
+        "Bf5",
+        "Qxg5",
+        "Bxg5",
+        "Be6",
+        "Bxe6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 806.0,
+        "opponent": 793.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a4b030476a60",
+      "fen": "r3r1k1/pp1b1ppp/8/4n3/3NPq2/1P5P/P2NQPP1/R3R1K1 w - - 3 19",
+      "player_color": "white",
+      "player_move": "Rac1",
+      "best_move": "Rad1",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+1.29",
+      "score_after": "+0.54",
+      "score_after_best": "+1.29",
+      "cp_loss": 75,
+      "category": "inaccuracy",
+      "explanation": "You played Rac1 (inaccuracy, lost 0.8 pawns). A better move was Rad1.",
+      "acceptable_moves": [
+        "Rad1"
+      ],
+      "pv": [
+        "Rad1",
+        "Rad8",
+        "Nc4",
+        "Nxc4",
+        "Qxc4",
+        "Qe5",
+        "Qe2",
+        "h6",
+        "Qe3",
+        "a5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 669.6,
+        "opponent": 768.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "4fe7e26a3ce4",
+      "fen": "rnbq1rk1/ppppppbp/5np1/8/2PP4/4PN2/PP3PPP/RNBQKB1R w KQ - 1 5",
+      "player_color": "white",
+      "player_move": "Nbd2",
+      "best_move": "Be2",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.8 pawns).",
+      "score_before": "+0.22",
+      "score_after": "-0.53",
+      "score_after_best": "+0.22",
+      "cp_loss": 75,
+      "category": "inaccuracy",
+      "explanation": "You played Nbd2 (inaccuracy, lost 0.8 pawns). A better move was Be2.",
+      "acceptable_moves": [
+        "Be2"
+      ],
+      "pv": [
+        "Be2",
+        "c5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166462966860",
+        "source": "chess.com",
+        "opponent": "adit-yehh",
+        "date": "2026.03.26",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 908.8,
+        "opponent": 910.0
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "ae95165f7446",
+      "fen": "r1bq1rk1/p2nppbp/2p2np1/2Pp4/3P4/2BBPN1P/P4PP1/RN1Q1RK1 b - - 6 12",
+      "player_color": "black",
+      "player_move": "e6",
+      "best_move": "e5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.25",
+      "score_after": "+0.99",
+      "score_after_best": "+0.25",
+      "cp_loss": 74,
+      "category": "inaccuracy",
+      "explanation": "You played e6 (inaccuracy, lost 0.7 pawns). A better move was e5.",
+      "acceptable_moves": [
+        "e5"
+      ],
+      "pv": [
+        "e5",
+        "Nxe5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 852.2,
+        "opponent": 972.4
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6230865c162c",
+      "fen": "r1bqk2r/2pnbppp/p3pn2/QB1p4/3P4/4PN2/PPP2PPP/RNB1K2R b KQkq - 0 8",
+      "player_color": "black",
+      "player_move": "Bb7",
+      "best_move": "Rb8",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.00",
+      "score_after": "+0.74",
+      "score_after_best": "+0.00",
+      "cp_loss": 74,
+      "category": "inaccuracy",
+      "explanation": "You played Bb7 (inaccuracy, lost 0.7 pawns). A better move was Rb8.",
+      "acceptable_moves": [
+        "Rb8"
+      ],
+      "pv": [
+        "Rb8",
+        "Bxd7+",
+        "Bxd7",
+        "Qxa6",
+        "Bb4+",
+        "Bd2",
+        "Bb5",
+        "Qa7",
+        "Ra8",
+        "Qb7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166305403436",
+        "source": "chess.com",
+        "opponent": "Jhonalexismina",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 912.6,
+        "opponent": 945.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "d209ecb6d4ab",
+      "fen": "r1bq1rk1/ppp2pbp/2n1p1p1/3pPn2/3P4/2P1BN1P/PP2BPP1/RNQ1K2R b KQ - 6 9",
+      "player_color": "black",
+      "player_move": "Nxe3",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "-0.27",
+      "score_after": "+0.47",
+      "score_after_best": "-0.27",
+      "cp_loss": 74,
+      "category": "inaccuracy",
+      "explanation": "You played Nxe3 (inaccuracy, lost 0.7 pawns). A better move was f6. Your knight on e3 is left undefended.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6",
+        "exf6",
+        "Qxf6",
+        "O-O",
+        "Nxe3",
+        "Qxe3",
+        "e5",
+        "Nxe5",
+        "Nxe5",
+        "Qxe5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 876.3,
+        "opponent": 920.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "38e26f7857f2",
+      "fen": "rnq1r1k1/1b3pbp/p1p1pnp1/P1Pp4/3P4/N1BBPN1P/1R2QPP1/5RK1 b - - 7 18",
+      "player_color": "black",
+      "player_move": "Re7",
+      "best_move": "Nbd7",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+2.11",
+      "score_after": "+2.83",
+      "score_after_best": "+2.11",
+      "cp_loss": 72,
+      "category": "inaccuracy",
+      "explanation": "You played Re7 (inaccuracy, lost 0.7 pawns). A better move was Nbd7.",
+      "acceptable_moves": [
+        "Nbd7"
+      ],
+      "pv": [
+        "Nbd7",
+        "Rfb1",
+        "Ra7",
+        "Ne1",
+        "Qc7",
+        "f4",
+        "Nh5",
+        "Qc2",
+        "Bf8",
+        "Rb6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 774.1,
+        "opponent": 924.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "9f23ae2efeb3",
+      "fen": "rnbq1rk1/pp2ppbp/3p1np1/2pP4/2P5/1P3N2/PB2PPPP/RN1QKB1R w KQ - 0 7",
+      "player_color": "white",
+      "player_move": "Qc2",
+      "best_move": "e3",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "-0.14",
+      "score_after": "-0.85",
+      "score_after_best": "-0.14",
+      "cp_loss": 71,
+      "category": "inaccuracy",
+      "explanation": "You played Qc2 (inaccuracy, lost 0.7 pawns). A better move was e3.",
+      "acceptable_moves": [
+        "e3"
+      ],
+      "pv": [
+        "e3",
+        "e6",
+        "dxe6",
+        "Bxe6",
+        "Be2",
+        "Nc6",
+        "O-O",
+        "Qe7",
+        "Nc3",
+        "Rad8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265771230",
+        "source": "chess.com",
+        "opponent": "StarLight-S2",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 928.0,
+        "opponent": 864.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "f775ed2d6e66",
+      "fen": "rnb3k1/1p3rp1/2p1pq1p/p4p2/P2P1P2/1BP1P3/2Q3PP/R1B2RK1 w - - 0 17",
+      "player_color": "white",
+      "player_move": "Bb2",
+      "best_move": "e4",
+      "context": "Opening, playing as White, you had a strong advantage. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+2.70",
+      "score_after": "+2.01",
+      "score_after_best": "+2.70",
+      "cp_loss": 69,
+      "category": "inaccuracy",
+      "explanation": "You played Bb2 (inaccuracy, lost 0.7 pawns). A better move was e4.",
+      "acceptable_moves": [
+        "e4"
+      ],
+      "pv": [
+        "e4",
+        "Nd7",
+        "Ba3",
+        "b5",
+        "exf5",
+        "Nf8",
+        "Bd6",
+        "Qxf5",
+        "Qxf5",
+        "Rxf5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 877.5,
+        "opponent": 910.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "c2ee8002c1b1",
+      "fen": "rnq3k1/1br2pbp/pRp1pnp1/P1Pp4/3P4/N1BBPN1P/4QPP1/1R4K1 b - - 11 20",
+      "player_color": "black",
+      "player_move": "Nfd7",
+      "best_move": "Nbd7",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+2.28",
+      "score_after": "+2.97",
+      "score_after_best": "+2.28",
+      "cp_loss": 69,
+      "category": "inaccuracy",
+      "explanation": "You played Nfd7 (inaccuracy, lost 0.7 pawns). A better move was Nbd7.",
+      "acceptable_moves": [
+        "Nbd7"
+      ],
+      "pv": [
+        "Nbd7",
+        "R6b3",
+        "Bf8",
+        "Qc2",
+        "Ne8",
+        "Qb2",
+        "Ra7",
+        "Bb4",
+        "Qd8",
+        "Nc2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 751.0,
+        "opponent": 926.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "d2301781dd87",
+      "fen": "rn3rk1/1p3pbp/1q2b1p1/2p1P1B1/PpB5/1Q3N2/1P3PPP/R4RK1 w - - 0 18",
+      "player_color": "white",
+      "player_move": "Bxe6",
+      "best_move": "Be7",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.62",
+      "score_after": "-0.06",
+      "score_after_best": "+0.62",
+      "cp_loss": 68,
+      "category": "inaccuracy",
+      "explanation": "You played Bxe6 (inaccuracy, lost 0.7 pawns). A better move was Be7.",
+      "acceptable_moves": [
+        "Be7"
+      ],
+      "pv": [
+        "Be7",
+        "Re8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 714.0,
+        "opponent": 540.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3bfcb1bc1404",
+      "fen": "rnq3k1/1b2rpbp/p1p1pnp1/P1Pp4/3P4/N1BBPN1P/1R2QPP1/1R4K1 b - - 9 19",
+      "player_color": "black",
+      "player_move": "Rc7",
+      "best_move": "Ra7",
+      "context": "Opening, playing as Black, you were in a difficult position. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+3.00",
+      "score_after": "+3.68",
+      "score_after_best": "+3.00",
+      "cp_loss": 68,
+      "category": "inaccuracy",
+      "explanation": "You played Rc7 (inaccuracy, lost 0.7 pawns). A better move was Ra7.",
+      "acceptable_moves": [
+        "Ra7"
+      ],
+      "pv": [
+        "Ra7",
+        "e4",
+        "Ne8",
+        "e5",
+        "Nc7",
+        "Bd2",
+        "Nb5",
+        "Nc2",
+        "Nd7",
+        "Bg5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 754.7,
+        "opponent": 927.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a0aa31cae679",
+      "fen": "3r2k1/pB3pbp/1n3np1/2p5/2P5/1PN1P2P/P2r1PP1/2R2RK1 w - - 1 18",
+      "player_color": "white",
+      "player_move": "Nb5",
+      "best_move": "Rfd1",
+      "context": "Opening, playing as White, you were in a difficult position. Your move was inaccurate (0.7 pawns).",
+      "score_before": "-2.71",
+      "score_after": "-3.39",
+      "score_after_best": "-2.71",
+      "cp_loss": 68,
+      "category": "inaccuracy",
+      "explanation": "You played Nb5 (inaccuracy, lost 0.7 pawns). A better move was Rfd1.",
+      "acceptable_moves": [
+        "Rfd1"
+      ],
+      "pv": [
+        "Rfd1",
+        "Ne8",
+        "Rxd2",
+        "Rxd2",
+        "Ne4",
+        "Rxa2",
+        "Rd1",
+        "Ra1",
+        "Rxa1",
+        "Bxa1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166291210702",
+        "source": "chess.com",
+        "opponent": "searsher1985",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 765.4,
+        "opponent": 773.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "243d24a8820e",
+      "fen": "2r1r1k1/p2n1pbp/5np1/qBpb4/8/4PN2/PBQN1PPP/2R2RK1 w - - 4 18",
+      "player_color": "white",
+      "player_move": "Qa4",
+      "best_move": "a4",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.7 pawns). You had more time (14min vs 9min) and could have taken longer on this move.",
+      "score_before": "+0.68",
+      "score_after": "+0.00",
+      "score_after_best": "+0.68",
+      "cp_loss": 68,
+      "category": "inaccuracy",
+      "explanation": "You played Qa4 (inaccuracy, lost 0.7 pawns). A better move was a4.",
+      "acceptable_moves": [
+        "a4"
+      ],
+      "pv": [
+        "a4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265771230",
+        "source": "chess.com",
+        "opponent": "StarLight-S2",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 854.5,
+        "opponent": 563.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6d139b30b36e",
+      "fen": "6k1/1bq1npbp/r3p1p1/1p1pP3/1PpP4/2P2N1P/1Q1NBPP1/R5K1 b - - 1 26",
+      "player_color": "black",
+      "player_move": "Nc8",
+      "best_move": "Rxa1+",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.25",
+      "score_after": "+0.92",
+      "score_after_best": "+0.25",
+      "cp_loss": 67,
+      "category": "inaccuracy",
+      "explanation": "You played Nc8 (inaccuracy, lost 0.7 pawns). You missed capturing the rook with Rxa1+. Rxa1+ also gives check.",
+      "acceptable_moves": [
+        "Rxa1+"
+      ],
+      "pv": [
+        "Rxa1+",
+        "Qxa1",
+        "f6",
+        "exf6",
+        "Bxf6",
+        "Nf1",
+        "Bc6",
+        "Ne3",
+        "h5",
+        "Bd1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 694.8,
+        "opponent": 906.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6782dbf1efb9",
+      "fen": "r4rk1/1bq1npbp/4p1p1/1p1pP3/1PpP4/2P2N1P/2QNBPP1/RR4K1 b - - 0 23",
+      "player_color": "black",
+      "player_move": "Ra6",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.17",
+      "score_after": "+0.82",
+      "score_after_best": "+0.17",
+      "cp_loss": 65,
+      "category": "inaccuracy",
+      "explanation": "You played Ra6 (inaccuracy, lost 0.7 pawns). A better move was f6.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 738.7,
+        "opponent": 889.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "2934bfde8a65",
+      "fen": "r3r1k1/ppqn1pbp/2p2np1/4p3/2P5/1P1BPN1P/PBQ2PP1/R4RK1 w - - 0 14",
+      "player_color": "white",
+      "player_move": "Ng5",
+      "best_move": "Be2",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.7 pawns).",
+      "score_before": "+0.44",
+      "score_after": "-0.21",
+      "score_after_best": "+0.44",
+      "cp_loss": 65,
+      "category": "inaccuracy",
+      "explanation": "You played Ng5 (inaccuracy, lost 0.7 pawns). A better move was Be2.",
+      "acceptable_moves": [
+        "Be2"
+      ],
+      "pv": [
+        "Be2",
+        "e4",
+        "Nd2",
+        "Qd8",
+        "a3",
+        "Qe7",
+        "Bc3",
+        "b6",
+        "Rfd1",
+        "h5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166462966860",
+        "source": "chess.com",
+        "opponent": "adit-yehh",
+        "date": "2026.03.26",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 843.1,
+        "opponent": 914.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "4057618e31c7",
+      "fen": "rnbqkb1r/pp3ppp/4pn2/3p4/8/1B3N2/PPPP1PPP/RNBQ1RK1 b kq - 1 6",
+      "player_color": "black",
+      "player_move": "Bc5",
+      "best_move": "Bd6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-0.23",
+      "score_after": "+0.41",
+      "score_after_best": "-0.23",
+      "cp_loss": 64,
+      "category": "inaccuracy",
+      "explanation": "You played Bc5 (inaccuracy, lost 0.6 pawns). A better move was Bd6.",
+      "acceptable_moves": [
+        "Bd6"
+      ],
+      "pv": [
+        "Bd6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166222880876",
+        "source": "chess.com",
+        "opponent": "SohDaBarber",
+        "date": "2026.03.21",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 936.5,
+        "opponent": 919.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ac6f8746523d",
+      "fen": "rn3rk1/1p4bp/4p1p1/2p1P1B1/Pp6/5N2/1P3PPP/R4RK1 w - - 0 20",
+      "player_color": "white",
+      "player_move": "Rfd1",
+      "best_move": "Be7",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+0.00",
+      "score_after": "-0.63",
+      "score_after_best": "+0.00",
+      "cp_loss": 63,
+      "category": "inaccuracy",
+      "explanation": "You played Rfd1 (inaccuracy, lost 0.6 pawns). A better move was Be7.",
+      "acceptable_moves": [
+        "Be7"
+      ],
+      "pv": [
+        "Be7",
+        "Rc8",
+        "Bd6",
+        "Nd7",
+        "b3",
+        "c4",
+        "bxc4",
+        "Rxc4",
+        "g3",
+        "Bf8"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 711.2,
+        "opponent": 551.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "530e3e5e4b5d",
+      "fen": "rnbq1rk1/1p3pp1/2p1pn1p/p7/P1BP4/2P1PN2/5PPP/R1BQ1RK1 w - - 0 11",
+      "player_color": "white",
+      "player_move": "Bb3",
+      "best_move": "Re1",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+1.84",
+      "score_after": "+1.23",
+      "score_after_best": "+1.84",
+      "cp_loss": 61,
+      "category": "inaccuracy",
+      "explanation": "You played Bb3 (inaccuracy, lost 0.6 pawns). A better move was Re1.",
+      "acceptable_moves": [
+        "Re1"
+      ],
+      "pv": [
+        "Re1",
+        "b6",
+        "e4",
+        "Ba6",
+        "Ba2",
+        "Nbd7",
+        "c4",
+        "Re8",
+        "e5",
+        "Nh7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 901.3,
+        "opponent": 942.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a678441cfdb3",
+      "fen": "8/5p1p/2R2kp1/PrPp4/8/4P2P/5PP1/6K1 b - - 0 35",
+      "player_color": "black",
+      "player_move": "Ke7",
+      "best_move": "Ke5",
+      "context": "Endgame, playing as Black, you were in a difficult position. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+4.60",
+      "score_after": "+5.20",
+      "score_after_best": "+4.60",
+      "cp_loss": 60,
+      "category": "inaccuracy",
+      "explanation": "You played Ke7 (inaccuracy, lost 0.6 pawns). A better move was Ke5.",
+      "acceptable_moves": [
+        "Ke5"
+      ],
+      "pv": [
+        "Ke5",
+        "a6",
+        "Ra5",
+        "Rc7",
+        "Rxa6",
+        "Rxf7",
+        "h6",
+        "Re7+",
+        "Kf5",
+        "f4"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 773.4,
+        "opponent": 794.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "8be66ae7bbb1",
+      "fen": "rnbqkb1r/ppp2p1p/5np1/3p2B1/1P1P4/P4N1P/2P1P1P1/RN1QKB1R b KQkq - 1 7",
+      "player_color": "black",
+      "player_move": "Bg7",
+      "best_move": "Be7",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-0.96",
+      "score_after": "-0.37",
+      "score_after_best": "-0.96",
+      "cp_loss": 59,
+      "category": "inaccuracy",
+      "explanation": "You played Bg7 (inaccuracy, lost 0.6 pawns). A better move was Be7.",
+      "acceptable_moves": [
+        "Be7"
+      ],
+      "pv": [
+        "Be7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166334588890",
+        "source": "chess.com",
+        "opponent": "Xpolash",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 901.8,
+        "opponent": 931.2
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "d99d159d962b",
+      "fen": "rnbq1rk1/p3ppbp/2p2np1/2Pp4/3P4/4PN1P/PB3PP1/RN1QKB1R b KQ - 0 9",
+      "player_color": "black",
+      "player_move": "Qa5+",
+      "best_move": "Ne4",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-0.44",
+      "score_after": "+0.15",
+      "score_after_best": "-0.44",
+      "cp_loss": 59,
+      "category": "inaccuracy",
+      "explanation": "You played Qa5+ (inaccuracy, lost 0.6 pawns). A better move was Ne4.",
+      "acceptable_moves": [
+        "Ne4"
+      ],
+      "pv": [
+        "Ne4",
+        "Nc3",
+        "Na6",
+        "Rc1",
+        "Rb8",
+        "Ba1",
+        "Qa5",
+        "Be2",
+        "Nb4",
+        "O-O"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 911.2,
+        "opponent": 953.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "6b3322fdf14f",
+      "fen": "r3r1k1/pp1b1ppp/6n1/8/3NP3/1P3P1P/P2N1KP1/2R1R3 w - - 1 24",
+      "player_color": "white",
+      "player_move": "Rc7",
+      "best_move": "Red1",
+      "context": "Opening, playing as White, you had a strong advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+2.59",
+      "score_after": "+2.00",
+      "score_after_best": "+2.59",
+      "cp_loss": 59,
+      "category": "inaccuracy",
+      "explanation": "You played Rc7 (inaccuracy, lost 0.6 pawns). A better move was Red1.",
+      "acceptable_moves": [
+        "Red1"
+      ],
+      "pv": [
+        "Red1",
+        "Be6",
+        "Nxe6",
+        "Rxe6",
+        "Nf1",
+        "Ra6",
+        "Rc2",
+        "Nf8",
+        "Ne3",
+        "g6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166211856334",
+        "source": "chess.com",
+        "opponent": "iamvitalya",
+        "date": "2026.03.20",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 462.6,
+        "opponent": 647.6
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a0fe630bebc5",
+      "fen": "r2qk2r/1bpnbppp/p3p3/Q2pN3/3P4/4P3/PPP2PPP/RNB1K2R b KQkq - 1 10",
+      "player_color": "black",
+      "player_move": "O-O",
+      "best_move": "Nxe5",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-0.42",
+      "score_after": "+0.15",
+      "score_after_best": "-0.42",
+      "cp_loss": 57,
+      "category": "inaccuracy",
+      "explanation": "You played O-O (inaccuracy, lost 0.6 pawns). You missed capturing the knight with Nxe5.",
+      "acceptable_moves": [
+        "Nxe5"
+      ],
+      "pv": [
+        "Nxe5",
+        "dxe5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166305403436",
+        "source": "chess.com",
+        "opponent": "Jhonalexismina",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 888.6,
+        "opponent": 934.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "eecfac265136",
+      "fen": "6k1/1p6/4p1p1/2p4p/Pp6/1P2B1P1/2r1KP2/R5b1 w - - 1 32",
+      "player_color": "white",
+      "player_move": "Kf1",
+      "best_move": "Kf3",
+      "context": "Middlegame, playing as White, you had a slight advantage. Your move was inaccurate (0.6 pawns). You had more time (11min vs 6min) and could have taken longer on this move.",
+      "score_before": "+0.56",
+      "score_after": "+0.00",
+      "score_after_best": "+0.56",
+      "cp_loss": 56,
+      "category": "inaccuracy",
+      "explanation": "You played Kf1 (inaccuracy, lost 0.6 pawns). A better move was Kf3.",
+      "acceptable_moves": [
+        "Kf3"
+      ],
+      "pv": [
+        "Kf3"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166354857372",
+        "source": "chess.com",
+        "opponent": "jjyong_928",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 673.8,
+        "opponent": 346.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "6b5cb66c818f",
+      "fen": "r4rk1/1bq1npbp/p3p1p1/1p1pP3/1PpP4/P1P2N1P/2QNBPP1/R4RK1 b - - 0 21",
+      "player_color": "black",
+      "player_move": "a5",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-0.37",
+      "score_after": "+0.19",
+      "score_after_best": "-0.37",
+      "cp_loss": 56,
+      "category": "inaccuracy",
+      "explanation": "You played a5 (inaccuracy, lost 0.6 pawns). A better move was f6.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 795.3,
+        "opponent": 878.5
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "3b703c8103b3",
+      "fen": "r1b2r1k/1pqnbppB/p1p1p3/4P3/P2P4/2P2N2/2QB1PPP/R4RK1 w - - 1 16",
+      "player_color": "white",
+      "player_move": "Be4",
+      "best_move": "Qd3",
+      "context": "Opening, playing as White, you had a strong advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+4.22",
+      "score_after": "+3.67",
+      "score_after_best": "+4.22",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played Be4 (inaccuracy, lost 0.6 pawns). A better move was Qd3.",
+      "acceptable_moves": [
+        "Qd3"
+      ],
+      "pv": [
+        "Qd3",
+        "Qd8",
+        "Rfe1",
+        "Nb6",
+        "Be4",
+        "Nd5",
+        "c4",
+        "f5",
+        "exf6",
+        "Nxf6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166376790990",
+        "source": "chess.com",
+        "opponent": "Fader_Movitz",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 815.5,
+        "opponent": 620.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "a08bf743d023",
+      "fen": "8/1r3p1p/R1p2kp1/P1Pp4/8/4P2P/5PP1/6K1 b - - 0 34",
+      "player_color": "black",
+      "player_move": "Rb5",
+      "best_move": "Ke5",
+      "context": "Endgame, playing as Black, you were in a difficult position. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+3.78",
+      "score_after": "+4.33",
+      "score_after_best": "+3.78",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played Rb5 (inaccuracy, lost 0.6 pawns). A better move was Ke5.",
+      "acceptable_moves": [
+        "Ke5"
+      ],
+      "pv": [
+        "Ke5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166314017646",
+        "source": "chess.com",
+        "opponent": "RahimSarwarBD",
+        "date": "2026.03.23",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 767.2,
+        "opponent": 786.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ba10c8645222",
+      "fen": "8/q4ppk/Pb5p/8/8/8/R4PPP/1R4K1 w - - 6 42",
+      "player_color": "white",
+      "player_move": "Rab2",
+      "best_move": "h3",
+      "context": "Middlegame, playing as White, you were in a difficult position. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-2.75",
+      "score_after": "-3.30",
+      "score_after_best": "-2.75",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played Rab2 (inaccuracy, lost 0.6 pawns). A better move was h3.",
+      "acceptable_moves": [
+        "h3"
+      ],
+      "pv": [
+        "h3",
+        "Qc7",
+        "Rxb6",
+        "Qxb6",
+        "Ra1",
+        "Qd4",
+        "Ra2",
+        "Qd1+",
+        "Kh2",
+        "Qd5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166269757202",
+        "source": "chess.com",
+        "opponent": "brewok007",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 735.9,
+        "opponent": 627.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "8a07996d4d3f",
+      "fen": "r1r3k1/pp1qppbp/2n3p1/3b2N1/3P1B1Q/P1P5/2P2PPP/2KR1B1R b - - 4 19",
+      "player_color": "black",
+      "player_move": "h5",
+      "best_move": "h6",
+      "context": "Opening, playing as Black, you had a strong advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "-2.83",
+      "score_after": "-2.28",
+      "score_after_best": "-2.83",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played h5 (inaccuracy, lost 0.6 pawns). A better move was h6.",
+      "acceptable_moves": [
+        "h6"
+      ],
+      "pv": [
+        "h6",
+        "Nf3",
+        "Na5",
+        "Bxh6",
+        "Rxc3",
+        "Bxg7",
+        "Kxg7",
+        "Bd3",
+        "Qa4",
+        "Kd2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267979194",
+        "source": "chess.com",
+        "opponent": "NirwanSaranga2006",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 828.6,
+        "opponent": 799.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "b1a6c6647d86",
+      "fen": "r4rk1/p4ppp/1p3n2/2pq1b2/3Pn3/P3PN2/1B2BPPP/2RQ1RK1 w - - 0 15",
+      "player_color": "white",
+      "player_move": "dxc5",
+      "best_move": "Ne5",
+      "context": "Opening, playing as White, you had a slight advantage. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+1.18",
+      "score_after": "+0.63",
+      "score_after_best": "+1.18",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played dxc5 (inaccuracy, lost 0.6 pawns). A better move was Ne5.",
+      "acceptable_moves": [
+        "Ne5"
+      ],
+      "pv": [
+        "Ne5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166267448056",
+        "source": "chess.com",
+        "opponent": "T1602T",
+        "date": "2026.03.22",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 955.4,
+        "opponent": 905.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "a78d133af91c",
+      "fen": "r1bq1rk1/ppp1npbp/2n1p1p1/3pP3/3P4/2P1BN1P/PP2BPP1/RN1QK2R b KQ - 4 8",
+      "player_color": "black",
+      "player_move": "Nf5",
+      "best_move": "f6",
+      "context": "Opening, playing as Black, you were slightly worse. Your move was inaccurate (0.6 pawns).",
+      "score_before": "+0.66",
+      "score_after": "+1.21",
+      "score_after_best": "+0.66",
+      "cp_loss": 55,
+      "category": "inaccuracy",
+      "explanation": "You played Nf5 (inaccuracy, lost 0.6 pawns). A better move was f6.",
+      "acceptable_moves": [
+        "f6"
+      ],
+      "pv": [
+        "f6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 879.5,
+        "opponent": 912.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "a3a753c619dd",
+      "fen": "r4rk1/p2n1ppp/4p3/1p1p4/1P6/2P1R3/P2N1PPP/R5K1 b - - 0 16",
+      "player_color": "black",
+      "player_move": "Rfc8",
+      "best_move": "Nb6",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-2.90",
+      "score_after": "-2.36",
+      "score_after_best": "-2.90",
+      "cp_loss": 54,
+      "category": "inaccuracy",
+      "explanation": "You played Rfc8 (inaccuracy, lost 0.5 pawns). A better move was Nb6.",
+      "acceptable_moves": [
+        "Nb6"
+      ],
+      "pv": [
+        "Nb6",
+        "Nb3",
+        "Na4",
+        "Nd4",
+        "a6",
+        "f4",
+        "g6",
+        "g4",
+        "Rfc8",
+        "Ne2"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166398619608",
+        "source": "chess.com",
+        "opponent": "FarshadDabest",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 835.5,
+        "opponent": 918.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "2509a92f06b3",
+      "fen": "rnb2rk1/ppp2pbp/3q1np1/3pN1B1/1P1P4/P2BP2P/2P3P1/RN1QK2R b KQ - 4 10",
+      "player_color": "black",
+      "player_move": "Nbd7",
+      "best_move": "Nh5",
+      "context": "Opening, playing as Black, you had a slight advantage. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-1.64",
+      "score_after": "-1.10",
+      "score_after_best": "-1.64",
+      "cp_loss": 54,
+      "category": "inaccuracy",
+      "explanation": "You played Nbd7 (inaccuracy, lost 0.5 pawns). A better move was Nh5.",
+      "acceptable_moves": [
+        "Nh5"
+      ],
+      "pv": [
+        "Nh5",
+        "Nf3",
+        "h6",
+        "Bh4",
+        "Ng3",
+        "Bxg3",
+        "Qxg3+",
+        "Kf1",
+        "Nd7",
+        "Qe1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166334588890",
+        "source": "chess.com",
+        "opponent": "Xpolash",
+        "date": "2026.03.23",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 878.6,
+        "opponent": 928.7
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "bfecdb5ac0fc",
+      "fen": "r4rk1/1bq1npbp/4p1p1/pp1pP3/1PpP4/P1P2N1P/2QNBPP1/RR4K1 b - - 1 22",
+      "player_color": "black",
+      "player_move": "axb4",
+      "best_move": "Ra6",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-0.27",
+      "score_after": "+0.26",
+      "score_after_best": "-0.27",
+      "cp_loss": 53,
+      "category": "inaccuracy",
+      "explanation": "You played axb4 (inaccuracy, lost 0.5 pawns). A better move was Ra6. Your pawn on b4 is left undefended.",
+      "acceptable_moves": [
+        "Ra6"
+      ],
+      "pv": [
+        "Ra6",
+        "Qd1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 790.7,
+        "opponent": 885.8
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "44d26a2ef9e3",
+      "fen": "r1r3k1/p4ppp/4p3/1p1p4/nP6/2PR1N2/P4PPP/2R3K1 b - - 6 19",
+      "player_color": "black",
+      "player_move": "Rc7",
+      "best_move": "Rc4",
+      "context": "Middlegame, playing as Black, you had a strong advantage. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-3.58",
+      "score_after": "-3.06",
+      "score_after_best": "-3.58",
+      "cp_loss": 52,
+      "category": "inaccuracy",
+      "explanation": "You played Rc7 (inaccuracy, lost 0.5 pawns). A better move was Rc4.",
+      "acceptable_moves": [
+        "Rc4"
+      ],
+      "pv": [
+        "Rc4",
+        "Nd4",
+        "a5",
+        "Ne2",
+        "axb4",
+        "cxb4",
+        "Nb2",
+        "Rb3",
+        "Rxc1+",
+        "Nxc1"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166398619608",
+        "source": "chess.com",
+        "opponent": "FarshadDabest",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 738.3,
+        "opponent": 846.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "ed0d2e771f65",
+      "fen": "r6k/1pQ3p1/4r1qp/p4p2/P4Pn1/B3P1P1/7P/4RRK1 w - - 2 27",
+      "player_color": "white",
+      "player_move": "Bc1",
+      "best_move": "Qxb7",
+      "context": "Opening, playing as White, the position was roughly equal. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-0.11",
+      "score_after": "-0.63",
+      "score_after_best": "-0.11",
+      "cp_loss": 52,
+      "category": "inaccuracy",
+      "explanation": "You played Bc1 (inaccuracy, lost 0.5 pawns). You missed capturing the pawn with Qxb7.",
+      "acceptable_moves": [
+        "Qxb7"
+      ],
+      "pv": [
+        "Qxb7"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166363391518",
+        "source": "chess.com",
+        "opponent": "DDDestryer",
+        "date": "2026.03.24",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 777.9,
+        "opponent": 852.9
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "c438a7cd42db",
+      "fen": "r2q1rk1/pb1nbp1p/1pp1pnp1/3p4/P1PP3P/1PNBPN2/2Q2PP1/R1B2RK1 b - - 0 11",
+      "player_color": "black",
+      "player_move": "Re8",
+      "best_move": "Rc8",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-0.23",
+      "score_after": "+0.27",
+      "score_after_best": "-0.23",
+      "cp_loss": 50,
+      "category": "inaccuracy",
+      "explanation": "You played Re8 (inaccuracy, lost 0.5 pawns). A better move was Rc8.",
+      "acceptable_moves": [
+        "Rc8"
+      ],
+      "pv": [
+        "Rc8",
+        "a5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 757.1,
+        "opponent": 840.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-25",
+        "history": []
+      }
+    },
+    {
+      "id": "dc65030ceacf",
+      "fen": "r3r1k1/pbq2pbp/1p3np1/2p3N1/P1B4P/4P1N1/2Q2PP1/3R1RK1 b - - 2 20",
+      "player_color": "black",
+      "player_move": "Rf8",
+      "best_move": "Re7",
+      "context": "Opening, playing as Black, the position was roughly equal. Your move was inaccurate (0.5 pawns).",
+      "score_before": "-0.37",
+      "score_after": "+0.13",
+      "score_after_best": "-0.37",
+      "cp_loss": 50,
+      "category": "inaccuracy",
+      "explanation": "You played Rf8 (inaccuracy, lost 0.5 pawns). A better move was Re7.",
+      "acceptable_moves": [
+        "Re7"
+      ],
+      "pv": [
+        "Re7",
+        "h5",
+        "Kh8",
+        "f4",
+        "Rf8",
+        "e4",
+        "Ng4",
+        "Qe2",
+        "Bc8",
+        "hxg6"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166399789664",
+        "source": "chess.com",
+        "opponent": "xmrvm",
+        "date": "2026.03.25",
+        "result": "1-0",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 652.6,
+        "opponent": 636.3
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    },
+    {
+      "id": "55d54c346f29",
+      "fen": "3b2k1/1q3p1p/bn2p1p1/Qp1pP3/1PpP2N1/2P2N1P/5PP1/3B2K1 b - - 11 33",
+      "player_color": "black",
+      "player_move": "Qc8",
+      "best_move": "Qa8",
+      "context": "Opening, playing as Black, you were slightly worse. Your move was inaccurate (0.5 pawns).",
+      "score_before": "+0.85",
+      "score_after": "+1.35",
+      "score_after_best": "+0.85",
+      "cp_loss": 50,
+      "category": "inaccuracy",
+      "explanation": "You played Qc8 (inaccuracy, lost 0.5 pawns). A better move was Qa8.",
+      "acceptable_moves": [
+        "Qa8"
+      ],
+      "pv": [
+        "Qa8",
+        "Qa3",
+        "h5",
+        "Ngh2",
+        "Bc8",
+        "Qc1",
+        "Qa2",
+        "g4",
+        "Na4",
+        "gxh5"
+      ],
+      "game": {
+        "id": "https://www.chess.com/game/live/166265019284",
+        "source": "chess.com",
+        "opponent": "promisedumbor",
+        "date": "2026.03.22",
+        "result": "0-1",
+        "opening": "Live Chess"
+      },
+      "clock": {
+        "player": 697.0,
+        "opponent": 869.1
+      },
+      "srs": {
+        "interval": 0,
+        "ease": 2.5,
+        "next_review": "2026-03-27",
+        "history": []
+      }
+    }
+  ],
+  "analyzed_game_ids": [
+    "https://lichess.org/izX93efp",
+    "https://www.chess.com/game/live/166160698244",
+    "https://www.chess.com/game/live/166211856334",
+    "https://www.chess.com/game/live/166222880876",
+    "https://www.chess.com/game/live/166265019284",
+    "https://www.chess.com/game/live/166265771230",
+    "https://www.chess.com/game/live/166267448056",
+    "https://www.chess.com/game/live/166267979194",
+    "https://www.chess.com/game/live/166269757202",
+    "https://www.chess.com/game/live/166291210702",
+    "https://www.chess.com/game/live/166305403436",
+    "https://www.chess.com/game/live/166307792370",
+    "https://www.chess.com/game/live/166314017646",
+    "https://www.chess.com/game/live/166323355096",
+    "https://www.chess.com/game/live/166334588890",
+    "https://www.chess.com/game/live/166354857372",
+    "https://www.chess.com/game/live/166363391518",
+    "https://www.chess.com/game/live/166376790990",
+    "https://www.chess.com/game/live/166398619608",
+    "https://www.chess.com/game/live/166399789664",
+    "https://www.chess.com/game/live/166408702408",
+    "https://www.chess.com/game/live/166442353784",
+    "https://www.chess.com/game/live/166446936234",
+    "https://www.chess.com/game/live/166462966860"
+  ]
 }

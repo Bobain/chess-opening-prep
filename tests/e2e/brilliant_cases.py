@@ -34,4 +34,31 @@ GAMES: list[dict] = [
             2: "c4 Queen's Gambit — same FP pattern as DDDestryer",
         },
     },
+    {
+        "game_id": "mahmutyardim_166408702408",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
+    {
+        "game_id": "FarshadDabest_166398619608",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
+    {
+        "game_id": "Jhonalexismina_166305403436",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
+    {
+        "game_id": "StarLight-S2_166265771230",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
+    {
+        "game_id": "Xpolash_166334588890",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {
+            52: "Rxe6 — trapped rook, 'sacrifice' only minimizes losses (not a tactical advantage)",
+        },
+    },
 ]

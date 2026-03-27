@@ -1505,9 +1505,9 @@ function classifyMove(move, playerColor) {
   const wpAfter = winProb(evalAfter.score_cp * sign);
   const eplLost = wpBefore - wpAfter;
 
-  // Brilliant detection: sacrifice + best/near-best + not already dominating + not opening theory
+  // Brilliant detection: sacrifice + best/near-best + not dominating + not hopeless + not opening theory
   const isOpening = move.in_opening !== undefined ? move.in_opening : false;
-  if (eplLost <= 0.02 && wpBefore < 0.95 && !isOpening && isSacrifice(move)) {
+  if (eplLost <= 0.02 && wpBefore > 0.05 && wpBefore < 0.95 && !isOpening && isSacrifice(move)) {
     return { category: 'brilliant', symbol: '!!', color: '#1baca6' };
   }
 
