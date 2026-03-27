@@ -1838,8 +1838,9 @@ function selectGame(gameId) {
   // Classify all moves
   classifiedMoves = classifyAllMoves(reviewGame.moves, reviewGame.player_color);
 
-  // Hide selector, show review
+  // Hide selector and toolbar, show review
   document.getElementById('game-selector').classList.add('hidden');
+  document.getElementById('game-list-toolbar').classList.add('hidden');
   document.getElementById('game-review').classList.remove('hidden');
 
   // Game info bar
