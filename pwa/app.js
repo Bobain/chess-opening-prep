@@ -1445,6 +1445,9 @@ function isSacrifice(move) {
 
   const firstMoveNet = firstCapturedValue - firstPieceValue;
 
+  // Pawn sacrifices are not brilliant — must sacrifice a piece (value > 2)
+  if (firstPieceValue <= 2) return false;
+
   // Genuine sacrifice: full chain loses material
   if (materialBalance < -0.5) return true;
 
