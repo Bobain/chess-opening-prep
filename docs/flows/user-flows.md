@@ -84,7 +84,7 @@ sequenceDiagram
 
 ### Key details
 
-- **Game list**: default view, shows all games (analyzed + cached). Cards showing opponent, date, result (W/D/L badge), opening name, move count. Analyzed games also show accuracy % and classification badges. All games have checkboxes for (re-)analysis; selecting an already-analyzed game auto-sets `reanalyze_all`.
+- **Game list**: default view, shows all games (analyzed + cached). Cards showing opponent, date, result (W/D/L badge), opening name, move count. Analyzed games also show accuracy % and classification badges. All games have checkboxes for (re-)analysis; selecting an already-analyzed game auto-sets `reanalyze_all`. Toolbar filters: result dropdown (All/Wins/Losses/Draws), status dropdown (All/Analyzed/Not analyzed), game limit (20/50/100).
 - **Training**: accessible via hamburger menu → "Training" (all positions) or per-game "Train" button in review.
 - **Move classifications**: win probability model — `winProb(cp) = 1/(1+10^(-cp/400))`, thresholds: Best ≤0, Excellent ≤0.02, Good ≤0.05, Inaccuracy ≤0.10, Mistake ≤0.20, Blunder >0.20. Special: Brilliant (piece sacrifice value >2 + EPL ≤0.02 + wpBefore >0.05 and <0.95 + not opening theory + PV ≥3 moves).
 - **Eval bar**: sigmoid mapping, 50% at equal, smooth CSS transition. For book moves (no Stockfish eval), derives approximate cp from opening explorer win/draw/loss stats. Shows "M3" for mate.
