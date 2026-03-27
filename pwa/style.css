@@ -311,6 +311,9 @@ cg-container {
 
 .cg-wrap coords.ranks coord {
   transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .cg-wrap coords.files {
