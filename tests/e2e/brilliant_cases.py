@@ -22,4 +22,9 @@ GAMES: list[dict] = [
             64: "Rxe3 — tactical trap, wins knight via Qxg7# mate threat",
         },
     },
+    {
+        "game_id": "adit_yehh_166462966860",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
 ]
