@@ -30,7 +30,7 @@ def _wait_for_board(page, pwa_url):
     # Default view is game list; switch to training via nav menu
     page.wait_for_selector("#menu-btn", timeout=5000)
     page.click("#menu-btn")
-    page.wait_for_selector("#nav-menu.nav-open", timeout=5000)
+    page.wait_for_selector("#nav-menu.nav-open", state="attached", timeout=5000)
     page.click("#nav-training")
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
 
@@ -303,7 +303,7 @@ def test_see_moves_works_after_reload(page, pwa_url):
     # After reload, default view is game list; switch to training again
     page.wait_for_selector("#menu-btn", timeout=5000)
     page.click("#menu-btn")
-    page.wait_for_selector("#nav-menu.nav-open", timeout=5000)
+    page.wait_for_selector("#nav-menu.nav-open", state="attached", timeout=5000)
     page.click("#nav-training")
     page.wait_for_selector("cg-board piece", timeout=BOARD_TIMEOUT)
     _wait_for_animation(page)
