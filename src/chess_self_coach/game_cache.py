@@ -177,17 +177,21 @@ def fetch_and_cache_games(
     """
     from chess_self_coach.importer import fetch_chesscom_games, fetch_lichess_games
 
+    # Fetch more than requested to account for duplicates already in cache
+    existing_cache = load_game_cache()
+    cached_count = len(existing_cache.get("games", {}))
+    fetch_count = max_games + cached_count
+
     all_games: list[chess.pgn.Game] = []
     if lichess_user:
-        all_games.extend(fetch_lichess_games(lichess_user, max_games))
+        all_games.extend(fetch_lichess_games(lichess_user, fetch_count))
     if chesscom_user:
-        all_games.extend(fetch_chesscom_games(chesscom_user, max_games))
+        all_games.extend(fetch_chesscom_games(chesscom_user, fetch_count))
 
     root = _find_project_root()
     cache_path = root / CACHE_FILENAME
 
-    # Load existing cache and merge (preserve previously fetched games)
-    existing_cache = load_game_cache()
+    # Merge with existing cache (preserve previously fetched games)
     cache_games: dict[str, dict] = dict(existing_cache.get("games", {}))
     new_count = 0
 
