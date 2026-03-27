@@ -2247,7 +2247,7 @@ function renderScoreChart() {
   const moves = reviewGame.moves;
   if (moves.length === 0) return;
 
-  const maxCp = 1000; // clamp
+  const maxCp = 800; // clamp at ±8 pawns to avoid overflow
   const midY = h / 2;
 
   /**
