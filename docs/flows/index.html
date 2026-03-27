@@ -251,60 +251,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Setup Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../training/" class="md-nav__link">
         
   
@@ -342,10 +288,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -363,8 +309,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -479,17 +425,6 @@
     <span class="md-ellipsis">
       
         System flows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#coming-soon-flows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coming soon flows
       
     </span>
   </a>
@@ -623,14 +558,14 @@
   
   
     <li class="md-nav__item">
-      <a href="coming-soon-flows/" class="md-nav__link">
+      <a href="coming-soon-flows.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Coming soon
+    Coming soon : WIP
   
 
     
@@ -675,6 +610,60 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -861,17 +850,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#coming-soon-flows" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Coming soon flows
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#meta-flows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -925,9 +903,10 @@
 <p>Interactive workflows visible to the player.</p>
 <ul>
 <li><strong>Training session</strong> — PWA quiz loop with spaced repetition</li>
-<li><strong>Analyse latest games</strong> — Fetch, analyze, generate training positions</li>
+<li><strong>Game review</strong> — Chess.com-style game review with eval bar, score chart, move classifications</li>
+<li><strong>Analyze selected games</strong> — Fetch games, select for analysis, generate training positions</li>
 <li><strong>Setup wizard</strong> — CLI interactive configuration</li>
-<li><strong>Config management</strong> — CLI setup + PWA edit config</li>
+<li><strong>Config management</strong> — CLI setup + PWA unified settings</li>
 </ul>
 <h3 id="data-flows"><a href="data-flows/">Data flows</a></h3>
 <p>How data moves through the system.</p>
@@ -942,11 +921,7 @@
 <li><strong>PWA mode detection</strong> — Demo vs application mode</li>
 <li><strong>Service worker &amp; caching</strong> — Offline access and updates</li>
 <li><strong>Stockfish lifecycle</strong> — Detection, crash recovery, WASM fallback</li>
-</ul>
-<h3 id="coming-soon-flows"><a href="coming-soon-flows/">Coming soon flows</a></h3>
-<p>Planned features not yet fully implemented.</p>
-<ul>
-<li><strong>PGN sync</strong> — Push/pull/cleanup Lichess studies</li>
+<li><strong>Bug reporting and autocorrection</strong> — Crash reporter → GitHub issues → <code>/fix-issues</code> command</li>
 </ul>
 <h3 id="meta-flows"><a href="meta-flows/">Meta flows</a></h3>
 <p>How this documentation stays up to date.</p>

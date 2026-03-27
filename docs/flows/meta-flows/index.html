@@ -11,10 +11,10 @@
         <link rel="canonical" href="https://bobain.github.io/chess-self-coach/docs/flows/meta-flows/">
       
       
-        <link rel="prev" href="../coming-soon-flows/">
+        <link rel="prev" href="../system-flows/">
       
       
-        <link rel="next" href="../../api/">
+        <link rel="next" href="../../setup/">
       
       
         
@@ -251,60 +251,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Setup Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../training/" class="md-nav__link">
         
   
@@ -342,10 +288,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -363,8 +309,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -493,14 +439,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../coming-soon-flows/" class="md-nav__link">
+      <a href="../coming-soon-flows.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Coming soon
+    Coming soon : WIP
   
 
     
@@ -631,6 +577,60 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -840,7 +840,8 @@
         CODE_CHANGE[Claude edits a code file] --&gt; MATCH{Path matches&lt;br/&gt;flow-relevant pattern?}
         MATCH --&gt;|src/trainer.py| DATA[Set .pending-flows-check&lt;br/&gt;Category: data flows]
         MATCH --&gt;|src/server.py| SYS[Set .pending-flows-check&lt;br/&gt;Category: system flows]
-        MATCH --&gt;|src/lichess.py| SOON[Set .pending-flows-check&lt;br/&gt;Category: coming-soon flows]
+        MATCH --&gt;|src/config.py, cli.py| MULTI[Set .pending-flows-check&lt;br/&gt;Category: user + data flows]
+        MATCH --&gt;|src/importer.py| IMP[Set .pending-flows-check&lt;br/&gt;Category: data flows]
         MATCH --&gt;|pwa/app.js| USER[Set .pending-flows-check&lt;br/&gt;Category: user flows]
         MATCH --&gt;|pwa/sw.js| SYS2[Set .pending-flows-check&lt;br/&gt;Category: system flows]
         MATCH --&gt;|No match| SKIP[No action]
@@ -889,8 +890,16 @@
 <td><a href="../system-flows/">System flows</a></td>
 </tr>
 <tr>
-<td><code>src/chess_self_coach/lichess.py</code></td>
-<td><a href="../coming-soon-flows/">Coming soon flows</a></td>
+<td><code>src/chess_self_coach/config.py</code></td>
+<td><a href="../data-flows/">Data flows</a></td>
+</tr>
+<tr>
+<td><code>src/chess_self_coach/cli.py</code></td>
+<td><a href="../user-flows/">User flows</a></td>
+</tr>
+<tr>
+<td><code>src/chess_self_coach/importer.py</code></td>
+<td><a href="../data-flows/">Data flows</a></td>
 </tr>
 <tr>
 <td><code>pwa/app.js</code></td>

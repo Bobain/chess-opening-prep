@@ -14,7 +14,7 @@
         <link rel="prev" href="../data-flows/">
       
       
-        <link rel="next" href="../coming-soon-flows/">
+        <link rel="next" href="../meta-flows/">
       
       
         
@@ -251,60 +251,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Setup Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../training/" class="md-nav__link">
         
   
@@ -342,10 +288,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -363,8 +309,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -619,6 +565,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bug-reporting-and-autocorrection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug reporting and autocorrection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bug reporting and autocorrection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-details_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -635,14 +609,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../coming-soon-flows/" class="md-nav__link">
+      <a href="../coming-soon-flows.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Coming soon
+    Coming soon : WIP
   
 
     
@@ -687,6 +661,60 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -922,6 +950,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#bug-reporting-and-autocorrection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bug reporting and autocorrection
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bug reporting and autocorrection">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-details_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key details
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -999,6 +1055,7 @@
     ├── sw.js
     ├── manifest.json
     ├── training_data.json
+    ├── analysis_data.json
     └── stockfish/
 </code></pre></div>
 <hr />
@@ -1010,8 +1067,8 @@
     FETCH --&gt;|200 OK| APP[App mode]
     FETCH --&gt;|Network error / 404| DEMO[Demo mode]
 
-    APP --&gt; SHOW[Show app-only menu items&lt;br/&gt;Enable native Stockfish&lt;br/&gt;Set depth=18]
-    DEMO --&gt; HIDE[Hide app-only items&lt;br/&gt;Use WASM Stockfish&lt;br/&gt;Set depth=12]
+    APP --&gt; SHOW[Show app-only menu items&lt;br/&gt;Enable native Stockfish&lt;br/&gt;Set depth=18&lt;br/&gt;Serve analysis_data.json fresh]
+    DEMO --&gt; HIDE[Hide app-only items&lt;br/&gt;Use WASM Stockfish&lt;br/&gt;Set depth=12&lt;br/&gt;Use bundled analysis_data.json]
 
     APP --&gt; VER{Version check}
     VER --&gt;|Newer available| PROMPT[Show update prompt]
@@ -1088,6 +1145,38 @@
 <li><strong>Engine lock</strong>: <code>asyncio.Lock</code> prevents concurrent access to the single engine process.</li>
 <li><strong>WASM variant</strong>: uses <code>stockfish-18-lite-single.js</code> (single-threaded, suitable for browser). Depth limited to 12 (vs 18 for native).</li>
 <li><strong>Lazy init</strong>: WASM worker is only created on first call to <code>getBestMove()</code>.</li>
+</ul>
+<h2 id="bug-reporting-and-autocorrection">Bug reporting and autocorrection</h2>
+<p>Automated crash detection → issue creation → developer-driven fix cycle.</p>
+<p><img alt="Bug reporting and autocorrection flow" src="images/bug-reporting.svg" /></p>
+<pre class="mermaid"><code>flowchart TD
+    subgraph "Automatic (server runtime)"
+        CRASH[Unhandled exception&lt;br/&gt;in FastAPI endpoint] --&gt; HANDLER[Exception handler&lt;br/&gt;formats traceback]
+        HANDLER --&gt; DEDUP{Duplicate&lt;br/&gt;issue exists?}
+        DEDUP --&gt;|Yes| SKIP[Skip silently]
+        DEDUP --&gt;|No| CREATE["gh issue create&lt;br/&gt;--label bug"]
+    end
+
+    subgraph "Developer-driven (/fix-issues)"
+        COLLECT["gh issue list&lt;br/&gt;--label bug --state open"] --&gt; ANALYZE[Analyze tracebacks&lt;br/&gt;group by root cause]
+        ANALYZE --&gt; TABLE[Show summary table&lt;br/&gt;ask user to confirm]
+        TABLE --&gt; LOOP["For each root cause:"]
+        LOOP --&gt; TEST_RED[Create E2E test&lt;br/&gt;assert no 500]
+        TEST_RED --&gt; VERIFY_RED[Run test → RED]
+        VERIFY_RED --&gt; FIX[Fix the code]
+        FIX --&gt; PYRIGHT[basedpyright → fix types]
+        PYRIGHT --&gt; TEST_GREEN[Run all tests → GREEN]
+        TEST_GREEN --&gt; COMMIT["Commit: Fix #N"]
+        COMMIT --&gt; CLOSE["Close duplicates&lt;br/&gt;gh issue close"]
+    end
+
+    CREATE -.-&gt;|"issues accumulate&lt;br/&gt;until /fix-issues"| COLLECT</code></pre>
+<h3 id="key-details_1">Key details</h3>
+<ul>
+<li><strong>Crash reporter</strong> (<code>server.py</code>): exception handler on all unhandled errors. Runs <code>gh issue create</code> in a daemon thread (non-blocking). Requires <code>gh</code> CLI with write access — no explicit permission check, <code>gh</code> fails silently if unauthorized.</li>
+<li><strong>Deduplication</strong>: searches open issues by title before creating. Title format: <code>[crash] ErrorType: message</code>.</li>
+<li><strong><code>/fix-issues</code> command</strong>: Claude Code slash command that drives the full fix cycle. Follows red-green-refactor: write failing test first, then fix, then verify.</li>
+<li><strong>Issue body format</strong>: endpoint, version, full traceback — provides enough context to reproduce.</li>
 </ul>
 
 

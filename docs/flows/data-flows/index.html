@@ -251,60 +251,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Setup Guide
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../cli/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CLI Reference
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../training/" class="md-nav__link">
         
   
@@ -342,10 +288,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -363,8 +309,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
   
@@ -509,10 +455,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#training_datajson-structure" class="md-nav__link">
+  <a href="#two-layer-data-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        training_data.json structure
+        Two-layer data model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis_datajson-structure-per-game-per-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        analysis_data.json structure (per game, per move)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training_datajson-structure-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        training_data.json structure (unchanged)
       
     </span>
   </a>
@@ -590,14 +558,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../coming-soon-flows/" class="md-nav__link">
+      <a href="../coming-soon-flows.md" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Coming soon
+    Coming soon : WIP
   
 
     
@@ -642,6 +610,60 @@
           </ul>
         </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dev Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -795,10 +817,32 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#training_datajson-structure" class="md-nav__link">
+  <a href="#two-layer-data-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        training_data.json structure
+        Two-layer data model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#analysis_datajson-structure-per-game-per-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        analysis_data.json structure (per game, per move)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training_datajson-structure-unchanged" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        training_data.json structure (unchanged)
       
     </span>
   </a>
@@ -863,32 +907,92 @@
         CC[Chess.com API]
     end
 
-    subgraph Backend
+    subgraph "Phase 1 — Collection"
         IMP[Importer&lt;br/&gt;fetch games]
-        SF[Stockfish 18&lt;br/&gt;analyze positions]
-        TR[Trainer&lt;br/&gt;extract mistakes]
+        SF[Stockfish 18&lt;br/&gt;N-1 threads, 1GB hash]
+        TB[Lichess Tablebase&lt;br/&gt;≤7 pieces]
+        OE[Lichess Opening Explorer&lt;br/&gt;theory detection]
     end
 
     subgraph Storage
-        TD[training_data.json&lt;br/&gt;positions + game metadata]
+        AD[analysis_data.json&lt;br/&gt;all moves, max granularity]
+        TD[training_data.json&lt;br/&gt;filtered mistakes]
         LS[localStorage&lt;br/&gt;SRS state per position]
     end
 
-    subgraph PWA
+    subgraph "Phase 2 — Derivation"
+        DER[annotate_and_derive&lt;br/&gt;filter + explain]
+    end
+
+    subgraph "PWA — Training mode"
         SEL[Session selector&lt;br/&gt;SM-2 priority]
         QUIZ[Quiz interface&lt;br/&gt;board + feedback]
+    end
+
+    subgraph "PWA — Analysis mode"
+        GSEL[Game selector]
+        REV[Game review&lt;br/&gt;eval bar + score chart&lt;br/&gt;+ classifications]
     end
 
     LI --&gt; IMP
     CC --&gt; IMP
     IMP --&gt; SF
-    SF --&gt; TR
-    TR --&gt; TD
+    IMP --&gt; TB
+    IMP --&gt; OE
+    SF --&gt; AD
+    TB --&gt; AD
+    OE --&gt; AD
+    AD --&gt; DER
+    DER --&gt; TD
     TD --&gt; SEL
     LS --&gt; SEL
     SEL --&gt; QUIZ
-    QUIZ --&gt; LS</code></pre>
-<h3 id="training_datajson-structure">training_data.json structure</h3>
+    QUIZ --&gt; LS
+    AD --&gt; GSEL
+    GSEL --&gt; REV</code></pre>
+<h3 id="two-layer-data-model">Two-layer data model</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>analysis_data.json</code></td>
+<td>All moves, all evals, per game</td>
+<td>Phase 2 derivation + Analysis mode (game review UI)</td>
+</tr>
+<tr>
+<td><code>training_data.json</code></td>
+<td>Filtered mistakes (unchanged schema)</td>
+<td>App + Demo</td>
+</tr>
+</tbody>
+</table>
+<p>Phase 2 can be re-run cheaply without re-running Stockfish (<code>chess-self-coach train --derive</code>).</p>
+<h3 id="analysis_datajson-structure-per-game-per-move">analysis_data.json structure (per game, per move)</h3>
+<div class="highlight"><pre><span></span><code>{
+  version, player,
+  games: {
+    &quot;&lt;game_url&gt;&quot;: {
+      headers, player_color, analyzed_at, analysis_duration_s, settings,
+      moves: [
+        { ply, fen_before, fen_after, move_san, move_uci, side,
+          eval_source, in_opening, eval_before: {score_cp, is_mate, depth, seldepth, nodes, nps, time_ms, pv_san, ...},
+          eval_after: {...}, eval_after_best: {score_cp, is_mate, mate_in},
+          tablebase_before, tablebase_after,
+          opening_explorer: {opening: {eco, name}, moves: [{san, white, draws, black}]},
+          cp_loss, board: {piece_count, is_check, is_capture, ...},
+          clock: {player, opponent, time_spent} }
+      ]
+    }
+  }
+}
+</code></pre></div>
+<h3 id="training_datajson-structure-unchanged">training_data.json structure (unchanged)</h3>
 <div class="highlight"><pre><span></span><code>{
   version, generated, player: {lichess, chesscom},
   positions: [
