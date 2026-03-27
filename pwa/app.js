@@ -3006,6 +3006,8 @@ async function analyzeSelectedGames() {
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       console.error('[analyzeSelectedGames] API error:', resp.status, err.detail);
+      const el = document.getElementById('analysis-progress');
+      if (el) { el.textContent = `Error: ${err.detail || resp.status}`; el.classList.remove('hidden'); }
       return;
     }
     const { job_id: jobId } = await resp.json();
@@ -3019,6 +3021,8 @@ async function analyzeSelectedGames() {
     showAnalysisProgress(jobId);
   } catch (err) {
     console.error('[analyzeSelectedGames] Fetch failed:', err);
+    const el = document.getElementById('analysis-progress');
+    if (el) { el.textContent = `Error: ${err.message}`; el.classList.remove('hidden'); }
   }
 }
 
