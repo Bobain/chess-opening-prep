@@ -233,6 +233,7 @@ def fetch_and_cache_games(
             opening=entry.get("headers", {}).get("Opening", ""),
             move_count=entry.get("move_count", 0),
             source=entry.get("source", ""),
+            analyzed=False,
         ))
 
     # Write merged cache
