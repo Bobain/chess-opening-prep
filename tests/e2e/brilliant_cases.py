@@ -61,4 +61,9 @@ GAMES: list[dict] = [
             52: "Rxe6 — trapped rook, 'sacrifice' only minimizes losses (not a tactical advantage)",
         },
     },
+    {
+        "game_id": "Ansaar98_166442353784",
+        "brilliant_indices": [],  # no brilliant moves in this game
+        "notes": {},
+    },
 ]
