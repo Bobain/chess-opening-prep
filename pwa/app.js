@@ -104,8 +104,10 @@ let pendingGameIds = new Set();
 let analysisOffset = 0;
 /** @type {number} Total games across all batches */
 let analysisTotalAll = 0;
-/** @type {number} How many games to show in the list */
+/** @type {number} How many games to show per page */
 let gameListLimit = 20;
+/** @type {number} Current page (0-based) */
+let gameListPage = 0;
 /** @type {string} Active result filter: 'all', 'win', 'loss', 'draw' */
 let resultFilter = 'all';
 /** @type {string} Active status filter: 'all', 'analyzed', 'not-analyzed' */
@@ -1693,11 +1695,15 @@ async function showGameSelector() {
     return true;
   });
 
-  const limitedEntries = filteredList.slice(0, gameListLimit);
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / gameListLimit));
+  if (gameListPage >= totalPages) gameListPage = totalPages - 1;
+  if (gameListPage < 0) gameListPage = 0;
+  const start = gameListPage * gameListLimit;
+  const limitedEntries = filteredList.slice(start, start + gameListLimit);
 
-  if (limitedEntries.length === 0) {
+  if (filteredList.length === 0) {
     selector.textContent = appMode === 'app'
-      ? 'No games yet. Use menu \u2630 \u2192 Refresh games to fetch your games.'
+      ? 'No games yet. Use menu \u2630 \u2192 Fetch games to fetch your games.'
       : 'No analyzed games available.';
     if (toolbar) toolbar.classList.add('hidden');
     return;
@@ -1874,6 +1880,26 @@ async function showGameSelector() {
     card.appendChild(accEl);
 
     selector.appendChild(card);
+  }
+
+  // Pagination controls
+  if (totalPages > 1) {
+    const paginationEl = document.createElement('div');
+    paginationEl.className = 'game-list-pagination';
+    const prevBtn = document.createElement('button');
+    prevBtn.textContent = '← Previous';
+    prevBtn.disabled = gameListPage === 0;
+    prevBtn.addEventListener('click', () => { gameListPage--; showGameSelector(); });
+    const info = document.createElement('span');
+    info.textContent = `Page ${gameListPage + 1} / ${totalPages} (${filteredList.length} games)`;
+    const nextBtn = document.createElement('button');
+    nextBtn.textContent = 'Next →';
+    nextBtn.disabled = gameListPage >= totalPages - 1;
+    nextBtn.addEventListener('click', () => { gameListPage++; showGameSelector(); });
+    paginationEl.appendChild(prevBtn);
+    paginationEl.appendChild(info);
+    paginationEl.appendChild(nextBtn);
+    selector.appendChild(paginationEl);
   }
 
   updateAnalyzeButton();
@@ -2700,6 +2726,7 @@ async function init() {
   if (limitSelect) {
     limitSelect.addEventListener('change', () => {
       gameListLimit = parseInt(limitSelect.value, 10);
+      gameListPage = 0;
       console.log('[init] Game list limit changed to', gameListLimit);
       showGameSelector();
     });
@@ -2710,6 +2737,7 @@ async function init() {
   if (resultFilterSelect) {
     resultFilterSelect.addEventListener('change', () => {
       resultFilter = resultFilterSelect.value;
+      gameListPage = 0;
       console.log('[init] Result filter:', resultFilter);
       showGameSelector();
     });
@@ -2718,6 +2746,7 @@ async function init() {
   if (statusFilterSelect) {
     statusFilterSelect.addEventListener('change', () => {
       statusFilter = statusFilterSelect.value;
+      gameListPage = 0;
       console.log('[init] Status filter:', statusFilter);
       showGameSelector();
     });
