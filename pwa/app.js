@@ -1683,7 +1683,7 @@ async function showGameSelector() {
 
   if (appMode === 'app') {
     try {
-      const resp = await fetch('/api/games?limit=' + gameListLimit);
+      const resp = await fetch('/api/games?limit=9999');
       if (resp.ok) {
         const data = await resp.json();
         for (const g of data.games) {
