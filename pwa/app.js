@@ -816,17 +816,17 @@ async function handleMove(orig, dest) {
         console.log(`[handleMove] Opponent response: ${from}→${to}`);
         // Show the player's wrong move, then animate the opponent's response
         cg.set({ fen: chessAfter.fen(), lastMove: [orig, dest], movable: { dests: new Map() } });
-        setTimeout(() => {
+        animationTimer = setTimeout(() => {
           cg.move(from, to);
-          setTimeout(() => showRetryButton(position), 1000);
+          animationTimer = setTimeout(() => showRetryButton(position), 1000);
         }, 800);
       } else {
-        setTimeout(() => setupBoard(position), 400);
+        animationTimer = setTimeout(() => setupBoard(position), 400);
       }
     } catch (err) {
       hideThinking();
       console.log('[handleMove] Stockfish unavailable, fallback:', err.message);
-      setTimeout(() => setupBoard(position), 400);
+      animationTimer = setTimeout(() => setupBoard(position), 400);
     }
   }
 }
