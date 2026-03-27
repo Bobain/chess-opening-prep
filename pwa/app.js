@@ -110,6 +110,10 @@ let gameListLimit = 20;
 let gameListPage = 0;
 /** @type {string} Active result filter: 'all', 'win', 'loss', 'draw' */
 let resultFilter = 'all';
+/** @type {string} Active color filter: 'all', 'white', 'black' */
+let colorFilter = 'all';
+/** @type {string} Active opening filter: 'all' or opening name */
+let openingFilter = 'all';
 /** @type {string} Active status filter: 'all', 'analyzed', 'not-analyzed' */
 let statusFilter = 'all';
 /** @type {?string} When training on a specific game, its ID; null = all positions */
@@ -1677,17 +1681,46 @@ async function showGameSelector() {
     }
   }
 
-  // Filter by result and analysis status
+  // Build opening counts for the dropdown (before filtering by opening)
+  const openingCounts = new Map();
+  for (const entry of unifiedList) {
+    const opening = entry.richData?.headers?.opening || entry.apiData?.opening || '';
+    if (opening) openingCounts.set(opening, (openingCounts.get(opening) || 0) + 1);
+  }
+  const openingSelect = document.getElementById('opening-filter-select');
+  if (openingSelect) {
+    const currentVal = openingFilter;
+    // Clear and rebuild options using DOM methods (safe, no innerHTML)
+    while (openingSelect.options.length > 1) openingSelect.remove(1);
+    const sorted = [...openingCounts.entries()].sort((a, b) => b[1] - a[1]);
+    for (const [name, count] of sorted) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = `${name} (${count})`;
+      openingSelect.appendChild(opt);
+    }
+    openingSelect.value = currentVal;
+    if (openingSelect.value !== currentVal) openingFilter = 'all';
+  }
+
+  // Filter by result, color, opening, and analysis status
   const filteredList = unifiedList.filter((entry) => {
+    const result = entry.richData ? entry.richData.headers.result : entry.apiData?.result;
+    const pc = entry.richData ? entry.richData.player_color : entry.apiData?.player_color;
     // Result filter
     if (resultFilter !== 'all') {
-      const result = entry.richData ? entry.richData.headers.result : entry.apiData?.result;
-      const pc = entry.richData ? entry.richData.player_color : entry.apiData?.player_color;
       const isWin = (result === '1-0' && pc === 'white') || (result === '0-1' && pc === 'black');
       const isLoss = (result === '1-0' && pc === 'black') || (result === '0-1' && pc === 'white');
       if (resultFilter === 'win' && !isWin) return false;
       if (resultFilter === 'loss' && !isLoss) return false;
       if (resultFilter === 'draw' && (isWin || isLoss)) return false;
+    }
+    // Color filter
+    if (colorFilter !== 'all' && pc !== colorFilter) return false;
+    // Opening filter
+    if (openingFilter !== 'all') {
+      const opening = entry.richData?.headers?.opening || entry.apiData?.opening || '';
+      if (opening !== openingFilter) return false;
     }
     // Status filter
     if (statusFilter === 'analyzed' && !entry.analyzed) return false;
@@ -2739,6 +2772,22 @@ async function init() {
       resultFilter = resultFilterSelect.value;
       gameListPage = 0;
       console.log('[init] Result filter:', resultFilter);
+      showGameSelector();
+    });
+  }
+  const colorFilterSelect = document.getElementById('color-filter-select');
+  if (colorFilterSelect) {
+    colorFilterSelect.addEventListener('change', () => {
+      colorFilter = colorFilterSelect.value;
+      gameListPage = 0;
+      showGameSelector();
+    });
+  }
+  const openingFilterSelect = document.getElementById('opening-filter-select');
+  if (openingFilterSelect) {
+    openingFilterSelect.addEventListener('change', () => {
+      openingFilter = openingFilterSelect.value;
+      gameListPage = 0;
       showGameSelector();
     });
   }
