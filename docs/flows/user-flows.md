@@ -164,6 +164,7 @@ sequenceDiagram
 - **Crash safety**: atomic write of `analysis_data.json` after each game. Resumable on interruption.
 - **Thresholds**: blunder ≥ 200cp, mistake ≥ 100cp, inaccuracy ≥ 50cp.
 - **Interrupt**: user can click interrupt → `POST /api/jobs/{id}/cancel` → saves progress so far.
+- **Fetch games**: menu → "Fetch games" opens modal with "Fetch latest" (200 recent) or "Fetch N games" (configurable count, includes older games). Backend: `POST /api/games/fetch?max_games=N`.
 
 ---
 
