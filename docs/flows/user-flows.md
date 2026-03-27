@@ -29,7 +29,7 @@ sequenceDiagram
             PWA->>SF: getStockfishBestMove(fen)
             SF-->>PWA: Opponent response (UCI)
             PWA->>U: Animate opponent move + Retry button
-            Note over U,PWA: Player can retry<br/>unlimited times or<br/>click "Give up"
+            Note over U,PWA: Player can retry, skip,<br/>show answer (after 3 attempts),<br/>or give up
         end
         U->>PWA: Click Next
     end
@@ -40,6 +40,8 @@ sequenceDiagram
 
 - **Position selection** uses SM-2 spaced repetition: overdue positions first, then new (blunders prioritized), then learning (interval < 7 days). Mastered positions are skipped.
 - **Intra-session repetition**: a correct first attempt reinserts the position 5 slots later for confirmation. A wrong answer reinserts 3 slots later.
+- **Skip** reinserts the position 3 slots later without affecting SRS state.
+- **Show answer** (after 3 wrong attempts) reveals the correct move with explanation and PV, but records a failure in SRS.
 - **Dismiss** ("Give up on this lesson") sets interval to 99999 days — the position never appears again.
 - **SRS state** is stored per position ID in `localStorage` key `train_srs`.
 
@@ -82,7 +84,7 @@ sequenceDiagram
 
 ### Key details
 
-- **Game list**: default view, shows all games (analyzed + cached). Cards showing opponent, date, result (W/D/L badge), opening name, move count. Analyzed games also show accuracy % and classification badges. All games have checkboxes for (re-)analysis; selecting an already-analyzed game auto-sets `reanalyze_all`.
+- **Game list**: default view, shows all games (analyzed + cached). Cards showing opponent, date, result (W/D/L badge), opening name, move count. Analyzed games also show accuracy % and classification badges. All games have checkboxes for (re-)analysis; selecting an already-analyzed game auto-sets `reanalyze_all`. Toolbar filters: result dropdown (All/Wins/Losses/Draws), status dropdown (All/Analyzed/Not analyzed), game limit (20/50/100).
 - **Training**: accessible via hamburger menu → "Training" (all positions) or per-game "Train" button in review.
 - **Move classifications**: win probability model — `winProb(cp) = 1/(1+10^(-cp/400))`, thresholds: Best ≤0, Excellent ≤0.02, Good ≤0.05, Inaccuracy ≤0.10, Mistake ≤0.20, Blunder >0.20. Special: Brilliant (piece sacrifice value >2 + EPL ≤0.02 + wpBefore >0.05 and <0.95 + not opening theory + PV ≥3 moves).
 - **Eval bar**: sigmoid mapping, 50% at equal, smooth CSS transition. For book moves (no Stockfish eval), derives approximate cp from opening explorer win/draw/loss stats. Shows "M3" for mate.
@@ -162,6 +164,7 @@ sequenceDiagram
 - **Crash safety**: atomic write of `analysis_data.json` after each game. Resumable on interruption.
 - **Thresholds**: blunder ≥ 200cp, mistake ≥ 100cp, inaccuracy ≥ 50cp.
 - **Interrupt**: user can click interrupt → `POST /api/jobs/{id}/cancel` → saves progress so far.
+- **Fetch games**: menu → "Fetch games" opens modal with "Fetch latest" (200 recent) or "Fetch N games" (configurable count, includes older games). Backend: `POST /api/games/fetch?max_games=N`.
 
 ---
 
