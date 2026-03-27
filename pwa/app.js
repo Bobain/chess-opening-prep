@@ -2370,7 +2370,7 @@ function renderScoreChartBase(ctx, w, h) {
   const moves = reviewGame.moves;
   if (moves.length === 0) return;
 
-  const maxCp = 1000;
+  const maxCp = 800; // clamp at ±8 pawns to avoid overflow
   const midY = h / 2;
 
   function getEval(move) {
@@ -2396,21 +2396,39 @@ function renderScoreChartBase(ctx, w, h) {
   ctx.lineTo(w, midY);
   ctx.stroke();
 
-  // Area fill
+  // Build the eval path points
+  const evalPoints = [];
+  for (let i = 0; i < moves.length; i++) {
+    evalPoints.push({ x: stepX * (i + 1), y: cpToY(getEval(moves[i])) });
+  }
+
+  // White area fill (above center line — favorable to White)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, w, midY);
+  ctx.clip();
   ctx.beginPath();
   ctx.moveTo(stepX, midY);
-  for (let i = 0; i < moves.length; i++) {
-    ctx.lineTo(stepX * (i + 1), cpToY(getEval(moves[i])));
-  }
+  for (const p of evalPoints) ctx.lineTo(p.x, p.y);
   ctx.lineTo(stepX * moves.length, midY);
   ctx.closePath();
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, 'rgba(255,255,255,0.15)');
-  grad.addColorStop(0.5, 'rgba(255,255,255,0.05)');
-  grad.addColorStop(0.5, 'rgba(0,0,0,0.05)');
-  grad.addColorStop(1, 'rgba(0,0,0,0.15)');
-  ctx.fillStyle = grad;
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
   ctx.fill();
+  ctx.restore();
+
+  // Black area fill (below center line — favorable to Black)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, midY, w, midY);
+  ctx.clip();
+  ctx.beginPath();
+  ctx.moveTo(stepX, midY);
+  for (const p of evalPoints) ctx.lineTo(p.x, p.y);
+  ctx.lineTo(stepX * moves.length, midY);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fill();
+  ctx.restore();
 
   // Eval line
   ctx.strokeStyle = 'rgba(255,255,255,0.6)';
