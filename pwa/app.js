@@ -88,6 +88,8 @@ let completedCount = 0;
 let sessionOriginalSize = 0;
 /** @type {?number} Timer ID for the wrong-move animation sequence */
 let animationTimer = null;
+/** @type {?number} Interval ID for the play-best-line animation */
+let playLineInterval = null;
 
 // --- Analysis mode state ---
 /** @type {string} Current view: 'games' (game list), 'review', or 'training' */
@@ -1001,15 +1003,17 @@ function showFeedback(correct, position, gaveUp = false) {
     playLineBtn.disabled = true;
     const chess = new Chess(position.fen);
     let step = 0;
-    const interval = setInterval(() => {
+    playLineInterval = setInterval(() => {
       if (step >= pvMoves.length) {
-        clearInterval(interval);
+        clearInterval(playLineInterval);
+        playLineInterval = null;
         playLineBtn.disabled = false;
         return;
       }
       const move = chess.move(pvMoves[step]);
       if (!move) {
-        clearInterval(interval);
+        clearInterval(playLineInterval);
+        playLineInterval = null;
         playLineBtn.disabled = false;
         return;
       }
@@ -1137,6 +1141,10 @@ function showPosition(index) {
   if (animationTimer) {
     clearTimeout(animationTimer);
     animationTimer = null;
+  }
+  if (playLineInterval) {
+    clearInterval(playLineInterval);
+    playLineInterval = null;
   }
 
   currentIndex = index;
