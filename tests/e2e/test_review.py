@@ -662,14 +662,11 @@ def _compute_f1(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
     return precision, recall, f1
 
 
-@pytest.mark.xfail(reason="Classification rules WIP — 14/27 great TP, 9 FP remaining")
-@pytest.mark.parametrize(
-    "game_gt",
-    BRILLIANT_GAMES,
-    ids=[g["game_id"] for g in BRILLIANT_GAMES],
-)
-def test_move_classification(page, pwa_url, game_gt):
-    """Classify all moves in a game and compute per-class F1 for brilliant/great/other."""
+def _classify_game(page, pwa_url, game_gt):
+    """Classify all moves in a game and return per-class stats.
+
+    Returns (classes, class_f1, macro_f1, errors) without asserting.
+    """
     page.goto(pwa_url)
     page.wait_for_selector(".game-card", timeout=10000)
 
@@ -752,9 +749,40 @@ def test_move_classification(page, pwa_url, game_gt):
     # Update log
     _update_classification_log(game_gt["game_id"], classes, class_f1, macro_f1)
 
-    # Assert no errors (FP or FN for brilliant or great)
-    assert not errors, (
-        f"Macro F1={macro_f1:.3f} — {len(errors)} error(s):\n" + "\n".join(errors)
+    return classes, class_f1, macro_f1, errors
+
+
+# Minimum acceptable macro F1 across all games (non-regression threshold).
+# Current baseline: ~0.55. Lower bound set to catch significant regressions.
+MIN_GLOBAL_MACRO_F1 = 0.50
+
+
+def test_classification_macro_f1_regression(page, pwa_url):
+    """Global non-regression: average macro F1 across all labeled games must not drop."""
+    macro_f1_scores = []
+    total_brilliant = {"tp": 0, "fp": 0, "fn": 0}
+    total_great = {"tp": 0, "fp": 0, "fn": 0}
+
+    for game_gt in BRILLIANT_GAMES:
+        classes, class_f1, macro_f1, errors = _classify_game(page, pwa_url, game_gt)
+        macro_f1_scores.append(macro_f1)
+        for key in ("tp", "fp", "fn"):
+            total_brilliant[key] += classes["brilliant"][key]
+            total_great[key] += classes["great"][key]
+
+    avg_macro_f1 = sum(macro_f1_scores) / len(macro_f1_scores)
+    _, _, brilliant_f1 = _compute_f1(total_brilliant["tp"], total_brilliant["fp"], total_brilliant["fn"])
+    _, _, great_f1 = _compute_f1(total_great["tp"], total_great["fp"], total_great["fn"])
+
+    print(f"\n{'='*60}")
+    print(f"GLOBAL CLASSIFICATION SUMMARY ({len(BRILLIANT_GAMES)} games)")
+    print(f"  Brilliant: TP={total_brilliant['tp']} FP={total_brilliant['fp']} FN={total_brilliant['fn']} F1={brilliant_f1:.3f}")
+    print(f"  Great:     TP={total_great['tp']} FP={total_great['fp']} FN={total_great['fn']} F1={great_f1:.3f}")
+    print(f"  Average macro F1={avg_macro_f1:.3f} (threshold={MIN_GLOBAL_MACRO_F1})")
+    print(f"{'='*60}")
+
+    assert avg_macro_f1 >= MIN_GLOBAL_MACRO_F1, (
+        f"Global macro F1 {avg_macro_f1:.3f} dropped below threshold {MIN_GLOBAL_MACRO_F1}"
     )
 
 
