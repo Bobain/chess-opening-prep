@@ -126,7 +126,7 @@ Uses a win probability model (chess.com-style): `winProb(cp) = 1 / (1 + 10^(-cp/
 | Miss       | Opponent blundered (≥15% wp loss) + player EPL > 0.05 + not opening | #e06666 | ×      |
 | Best       | ≤ 0.00              | #96bc4b | ★      |
 | Excellent  | ≤ 0.02              | #96bc4b | ↑      |
-| Good       | ≤ 0.05              | #95b776 |        |
+| Good       | ≤ 0.05              | #95b776 | ✓      |
 | Book       | (opening explorer)  | #a88764 | ♗      |
 | Inaccuracy | ≤ 0.10              | #f7c631 | ?!     |
 | Mistake    | ≤ 0.20              | #e6912a | ?      |

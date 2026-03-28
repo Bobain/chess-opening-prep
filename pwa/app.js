@@ -1627,7 +1627,7 @@ function classifyMove(move, playerColor, prevMove) {
   } else if (eplLost <= 0.02) {
     return { category: 'excellent', symbol: '\u2191', color: '#96bc4b' };
   } else if (eplLost <= 0.05) {
-    return { category: 'good', symbol: '', color: '#95b776' };
+    return { category: 'good', symbol: '\u2713', color: '#95b776' };
   } else if (eplLost <= 0.10) {
     return { category: 'inaccuracy', symbol: '?!', color: '#f7c631' };
   } else if (eplLost <= 0.20) {
@@ -1973,14 +1973,15 @@ async function showGameSelector() {
     const priorityCategories = [
       { key: 'brilliant', label: '!!', color: '#1baca6', title: 'brilliant moves' },
       { key: 'great', label: '!', color: '#5c9ced', title: 'great moves' },
-      { key: 'miss', label: '\u00d7', color: '#e06666', title: 'missed opportunities' },
       { key: 'best', label: '\u2605', color: '#96bc4b', title: 'best moves' },
-      { key: 'mistake', label: '?', color: '#e6912a', title: 'mistakes' },
+      { key: 'miss', label: '\u00d7', color: '#e06666', title: 'missed opportunities' },
       { key: 'blunder', label: '??', color: '#ca3431', title: 'blunders' },
     ];
     const fillCategories = [
+      { key: 'mistake', label: '?', color: '#e6912a', title: 'mistakes' },
       { key: 'inaccuracy', label: '?!', color: '#f7c631', title: 'inaccuracies' },
       { key: 'excellent', label: '\u2191', color: '#96bc4b', title: 'excellent moves' },
+      { key: 'good', label: '\u2713', color: '#95b776', title: 'good moves' },
     ];
     const MAX_BADGES = 5;
 
