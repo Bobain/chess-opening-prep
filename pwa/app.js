@@ -1570,13 +1570,19 @@ function classifyMove(move, playerColor) {
     return { category: 'brilliant', symbol: '!!', color: '#1baca6' };
   }
 
+  // Great detection: best/near-best move that significantly improves the position
+  // (e.g. turning a losing position into equal, or equal into winning)
+  // Requires a large win-probability swing and the position wasn't already dominating
+  const wpGain = wpAfter - wpBefore;
+  if (eplLost <= 0.02 && wpGain >= 0.20 && wpBefore > 0.10 && wpBefore < 0.80) {
+    return { category: 'great', symbol: '!', color: '#5c9ced' };
+  }
+
   if (eplLost <= 0) {
     return { category: 'best', symbol: '\u2605', color: '#96bc4b' };
   } else if (eplLost <= 0.02) {
     return { category: 'excellent', symbol: '\u2191', color: '#96bc4b' };
   } else if (eplLost <= 0.05) {
-    return { category: 'good', symbol: '', color: '#95b776' };
-  } else if (eplLost <= 0.10) {
     return { category: 'good', symbol: '', color: '#95b776' };
   } else if (eplLost <= 0.10) {
     return { category: 'inaccuracy', symbol: '?!', color: '#f7c631' };

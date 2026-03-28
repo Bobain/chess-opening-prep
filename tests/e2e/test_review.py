@@ -596,13 +596,14 @@ def _compute_f1(tp: int, fp: int, fn: int) -> tuple[float, float, float]:
     BRILLIANT_GAMES,
     ids=[g["game_id"] for g in BRILLIANT_GAMES],
 )
-def test_brilliant_f1(page, pwa_url, game_gt):
-    """Classify all moves in a game and compute F1 for brilliant detection."""
+def test_move_classification(page, pwa_url, game_gt):
+    """Classify all moves in a game and compute per-class F1 for brilliant/great/other."""
     page.goto(pwa_url)
     page.wait_for_selector(".game-card", timeout=10000)
 
     moves = _load_game_moves(game_gt["game_id"])
-    brilliant_set = set(game_gt["brilliant_indices"])
+    brilliant_set = set(game_gt.get("brilliant_indices", []))
+    great_set = set(game_gt.get("great_indices", []))
     notes = game_gt.get("notes", {})
 
     # Classify all moves in browser
@@ -610,96 +611,108 @@ def test_brilliant_f1(page, pwa_url, game_gt):
     results = page.evaluate(
         f"""() => {{
         const moves = {moves_json};
-        return moves.map(m => window._classifyMove(m, m.side));
+        return moves.map((m, i) => {{
+            const side = m.side || (i % 2 === 0 ? 'white' : 'black');
+            return window._classifyMove(m, side);
+        }});
     }}"""
     )
 
-    # Compute metrics
-    tp, fp, fn, tn = 0, 0, 0, 0
+    # Per-class TP/FP/FN
+    classes = {"brilliant": {"tp": 0, "fp": 0, "fn": 0},
+               "great": {"tp": 0, "fp": 0, "fn": 0}}
     errors = []
+
     for i, (move, result) in enumerate(zip(moves, results)):
-        is_brilliant = result is not None and result.get("category") == "brilliant"
-        should_be = i in brilliant_set
+        predicted = result.get("category") if result else "other"
+        if predicted not in ("brilliant", "great"):
+            predicted = "other"
+
+        if i in brilliant_set:
+            expected = "brilliant"
+        elif i in great_set:
+            expected = "great"
+        else:
+            expected = "other"
+
         move_num = (i // 2) + 1
         side = "w" if i % 2 == 0 else "b"
         label = f"{move_num}.{side} {move['move_san']}"
+        note = notes.get(i, "")
 
-        if should_be and is_brilliant:
-            tp += 1
-        elif should_be and not is_brilliant:
-            fn += 1
-            cat = result["category"] if result else "null"
-            note = notes.get(i, "")
-            errors.append(f"  FN: {label} — expected brilliant, got {cat}. {note}")
-        elif not should_be and is_brilliant:
-            fp += 1
-            note = notes.get(i, "")
-            errors.append(f"  FP: {label} — wrongly classified as brilliant. {note}")
+        if expected == predicted:
+            if expected in classes:
+                classes[expected]["tp"] += 1
         else:
-            tn += 1
+            if expected in classes:
+                classes[expected]["fn"] += 1
+                errors.append(f"  FN({expected}): {label} — expected {expected}, got {predicted}. {note}")
+            if predicted in classes:
+                classes[predicted]["fp"] += 1
+                errors.append(f"  FP({predicted}): {label} — wrongly classified as {predicted}. {note}")
 
-    precision, recall, f1 = _compute_f1(tp, fp, fn)
+    # Compute per-class F1
+    class_f1 = {}
+    for cls, counts in classes.items():
+        _, _, f1 = _compute_f1(counts["tp"], counts["fp"], counts["fn"])
+        class_f1[cls] = f1
+
+    # Macro F1 (average of per-class F1, only for classes that have ground truth)
+    active_classes = [cls for cls in classes if any(
+        i in (brilliant_set if cls == "brilliant" else great_set) for i in range(len(moves))
+    ) or classes[cls]["fp"] > 0]
+    macro_f1 = sum(class_f1[c] for c in active_classes) / len(active_classes) if active_classes else 1.0
 
     # Print detailed report
     print(f"\n{'='*60}")
-    print(f"Brilliant F1 — {game_gt['game_id']}")
-    print(f"  TP={tp} FP={fp} FN={fn} TN={tn}")
-    print(f"  Precision={precision:.3f} Recall={recall:.3f} F1={f1:.3f}")
+    print(f"Classification — {game_gt['game_id']}")
+    for cls, counts in classes.items():
+        p, r, f1 = _compute_f1(counts["tp"], counts["fp"], counts["fn"])
+        print(f"  {cls}: TP={counts['tp']} FP={counts['fp']} FN={counts['fn']} P={p:.3f} R={r:.3f} F1={f1:.3f}")
+    print(f"  Macro F1={macro_f1:.3f}")
     if errors:
         print("  Errors:")
         for e in errors:
             print(e)
     print(f"{'='*60}")
 
-    # Update F1 log
-    _update_f1_log(game_gt["game_id"], tp, fp, fn, tn, precision, recall, f1)
+    # Update log
+    _update_classification_log(game_gt["game_id"], classes, class_f1, macro_f1)
 
-    # Assert no errors (FP or FN)
+    # Assert no errors (FP or FN for brilliant or great)
     assert not errors, (
-        f"F1={f1:.3f} — {len(errors)} classification error(s):\n" + "\n".join(errors)
+        f"Macro F1={macro_f1:.3f} — {len(errors)} error(s):\n" + "\n".join(errors)
     )
 
 
-def _update_f1_log(
-    game_id: str, tp: int, fp: int, fn: int, tn: int,
-    precision: float, recall: float, f1: float,
+def _update_classification_log(
+    game_id: str, classes: dict, class_f1: dict, macro_f1: float,
 ) -> None:
-    """Append or update the F1 performance log."""
+    """Append or update the classification performance log."""
     today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
-    row = f"| {today} | {game_id} | {tp} | {fp} | {fn} | {tn} | {precision:.3f} | {recall:.3f} | {f1:.3f} |"
+    b = classes["brilliant"]
+    g = classes["great"]
+    row = (
+        f"| {today} | {game_id} "
+        f"| {b['tp']} | {b['fp']} | {b['fn']} | {class_f1['brilliant']:.3f} "
+        f"| {g['tp']} | {g['fp']} | {g['fn']} | {class_f1['great']:.3f} "
+        f"| {macro_f1:.3f} |"
+    )
 
     if F1_LOG.exists():
         content = F1_LOG.read_text()
-        # Replace existing row for this game (keep latest only)
         lines = content.split("\n")
-        lines = [l for l in lines if f"| {game_id} |" not in l]
-        # Find the table end (line before "## Global")
+        lines = [ln for ln in lines if f"| {game_id} " not in ln]
         insert_idx = next(
-            (i for i, l in enumerate(lines) if l.startswith("## Global")),
+            (i for i, ln in enumerate(lines) if ln.startswith("## Global")),
             len(lines),
         )
         lines.insert(insert_idx, row)
-        # Recompute global F1 from all game rows
-        total_tp = total_fp = total_fn = 0
-        for l in lines:
-            if l.startswith("|") and "TP" not in l and "---" not in l and "Date" not in l:
-                parts = [p.strip() for p in l.split("|")]
-                if len(parts) >= 9:
-                    try:
-                        total_tp += int(parts[3])
-                        total_fp += int(parts[4])
-                        total_fn += int(parts[5])
-                    except ValueError:
-                        pass
-        _, _, global_f1 = _compute_f1(total_tp, total_fp, total_fn)
-        # Update global line
-        lines = [l for l in lines if not l.startswith("## Global")]
-        lines.append(f"## Global: F1 = {global_f1:.3f}")
         F1_LOG.write_text("\n".join(lines) + "\n")
     else:
         header = (
-            "# Brilliant Classification — F1 Performance Log\n\n"
-            "| Date | Game | TP | FP | FN | TN | Precision | Recall | F1 |\n"
-            "|------|------|----|----|----|----|-----------| -------|-----|\n"
+            "# Move Classification — Performance Log\n\n"
+            "| Date | Game | B_TP | B_FP | B_FN | B_F1 | G_TP | G_FP | G_FN | G_F1 | Macro F1 |\n"
+            "|------|------|------|------|------|------|------|------|------|------|----------|\n"
         )
-        F1_LOG.write_text(header + row + f"\n\n## Global: F1 = {f1:.3f}\n")
+        F1_LOG.write_text(header + row + f"\n\n## Global: Macro F1 = {macro_f1:.3f}\n")
