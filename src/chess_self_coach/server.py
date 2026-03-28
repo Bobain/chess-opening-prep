@@ -473,15 +473,22 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
     try:
         raw_ids = params.get("game_ids")
         game_ids = cast(list[str] | None, raw_ids) if raw_ids else None
+
+        def _on_game_done(game_id: str) -> None:
+            _push({"phase": "derive", "message": "Deriving training data...", "game_id": game_id})
+            try:
+                annotate_and_derive()
+            except Exception as e:
+                _log.error("annotate_and_derive failed for %s: %s", game_id, e)
+
         analyze_games(
             game_ids=game_ids,
             max_games=cast(int, params.get("max_games", 10)),
             reanalyze_all=cast(bool, params.get("reanalyze_all", False)),
             on_progress=on_progress,
+            on_game_done=_on_game_done,
             cancel=cancel,
         )
-        _push({"phase": "derive", "message": "Generating training data...", "percent": 92})
-        annotate_and_derive()
         job["status"] = "done"
     except AnalysisInterrupted as exc:
         _push({"phase": "interrupted", "message": str(exc), "percent": 100})
@@ -509,6 +516,15 @@ async def job_events(job_id: str):
             yield {"data": json.dumps(event)}
 
     return EventSourceResponse(event_generator())
+
+
+@app.get("/api/jobs/current")
+async def job_current():
+    """Return the current job ID and status, if any."""
+    if not _current_job:
+        return {"job_id": None, "status": None, "game_ids": []}
+    params = _current_job.get("params", {})
+    return {"job_id": _current_job["id"], "status": _current_job["status"], "game_ids": params.get("game_ids", [])}
 
 
 @app.post("/api/jobs/{job_id}/cancel", status_code=202)
