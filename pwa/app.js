@@ -2001,12 +2001,18 @@ function selectGame(gameId) {
 
   // Show/hide "Train on this game" button
   const trainBtn = document.getElementById('review-train-btn');
-  if (trainBtn && trainingData) {
-    const hasPositions = trainingData.positions.some((p) => p.game && p.game.id === gameId);
-    if (hasPositions) {
-      trainBtn.classList.remove('hidden');
-      trainBtn.onclick = () => showTrainingView(gameId);
+  if (trainBtn) {
+    if (trainingData && trainingData.positions) {
+      const matchingPositions = trainingData.positions.filter((p) => p.game && p.game.id === gameId);
+      console.log(`[selectGame] Training positions for this game: ${matchingPositions.length} (gameId=${gameId})`);
+      if (matchingPositions.length > 0) {
+        trainBtn.classList.remove('hidden');
+        trainBtn.onclick = () => showTrainingView(gameId);
+      } else {
+        trainBtn.classList.add('hidden');
+      }
     } else {
+      console.log('[selectGame] trainingData not loaded, hiding train button');
       trainBtn.classList.add('hidden');
     }
   }
