@@ -100,9 +100,10 @@ def test_fetch_count_includes_cache_size(mock_lichess, mock_root, tmp_path):
     assert captured_max["value"] == 15
 
 
+@patch("chess_self_coach.config.load_config", return_value={"players": {}})
 @patch("chess_self_coach.game_cache._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
-def test_unified_list_includes_cached_only_games(mock_lichess, mock_root, tmp_path):
+def test_unified_list_includes_cached_only_games(mock_lichess, mock_root, mock_config, tmp_path):
     """get_unified_game_list returns cached-but-not-analyzed games."""
     mock_root.return_value = tmp_path
 
