@@ -1898,7 +1898,7 @@ async function showGameSelector() {
 
     const meta = document.createElement('div');
     meta.className = 'game-card-meta';
-    meta.textContent = `${dateStr} \u00b7 ${moveCountText}`;
+    meta.textContent = moveCountText;
     infoEl.appendChild(meta);
     card.appendChild(infoEl);
 
@@ -1924,12 +1924,19 @@ async function showGameSelector() {
     const classified = classifyAllMoves(game.moves, game.player_color);
     const playerAcc = computeAccuracy(game.moves, classified, game.player_color);
     const opponentAcc = computeAccuracy(game.moves, classified, opponentColor);
-    const categories = [
+    // Priority order for badges (max 5 shown per row)
+    const priorityCategories = [
       { key: 'brilliant', label: '!!', color: '#1baca6', title: 'brilliant moves' },
-      { key: 'inaccuracy', label: '?!', color: '#f7c631', title: 'inaccuracies' },
+      { key: 'great', label: '!', color: '#5c9ced', title: 'great moves' },
+      { key: 'best', label: '\u2605', color: '#96bc4b', title: 'best moves' },
       { key: 'mistake', label: '?', color: '#e6912a', title: 'mistakes' },
       { key: 'blunder', label: '??', color: '#ca3431', title: 'blunders' },
     ];
+    const fillCategories = [
+      { key: 'inaccuracy', label: '?!', color: '#f7c631', title: 'inaccuracies' },
+      { key: 'excellent', label: '\u2191', color: '#96bc4b', title: 'excellent moves' },
+    ];
+    const MAX_BADGES = 5;
 
     function buildAccuracyRow(color, acc, isOpponent) {
       const row = document.createElement('div');
@@ -1951,7 +1958,23 @@ async function showGameSelector() {
           counts[cls.category] = (counts[cls.category] || 0) + 1;
         }
       }
-      for (const cat of categories) {
+      // Show priority badges first, then fill with secondary if room
+      let shown = 0;
+      for (const cat of priorityCategories) {
+        const c = counts[cat.key] || 0;
+        if (c > 0 && shown < MAX_BADGES) {
+          const badge = document.createElement('span');
+          badge.className = 'class-badge';
+          badge.style.color = cat.color;
+          badge.style.border = `1px solid ${cat.color}`;
+          badge.textContent = `${c}${cat.label}`;
+          badge.title = `${c} ${cat.title}`;
+          row.appendChild(badge);
+          shown++;
+        }
+      }
+      for (const cat of fillCategories) {
+        if (shown >= MAX_BADGES) break;
         const c = counts[cat.key] || 0;
         if (c > 0) {
           const badge = document.createElement('span');
@@ -1961,6 +1984,7 @@ async function showGameSelector() {
           badge.textContent = `${c}${cat.label}`;
           badge.title = `${c} ${cat.title}`;
           row.appendChild(badge);
+          shown++;
         }
       }
       return row;
