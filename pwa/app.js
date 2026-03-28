@@ -1309,7 +1309,9 @@ function showAnalysisProgress(jobId) {
     } else if (event.current != null && event.total != null) {
       el.textContent = `Analyzing ${analysisOffset + event.current}/${analysisTotalAll}`;
     } else if (event.phase === 'derive') {
-      el.textContent = 'Finalizing...';
+      // Per-game derivation done — reload data so badges + review + train are available
+      loadAnalysisData();
+      loadTrainingData();
     } else if (event.phase === 'analyze') {
       el.textContent = `Analyzing ${analysisOffset}/${analysisTotalAll}`;
     }

@@ -473,15 +473,19 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
     try:
         raw_ids = params.get("game_ids")
         game_ids = cast(list[str] | None, raw_ids) if raw_ids else None
+
+        def _on_game_done(game_id: str) -> None:
+            _push({"phase": "derive", "message": "Deriving training data...", "game_id": game_id})
+            annotate_and_derive()
+
         analyze_games(
             game_ids=game_ids,
             max_games=cast(int, params.get("max_games", 10)),
             reanalyze_all=cast(bool, params.get("reanalyze_all", False)),
             on_progress=on_progress,
+            on_game_done=_on_game_done,
             cancel=cancel,
         )
-        _push({"phase": "derive", "message": "Generating training data...", "percent": 92})
-        annotate_and_derive()
         job["status"] = "done"
     except AnalysisInterrupted as exc:
         _push({"phase": "interrupted", "message": str(exc), "percent": 100})
