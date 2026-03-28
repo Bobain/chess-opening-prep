@@ -560,6 +560,77 @@ def test_sacrifice_in_dominating_position_not_brilliant(page, pwa_url):
     )
 
 
+def test_missed_opportunity_classified_as_miss(page, pwa_url):
+    """When opponent blunders and player fails to capitalize, it's a 'miss'.
+
+    Scenario: opponent's previous move lost ≥15% wp (big blunder),
+    but player's response lost >5% wp (didn't find the punishment).
+    """
+    page.goto(pwa_url)
+    page.wait_for_selector(".game-card", timeout=10000)
+
+    # prevMove: opponent blundered (cp went from 0 to -300 from opponent's perspective)
+    # This means oppWpBefore ≈ 0.50, oppWpAfter ≈ 0.16 → oppEPL ≈ 0.34
+    # move: player responded poorly (cp 300 for white → 200 after, eplLost ≈ 0.07)
+    result = page.evaluate("""() => {
+        const prevMove = {
+            move_uci: 'd7d5',
+            eval_before: { score_cp: 0, is_mate: false, mate_in: null },
+            eval_after: { score_cp: 300, is_mate: false, mate_in: null },
+        };
+        return window._classifyMove(
+            {
+                move_san: 'Nf3',
+                move_uci: 'g1f3',
+                eval_before: { score_cp: 300, is_mate: false, mate_in: null },
+                eval_after: { score_cp: 200, is_mate: false, mate_in: null },
+            },
+            'white',
+            prevMove
+        );
+    }""")
+
+    assert result is not None, "classifyMove returned null for missed opportunity"
+    assert result["category"] == "miss", (
+        f"Missed opportunity classified as '{result['category']}' instead of 'miss'"
+    )
+    assert result["symbol"] == "\u00d7"
+    assert result["color"] == "#e06666"
+
+
+def test_correct_response_to_blunder_not_miss(page, pwa_url):
+    """When opponent blunders and player finds the right response, it's NOT a miss."""
+    page.goto(pwa_url)
+    page.wait_for_selector(".game-card", timeout=10000)
+
+    # prevMove: opponent blundered (oppEPL ≈ 0.34)
+    # move: player responded well (eplLost ≈ -0.01, position improved)
+    result = page.evaluate("""() => {
+        const prevMove = {
+            move_uci: 'd7d5',
+            eval_before: { score_cp: 0, is_mate: false, mate_in: null },
+            eval_after: { score_cp: 300, is_mate: false, mate_in: null },
+        };
+        return window._classifyMove(
+            {
+                move_san: 'dxe5',
+                move_uci: 'd4e5',
+                eval_before: { score_cp: 300, is_mate: false, mate_in: null },
+                eval_after: { score_cp: 310, is_mate: false, mate_in: null },
+            },
+            'white',
+            prevMove
+        );
+    }""")
+
+    assert result is not None
+    # Should be great (oppEPL ≈ 0.34, eplLost < 0, not recapture)
+    # or at least best/excellent — NOT miss
+    assert result["category"] != "miss", (
+        f"Correct response to blunder wrongly classified as 'miss'"
+    )
+
+
 # --- Game-level brilliant classification with F1 scoring ---
 
 import pathlib

@@ -1606,6 +1606,22 @@ function classifyMove(move, playerColor, prevMove) {
     }
   }
 
+  // Miss detection: opponent blundered but player failed to capitalize
+  // The opponent created an opportunity (lost ≥15% wp) but the player's response
+  // was significantly suboptimal (lost >5% wp compared to best move)
+  if (!isOpening && eplLost > 0.05 && prevMove
+      && prevMove.eval_before && prevMove.eval_after
+      && prevMove.eval_before.score_cp != null && prevMove.eval_after.score_cp != null
+      && !prevMove.eval_before.is_mate && !prevMove.eval_after.is_mate) {
+    const oppSign = -sign;
+    const oppWpBefore = winProb(prevMove.eval_before.score_cp * oppSign);
+    const oppWpAfter = winProb(prevMove.eval_after.score_cp * oppSign);
+    const oppEpl = oppWpBefore - oppWpAfter;
+    if (oppEpl >= 0.15) {
+      return { category: 'miss', symbol: '\u00d7', color: '#e06666' };
+    }
+  }
+
   if (eplLost <= 0) {
     return { category: 'best', symbol: '\u2605', color: '#96bc4b' };
   } else if (eplLost <= 0.02) {
@@ -1957,6 +1973,7 @@ async function showGameSelector() {
     const priorityCategories = [
       { key: 'brilliant', label: '!!', color: '#1baca6', title: 'brilliant moves' },
       { key: 'great', label: '!', color: '#5c9ced', title: 'great moves' },
+      { key: 'miss', label: '\u00d7', color: '#e06666', title: 'missed opportunities' },
       { key: 'best', label: '\u2605', color: '#96bc4b', title: 'best moves' },
       { key: 'mistake', label: '?', color: '#e6912a', title: 'mistakes' },
       { key: 'blunder', label: '??', color: '#ca3431', title: 'blunders' },
@@ -2484,7 +2501,7 @@ function renderScoreChart() {
   if (classifiedMoves) {
     for (let i = 0; i < moves.length; i++) {
       const cls = classifiedMoves[i];
-      if (cls && ['brilliant', 'inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(cls.category)) {
+      if (cls && ['brilliant', 'miss', 'inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(cls.category)) {
         const x = stepX * (i + 1);
         const cp = getEval(moves[i]);
         const y = cpToY(cp);
@@ -2616,7 +2633,7 @@ function renderScoreChartBase(ctx, w, h) {
   if (classifiedMoves) {
     for (let i = 0; i < moves.length; i++) {
       const cls = classifiedMoves[i];
-      if (cls && ['brilliant', 'inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(cls.category)) {
+      if (cls && ['brilliant', 'miss', 'inaccuracy', 'mistake', 'blunder', 'missed_win'].includes(cls.category)) {
         const x = stepX * (i + 1);
         const y = cpToY(getEval(moves[i]));
         ctx.beginPath();
