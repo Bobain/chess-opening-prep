@@ -167,4 +167,22 @@ GAMES: list[dict] = [
             97: "49.b Kc4 — not great, other",
         },
     },
+    {
+        "game_id": "priyadarshi_123_130248687713",
+        "brilliant_indices": [],
+        "great_indices": [24, 27, 35, 37, 40, 46, 51, 55, 58, 72],
+        "notes": {
+            24: "13.w Nxf6+ — great",
+            27: "14.b Qxe3+ — great",
+            35: "18.b Qxh3+ — great",
+            37: "19.b Rg8+ — great",
+            40: "21.w Ke1 — great",
+            46: "24.w Qxf7+ — great",
+            51: "26.b Qxg6 — great",
+            55: "28.b Nxa1 — great",
+            58: "30.w Bc4+ — great",
+            61: "31.b Rf2 — not great, other",
+            72: "37.w Nd3 — great",
+        },
+    },
 ]
