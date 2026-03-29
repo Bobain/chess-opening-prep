@@ -207,4 +207,14 @@ GAMES: list[dict] = [
             44: "23.w Ng3 — not great, other",
         },
     },
+    {
+        "game_id": "James11e_120858977974",
+        "brilliant_indices": [],
+        "great_indices": [38],  # 20.w Nxf5
+        "notes": {
+            20: "11.w cxd5 — not great, other",
+            24: "13.w Bc2 — not great, other",
+            38: "20.w Nxf5 — great",
+        },
+    },
 ]
