@@ -262,4 +262,15 @@ GAMES: list[dict] = [
             96: "49.w Kxe2 — great (not detected by classifier)",
         },
     },
+    {
+        "game_id": "miki19751975_121467758236",
+        "brilliant_indices": [],
+        "great_indices": [35, 39, 42, 47],  # 18.b Bc5, 20.b Bxf2+, 22.w Nxb2, 24.b Bxa1
+        "notes": {
+            35: "18.b Bc5 — great",
+            39: "20.b Bxf2+ — great",
+            42: "22.w Nxb2 — great (not detected by classifier)",
+            47: "24.b Bxa1 — great",
+        },
+    },
 ]
