@@ -1640,9 +1640,9 @@ function classifyMove(move, playerColor, prevMove) {
       const oppWpAfter = winProb(prevMove.eval_after.score_cp * oppSign);
       const oppEpl = oppWpBefore - oppWpAfter;
       // Opponent lost >= 15% win probability AND:
-      // - Player's response maintains or improves position (eplLost <= 0)
+      // - Player's response is good (outer gate eplLost <= 0.02 already applied)
       // - Not a trivial recapture on the same square
-      if (oppEpl >= 0.15 && eplLost <= 0) {
+      if (oppEpl >= 0.15) {
         const isRecapture = prevMove.move_uci && move.move_uci
           && prevMove.move_uci.slice(2, 4) === move.move_uci.slice(2, 4);
         if (!isRecapture) {
