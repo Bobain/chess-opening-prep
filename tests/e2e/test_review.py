@@ -639,7 +639,7 @@ from datetime import datetime, timezone
 from tests.e2e.brilliant_cases import GAMES as BRILLIANT_GAMES
 
 FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
-F1_LOG = pathlib.Path(__file__).parent / "brilliant_f1_log.md"
+F1_LOG = pathlib.Path(__file__).parent / "classification_f1_log.md"
 
 
 def _load_game_moves(game_id: str) -> list[dict]:
