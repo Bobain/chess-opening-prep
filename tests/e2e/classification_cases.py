@@ -126,4 +126,30 @@ GAMES: list[dict] = [
             117: "59.b Kd3 — great",
         },
     },
+    {
+        "game_id": "nugomira_125299724951",
+        "brilliant_indices": [],
+        "great_indices": [27, 36],  # 14.b dxe4, 19.w Bxe6+
+        "notes": {
+            27: "14.b dxe4 — great, captures after opponent error c3",
+            36: "19.w Bxe6+ — great, not brilliant (already winning +313cp)",
+        },
+    },
+    {
+        "game_id": "qkrtjdbf_125404778455",
+        "brilliant_indices": [36],  # 19.w Nxe6
+        "great_indices": [38],  # 20.w Bxf5
+        "notes": {
+            36: "19.w Nxe6 — brilliant sacrifice",
+            38: "20.w Bxf5 — great, follows up the sacrifice",
+        },
+    },
+    {
+        "game_id": "Galafr_121671787502",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {
+            29: "15.b Rxe5 — not brilliant, other",
+        },
+    },
 ]
