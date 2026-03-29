@@ -63,7 +63,13 @@ def main() -> None:
         browser = p.chromium.launch()
         page = browser.new_page()
         page.goto("http://localhost:8000")
-        page.wait_for_load_state("networkidle")
+        # Wait for full app init: game cards rendered means chess.js is loaded
+        page.wait_for_selector(".game-card", timeout=30000)
+        # Extra wait for JS init to complete
+        page.wait_for_function(
+            "() => typeof window._classifyMove === 'function'",
+            timeout=10000,
+        )
 
         for game_gt in GAMES:
             gid = game_gt["game_id"]
