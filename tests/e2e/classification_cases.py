@@ -301,4 +301,16 @@ GAMES: list[dict] = [
             75: "38.b Qf2# — great (not detected by classifier)",
         },
     },
+    {
+        "game_id": "YUSFAZAD12_121737277726",
+        "brilliant_indices": [],
+        "great_indices": [56, 61, 62, 81],  # 29.w Qxf7+, 31.b Qa1+, 32.w Rf1, 41.b Rxd2
+        "notes": {
+            20: "11.w Bd3 — not great, other",
+            56: "29.w Qxf7+ — great",
+            61: "31.b Qa1+ — great",
+            62: "32.w Rf1 — great (not detected by classifier)",
+            81: "41.b Rxd2 — great",
+        },
+    },
 ]
