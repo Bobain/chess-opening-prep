@@ -1822,12 +1822,19 @@ async function showGameSelector() {
     for (const m of game.moves) {
       if (m.opening_explorer && m.opening_explorer.moves) {
         for (const om of m.opening_explorer.moves) {
-          if (om.opening && om.opening.name && om.uci === m.move_uci) {
+          if (om && om.opening && om.opening.name && om.uci === m.move_uci) {
             name = om.opening.name;
           }
         }
       }
     }
+    // Fallback to PGN header opening name
+    if (!name && game.headers) {
+      name = game.headers.opening || game.headers.Opening || '';
+    }
+    // Truncate to opening family (before first colon)
+    const colonIdx = name.indexOf(':');
+    if (colonIdx > 0) name = name.slice(0, colonIdx).trim();
     return name;
   }
 
