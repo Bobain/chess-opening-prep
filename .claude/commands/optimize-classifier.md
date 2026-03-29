@@ -56,6 +56,8 @@ Present the proposed rules clearly with:
 - The rule in plain language
 - The rule in code-like pseudocode
 - Expected impact on FN and FP counts
+- **Expected complexity cost** (how many new thresholds, conditions, helpers)
+- **Expected regularized score impact**: score = macro_F1 - 0.10 × complexity / 50. A rule that adds 10 conditions for 0.01 F1 gain will LOWER the score — reject it.
 - Any tradeoffs
 
 Ask the user to validate the proposed rules before implementing.
@@ -65,8 +67,9 @@ Ask the user to validate the proposed rules before implementing.
 After user approval:
 1. Update `classifyMove()` in `pwa/app.js`
 2. Run `uv run pytest tests/e2e/test_review.py -v` — all tests must pass
-3. Print the new macro F1 vs the old one
-4. Commit with descriptive message
+3. Print BEFORE and AFTER: macro F1, complexity breakdown (thresholds + conditions + helpers), and regularized score
+4. The regularized score must not decrease — if it does, the change adds more complexity than value
+5. Commit with descriptive message
 
 ## Important rules
 

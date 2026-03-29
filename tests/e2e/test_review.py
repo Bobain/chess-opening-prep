@@ -770,7 +770,11 @@ COMPLEXITY_BUDGET = 50
 
 
 def _count_classifier_complexity() -> tuple[int, int, int, int]:
-    """Count classifier complexity by parsing classifyMove and its helpers in app.js.
+    """Count complexity of !! and ! classification by dynamic dependency analysis.
+
+    Parses classifyMove to find the code zone that produces 'brilliant' or 'great'
+    returns, identifies helper functions called in that zone, and counts thresholds
+    + conditions in all relevant code. No hardcoded function lists.
 
     Returns (n_thresholds, n_conditions, n_helpers, total_complexity).
     """
@@ -779,38 +783,64 @@ def _count_classifier_complexity() -> tuple[int, int, int, int]:
     app_js = pathlib.Path(__file__).parent.parent.parent / "pwa" / "app.js"
     code = app_js.read_text()
 
-    classifier_functions = ["classifyMove", "isSacrifice", "isMissedCapture"]
-    total_thresholds: set[str] = set()
-    total_conditions = 0
-    n_helpers = 0
-
-    for func_name in classifier_functions:
-        match = re.search(rf"function {func_name}\b", code)
+    def _extract_function(name: str) -> str:
+        """Extract a function body from source code by brace counting."""
+        match = re.search(rf"function {name}\b", code)
         if not match:
-            continue
-        # Extract function body by counting braces
+            return ""
         depth = 0
-        func_code = ""
         for i in range(match.start(), len(code)):
             if code[i] == "{":
                 depth += 1
             elif code[i] == "}":
                 depth -= 1
                 if depth == 0:
-                    func_code = code[match.start() : i + 1]
-                    break
-        # Count unique numeric thresholds in comparisons (e.g. >= 0.15, < -0.005, >= 3)
-        # Decimals
-        for t in re.findall(r"[<>=!]=?\s*(-?\d+\.\d+)", func_code):
-            total_thresholds.add(t)
-        # Integers > 2 (skip 0, 1, 2 which are trivial loop/index constants)
-        for t in re.findall(r"[<>=!]=?\s*(-?\d+)(?!\.\d)", func_code):
-            if abs(int(t)) > 2:
-                total_thresholds.add(t)
-        # Count conditions (if statements)
-        total_conditions += len(re.findall(r"\bif\s*\(", func_code))
+                    return code[match.start() : i + 1]
+        return ""
 
-        if func_name != "classifyMove":
+    def _count_in_code(src: str) -> tuple[set[str], int]:
+        """Count unique thresholds and conditions in a code fragment."""
+        thresholds: set[str] = set()
+        for t in re.findall(r"[<>=!]=?\s*(-?\d+\.\d+)", src):
+            thresholds.add(t)
+        for t in re.findall(r"[<>=!]=?\s*(-?\d+)(?!\.\d)", src):
+            if abs(int(t)) > 2:
+                thresholds.add(t)
+        conditions = len(re.findall(r"\bif\s*\(", src))
+        return thresholds, conditions
+
+    # 1. Extract classifyMove body
+    classify_body = _extract_function("classifyMove")
+
+    # 2. Find the "brilliant/great zone": from the start of classifyMove up to
+    #    (and including) the last return of 'brilliant' or 'great'. This captures
+    #    all setup code (eval extraction, wp model) + the detection logic itself.
+    last_bg_pos = 0
+    for cat in ("brilliant", "great"):
+        for match in re.finditer(rf"return\s*\{{\s*category:\s*'{cat}'", classify_body):
+            if match.end() > last_bg_pos:
+                last_bg_pos = match.end()
+    # Extend to the end of the line/statement after the last brilliant/great return
+    next_newline = classify_body.find("\n", last_bg_pos)
+    bg_zone = classify_body[: next_newline if next_newline > 0 else last_bg_pos]
+
+    # 3. Count thresholds and conditions in the brilliant/great zone
+    total_thresholds, total_conditions = _count_in_code(bg_zone)
+
+    # 4. Find helper functions called in the brilliant/great zone
+    #    (any identifier followed by '(' that exists as 'function X(' in app.js)
+    called = set(re.findall(r"\b([a-zA-Z_]\w+)\s*\(", bg_zone))
+    defined = set(re.findall(r"function\s+([a-zA-Z_]\w+)\s*\(", code))
+    helpers = called & defined - {"classifyMove"}
+    n_helpers = 0
+
+    # 5. Recursively count complexity in each helper
+    for helper_name in helpers:
+        helper_code = _extract_function(helper_name)
+        if helper_code:
+            h_thresholds, h_conditions = _count_in_code(helper_code)
+            total_thresholds |= h_thresholds
+            total_conditions += h_conditions
             n_helpers += 1
 
     return len(total_thresholds), total_conditions, n_helpers, len(total_thresholds) + total_conditions + n_helpers
