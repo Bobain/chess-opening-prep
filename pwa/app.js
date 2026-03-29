@@ -1514,7 +1514,8 @@ function isSacrifice(move) {
 
 /**
  * Check if the engine's best move was a capture winning material (missed opportunity).
- * Simulates the best move and recapture chain (max 3 exchanges on same square).
+ * Simulates the best move and follows the PV up to 8 plies, tracking all captures
+ * on any square (an exchange can remove a defender, enabling a capture elsewhere).
  * @param {Object} move - Move data (must have fen_before, move_uci, eval_before with PV).
  * @returns {boolean} True if best move was a capture with net material gain.
  */
@@ -1536,16 +1537,17 @@ function isMissedCapture(move) {
     });
     if (!firstResult || !firstResult.captured) return false;
 
-    // Simulate recapture chain on same square (max 3 total exchanges)
+    // Follow the PV up to 8 plies, tracking all captures on any square.
+    // An exchange on one square can leave another piece undefended elsewhere.
     let materialBalance = PIECE_VALUES[firstResult.captured];
-    const MAX_CHAIN = 8;
+    const MAX_PLIES = 8;
 
-    for (let k = 1; k < Math.min(eb.pv_uci.length, MAX_CHAIN); k++) {
-      const pvDest = eb.pv_uci[k].slice(2, 4);
-      if (pvDest !== bestTo) break;
+    for (let k = 1; k < Math.min(eb.pv_uci.length, MAX_PLIES); k++) {
       const promo = eb.pv_uci[k].length > 4 ? eb.pv_uci[k][4] : undefined;
       const result = chess.move({
-        from: eb.pv_uci[k].slice(0, 2), to: pvDest, promotion: promo,
+        from: eb.pv_uci[k].slice(0, 2),
+        to: eb.pv_uci[k].slice(2, 4),
+        promotion: promo,
       });
       if (!result) break;
       if (result.captured) {
