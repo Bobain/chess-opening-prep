@@ -14,6 +14,10 @@ Also extract the same data for the move BEFORE and the move AFTER each move (the
 
 Print a summary: TP/FP/FN counts for both brilliant and great, plus current macro F1.
 
+Also compute and display the **current regularized score** BEFORE any changes by running:
+`uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0`
+This prints: macro F1, complexity breakdown (thresholds + conditions + helpers), penalty, and regularized score. Save these BEFORE values for comparison in Step 5.
+
 ## Step 2: Deep chess analysis with 4 parallel agents
 
 Launch 4 specialized agents in parallel. Each receives moves with full 3-move context (move before, the move, move after) including FEN, Stockfish eval, best lines, and PV.
@@ -67,9 +71,21 @@ Ask the user to validate the proposed rules before implementing.
 After user approval:
 1. Update `classifyMove()` in `pwa/app.js`
 2. Run `uv run pytest tests/e2e/test_review.py -v` — all tests must pass
-3. Print BEFORE and AFTER: macro F1, complexity breakdown (thresholds + conditions + helpers), and regularized score
-4. The regularized score must not decrease — if it does, the change adds more complexity than value
-5. Commit with descriptive message
+3. Run `uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0` to get the AFTER metrics
+4. Print a clear BEFORE/AFTER comparison table:
+   ```
+   | Metric              | BEFORE | AFTER | Delta |
+   |---------------------|--------|-------|-------|
+   | Macro F1            |  0.488 | 0.xxx | +x.xx |
+   | Thresholds          |     14 |    xx |   +xx |
+   | Conditions          |     25 |    xx |   +xx |
+   | Helpers             |      2 |    xx |   +xx |
+   | Total complexity    |     38 |    xx |   +xx |
+   | Penalty             | -0.076 | -x.xx |       |
+   | Regularized score   |  0.412 | 0.xxx | +x.xx |
+   ```
+5. The regularized score must not decrease — if it does, the change adds more complexity than value. Reject and simplify.
+6. Commit with descriptive message including the before/after regularized scores
 
 ## Important rules
 
