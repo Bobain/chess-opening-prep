@@ -328,4 +328,18 @@ GAMES: list[dict] = [
             54: "28.w Rxd7+ — great (not detected by classifier)",
         },
     },
+    {
+        "game_id": "April_Incandenza_129308541535",
+        "brilliant_indices": [],
+        "great_indices": [28, 33, 45, 51],  # 15.w Bxd5, 17.b Qxd2, 23.b Nb4, 26.b axb3
+        "notes": {
+            28: "15.w Bxd5 — great",
+            33: "17.b Qxd2 — great (not detected by classifier)",
+            45: "23.b Nb4 — great (not detected by classifier)",
+            48: "25.w Rc1 — not great, other",
+            51: "26.b axb3 — great (not detected by classifier)",
+            57: "29.b c4 — not great, other",
+            60: "31.w Ke2 — not great, other",
+        },
+    },
 ]
