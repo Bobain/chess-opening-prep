@@ -764,7 +764,7 @@ def _classify_game(page, pwa_url, game_gt):
 # Minimum acceptable regularized score across all games (non-regression).
 # score = macro_F1 - λ × complexity / budget
 # This penalizes overfitting: adding rules that barely improve F1 is rejected.
-MIN_GLOBAL_SCORE = 0.30
+MIN_GLOBAL_SCORE = 0.60
 COMPLEXITY_LAMBDA = 0.10
 COMPLEXITY_BUDGET = 50
 
@@ -875,31 +875,47 @@ def _count_classifier_complexity() -> tuple[int, int, int, int]:
 
 def test_classification_macro_f1_regression(page, pwa_url):
     """Global non-regression: regularized score (F1 - complexity penalty) must not drop."""
-    macro_f1_scores = []
     total_brilliant = {"tp": 0, "fp": 0, "fn": 0}
     total_great = {"tp": 0, "fp": 0, "fn": 0}
+    total_moves = 0
 
     for game_gt in CLASSIFICATION_GAMES:
         classes, class_f1, macro_f1, errors = _classify_game(page, pwa_url, game_gt)
-        macro_f1_scores.append(macro_f1)
         for key in ("tp", "fp", "fn"):
             total_brilliant[key] += classes["brilliant"][key]
             total_great[key] += classes["great"][key]
+        moves = _load_game_moves(game_gt["game_id"])
+        total_moves += len(moves)
 
-    avg_macro_f1 = sum(macro_f1_scores) / len(macro_f1_scores)
+    # Global F1 per class (aggregated across all games, not averaged per game)
     _, _, brilliant_f1 = _compute_f1(total_brilliant["tp"], total_brilliant["fp"], total_brilliant["fn"])
     _, _, great_f1 = _compute_f1(total_great["tp"], total_great["fp"], total_great["fn"])
+
+    # "Other" class: FP_other = FN_brilliant + FN_great (moves expected !! or ! but predicted other)
+    #                FN_other = FP_brilliant + FP_great (moves predicted !! or ! but expected other)
+    #                TP_other = total_moves - TP_b - FP_b - FN_b - TP_g - FP_g - FN_g + ...
+    # Simpler: TP_other = total - all moves involved in brilliant/great errors or TPs
+    fp_other = total_brilliant["fn"] + total_great["fn"]
+    fn_other = total_brilliant["fp"] + total_great["fp"]
+    tp_other = total_moves - (total_brilliant["tp"] + total_brilliant["fn"]
+                              + total_great["tp"] + total_great["fn"]
+                              + fn_other)
+    _, _, other_f1 = _compute_f1(tp_other, fp_other, fn_other)
+
+    # True macro F1: average of F1 across all 3 classes (brilliant, great, other)
+    macro_f1 = (brilliant_f1 + great_f1 + other_f1) / 3
 
     # Complexity penalty
     n_thresholds, n_conditions, n_helpers, complexity = _count_classifier_complexity()
     penalty = COMPLEXITY_LAMBDA * complexity / COMPLEXITY_BUDGET
-    score = avg_macro_f1 - penalty
+    score = macro_f1 - penalty
 
     print(f"\n{'='*60}")
-    print(f"GLOBAL CLASSIFICATION SUMMARY ({len(CLASSIFICATION_GAMES)} games)")
+    print(f"GLOBAL CLASSIFICATION SUMMARY ({len(CLASSIFICATION_GAMES)} games, {total_moves} moves)")
     print(f"  Brilliant: TP={total_brilliant['tp']} FP={total_brilliant['fp']} FN={total_brilliant['fn']} F1={brilliant_f1:.3f}")
     print(f"  Great:     TP={total_great['tp']} FP={total_great['fp']} FN={total_great['fn']} F1={great_f1:.3f}")
-    print(f"  Average macro F1={avg_macro_f1:.3f}")
+    print(f"  Other:     TP={tp_other} FP={fp_other} FN={fn_other} F1={other_f1:.3f}")
+    print(f"  Macro F1={macro_f1:.3f} (average of 3 class F1s)")
     print(f"  Complexity: {complexity} ({n_thresholds} thresholds + {n_conditions} conditions + {n_helpers} helpers)")
     print(f"  Penalty: -{penalty:.3f} (λ={COMPLEXITY_LAMBDA}, budget={COMPLEXITY_BUDGET})")
     print(f"  Regularized score={score:.3f} (threshold={MIN_GLOBAL_SCORE})")
@@ -907,7 +923,7 @@ def test_classification_macro_f1_regression(page, pwa_url):
 
     assert score >= MIN_GLOBAL_SCORE, (
         f"Regularized score {score:.3f} dropped below threshold {MIN_GLOBAL_SCORE} "
-        f"(F1={avg_macro_f1:.3f}, complexity={complexity})"
+        f"(F1={macro_f1:.3f}, complexity={complexity})"
     )
 
 
