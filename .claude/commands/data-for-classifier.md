@@ -21,7 +21,7 @@ If no candidates found, inform the user and stop.
 
 For each candidate game, from oldest to newest (!! games first):
 
-1. Show game info: White vs Black, date, result, player color, number of moves
+1. Show game info: White vs Black, date, result, player color, number of moves, and the **game URL** (the full game_id from analysis_data.json, e.g. https://www.chess.com/game/live/123456)
 2. Show ONLY the moves classified as !! or ! in a table:
    ```
    Idx  Move#  Move      Category  cp before→after  PV (first 5 moves)
