@@ -152,4 +152,19 @@ GAMES: list[dict] = [
             29: "15.b Rxe5 — not brilliant, other",
         },
     },
+    {
+        "game_id": "tusharpanda_120991163310",
+        "brilliant_indices": [],
+        "great_indices": [35, 49, 51, 69, 71, 83],  # 18.b fxe3, 25.b Nxe3, 26.b Qb6, 35.b Rxc4, 36.b Qd4, 42.b Bd6
+        "notes": {
+            35: "18.b fxe3 — great",
+            47: "24.b Kg7 — not great, other",
+            49: "25.b Nxe3 — great",
+            51: "26.b Qb6 — great (not detected by classifier)",
+            69: "35.b Rxc4 — great",
+            71: "36.b Qd4 — great",
+            83: "42.b Bd6 — great (not detected by classifier)",
+            97: "49.b Kc4 — not great, other",
+        },
+    },
 ]
