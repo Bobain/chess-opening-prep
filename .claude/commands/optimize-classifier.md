@@ -36,6 +36,14 @@ Each agent must:
 - Propose quantitative criteria that could be implemented in code
 - Explicitly flag any rule that would be overfitting
 - Reference the TP analysis to ensure proposals don't break existing correct classifications
+- **Estimate the exact complexity cost** of each proposed rule. Complexity is computed by `_count_classifier_complexity()` in `tests/e2e/test_review.py` which dynamically parses `classifyMove()` and its helper functions in `app.js`:
+  - **Thresholds** = unique numeric constants in comparisons (e.g. `>= 0.15`, `< -0.005`). Counted as unique values across all relevant functions. Reusing an existing threshold (e.g. 0.02) costs 0.
+  - **Conditions** = number of `if(` statements in the brilliant/great code zone and its helpers
+  - **Helpers** = number of functions called from the brilliant/great zone (e.g. isSacrifice, winProb)
+  - **Total complexity** = thresholds + conditions + helpers
+  - **Regularized score** = macro_F1 - 0.10 × complexity / 50
+  - A rule that adds 5 conditions for 0.01 F1 gain will LOWER the score (penalty +0.01 > F1 gain +0.01). Such rules must be rejected or simplified.
+  - Removing a redundant condition REDUCES complexity and IMPROVES the score even with no F1 change.
 
 ## Step 3: Pattern synthesis
 
