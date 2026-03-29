@@ -434,4 +434,15 @@ GAMES: list[dict] = [
             102: "52.w Rb5 — great (not detected by classifier)",
         },
     },
+    {
+        "game_id": "KlausFischer_165660451248",
+        "brilliant_indices": [],
+        "great_indices": [34, 54],  # 18.w exf5, 28.w Qf4
+        "notes": {
+            26: "14.w Bxf6 — not great, other",
+            31: "16.b Rg8 — not great, other",
+            34: "18.w exf5 — great (not detected by classifier)",
+            54: "28.w Qf4 — great",
+        },
+    },
 ]
