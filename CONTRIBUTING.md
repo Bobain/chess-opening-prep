@@ -41,14 +41,14 @@ The PWA detects its mode automatically via `/api/status`. If a FastAPI backend r
 | **Launch** | Static hosting | `chess-self-coach` (FastAPI server) |
 | **Opponent response engine** | Stockfish WASM (browser) | Native Stockfish (backend API, depth 18) |
 | **Analysis depth default** | 12 | 18 |
-| **Data** | Sample `training_data.json` + `analysis_data.json` | Generated from your own games |
+| **Data** | Sample `data/training_data.json` + `data/analysis_data.json` | Generated from your own games |
 | **CLI tools** | None | fetch, analyze, train |
 | **Menu** | Training, Settings, About | Training, Refresh games, Settings, About |
 | **Default view** | Game list (from analysis_data.json) | Game list (auto-fetched at startup) |
 
 The **demo** showcases the training and analysis interfaces with sample data. Install the app to train on your own games.
 
-The **application** (`chess-self-coach`) starts a FastAPI backend that serves the PWA with API endpoints for native Stockfish analysis. The CLI also fetches games from Lichess/chess.com, runs batch Stockfish analysis (native, depth 18, multi-core), and generates your personal `training_data.json`.
+The **application** (`chess-self-coach`) starts a FastAPI backend that serves the PWA with API endpoints for native Stockfish analysis. The CLI also fetches games from Lichess/chess.com, runs batch Stockfish analysis (native, depth 18, multi-core), and generates your personal `data/training_data.json`.
 
 **Critical constraint**: never break the `[demo]`. All JS must work without a backend.
 
@@ -66,7 +66,7 @@ When developing a new feature:
 
 The PWA provides a game-list-centric workflow:
 
-- **Auto-fetch** at startup: `POST /api/games/fetch` retrieves games from Lichess/chess.com and caches them in `fetched_games.json`
+- **Auto-fetch** at startup: `POST /api/games/fetch` retrieves games from Lichess/chess.com and caches them in `data/fetched_games.json`
 - **Game list** is the default view: shows all games (fetched + analyzed), with checkboxes for batch selection
 - **"Analyze selected"** button sends chosen game IDs via `POST /api/analysis/start {game_ids}`
 - Progress displayed via **SSE** (Server-Sent Events) in a modal with a step checklist (init → analyze → finalize)

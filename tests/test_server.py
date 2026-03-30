@@ -13,6 +13,7 @@ import chess.engine
 from fastapi.testclient import TestClient
 
 from chess_self_coach import server
+from chess_self_coach.config import CONFIG_FILE, DATA_DIR
 from chess_self_coach.server import app
 
 
@@ -127,6 +128,7 @@ def test_training_data_served():
 
 def test_training_data_missing(tmp_path):
     """GET /training_data.json returns 404 when file is absent."""
+    (tmp_path / DATA_DIR).mkdir()
     with patch.object(server, "_project_root", tmp_path):
         resp = client.get("/training_data.json")
     assert resp.status_code == 404
@@ -315,7 +317,8 @@ def test_get_config(tmp_path):
         "players": {"lichess": "testuser", "chesscom": "testcom"},
         "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
     }
-    (tmp_path / "config.json").write_text(json.dumps(config))
+    (tmp_path / DATA_DIR).mkdir()
+    (tmp_path / DATA_DIR / CONFIG_FILE).write_text(json.dumps(config))
 
     original = server._project_root
     server._project_root = tmp_path
@@ -349,7 +352,8 @@ def test_update_config(tmp_path):
         "players": {"lichess": "old", "chesscom": "old"},
         "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
     }
-    config_path = tmp_path / "config.json"
+    (tmp_path / DATA_DIR).mkdir()
+    config_path = tmp_path / DATA_DIR / CONFIG_FILE
     config_path.write_text(json.dumps(config))
 
     original = server._project_root
@@ -378,7 +382,8 @@ def test_update_config_partial(tmp_path):
         "players": {"lichess": "old", "chesscom": "old"},
         "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
     }
-    config_path = tmp_path / "config.json"
+    (tmp_path / DATA_DIR).mkdir()
+    config_path = tmp_path / DATA_DIR / CONFIG_FILE
     config_path.write_text(json.dumps(config))
 
     original = server._project_root

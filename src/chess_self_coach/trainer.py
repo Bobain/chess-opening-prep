@@ -14,7 +14,7 @@ from pathlib import Path
 import chess
 
 from chess_self_coach.analysis import _atomic_write_json
-from chess_self_coach.config import _find_project_root
+from chess_self_coach.config import training_data_path
 from chess_self_coach.tablebase import (
     TablebaseResult,
     tablebase_context,
@@ -282,8 +282,7 @@ def refresh_explanations() -> None:
     Reads existing positions, rebuilds explanations using generate_explanation(),
     and writes back. SRS progress and all other fields are preserved.
     """
-    root = _find_project_root()
-    data_path = root / "training_data.json"
+    data_path = training_data_path()
 
     if not data_path.exists():
         print("No training data found. Run: chess-self-coach train --prepare", file=sys.stderr)
@@ -427,11 +426,8 @@ def refresh_explanations() -> None:
         print("  Run /review-training to verify text quality")
 
 
-def get_stats_data(project_root: Path) -> dict:
+def get_stats_data() -> dict:
     """Compute training statistics from training_data.json.
-
-    Args:
-        project_root: Path to the project root containing training_data.json.
 
     Returns:
         Dict with keys: generated, total, by_category, by_source.
@@ -439,7 +435,7 @@ def get_stats_data(project_root: Path) -> dict:
     Raises:
         FileNotFoundError: If training_data.json does not exist.
     """
-    data_path = project_root / "training_data.json"
+    data_path = training_data_path()
     if not data_path.exists():
         raise FileNotFoundError(f"No training data at {data_path}")
 
@@ -468,9 +464,8 @@ def get_stats_data(project_root: Path) -> dict:
 
 def print_stats() -> None:
     """Show training progress from training_data.json."""
-    root = _find_project_root()
     try:
-        stats = get_stats_data(root)
+        stats = get_stats_data()
     except FileNotFoundError:
         print(
             "No training data found. Run: chess-self-coach train --prepare",

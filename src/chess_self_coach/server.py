@@ -36,7 +36,14 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from chess_self_coach import __version__
-from chess_self_coach.config import _find_project_root, find_stockfish
+from chess_self_coach.config import (
+    ANALYSIS_DATA_FILE,
+    CONFIG_FILE,
+    DATA_DIR,
+    TRAINING_DATA_FILE,
+    _find_project_root,
+    find_stockfish,
+)
 
 # --- State ---
 
@@ -268,7 +275,7 @@ async def bestmove(req: BestMoveRequest) -> BestMoveResponse:
 @app.get("/api/config")
 async def get_config() -> ConfigResponse:
     """Return editable config fields (players, analysis)."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -284,7 +291,7 @@ async def get_config() -> ConfigResponse:
 @app.post("/api/config")
 async def update_config(req: ConfigUpdateRequest) -> ConfigResponse:
     """Update editable config fields (players, analysis). Preserves other fields."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -373,7 +380,7 @@ async def get_analysis_settings() -> AnalysisSettingsResponse:
 @app.post("/api/analysis/settings")
 async def update_analysis_settings(req: AnalysisSettingsResponse) -> AnalysisSettingsResponse:
     """Save analysis engine settings to config.json."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -544,7 +551,7 @@ async def job_cancel(job_id: str):
 @app.get("/training_data.json")
 async def training_data():
     """Serve training data directly from project root (always fresh)."""
-    path = _project_root / "training_data.json"
+    path = _project_root / DATA_DIR / TRAINING_DATA_FILE
     if not path.exists():
         raise HTTPException(status_code=404, detail="No training data. Run: chess-self-coach train --prepare")
     return FileResponse(path, media_type="application/json")
@@ -553,7 +560,7 @@ async def training_data():
 @app.get("/analysis_data.json")
 async def analysis_data():
     """Serve analysis data directly from project root (always fresh)."""
-    path = _project_root / "analysis_data.json"
+    path = _project_root / DATA_DIR / ANALYSIS_DATA_FILE
     if not path.exists():
         raise HTTPException(status_code=404, detail="No analysis data. Run: chess-self-coach train --analyze")
     return FileResponse(path, media_type="application/json")

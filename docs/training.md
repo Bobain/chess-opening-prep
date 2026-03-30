@@ -134,4 +134,4 @@ Uses a win probability model (chess.com-style): `winProb(cp) = 1 / (1 + 10^(-cp/
 
 ### Data source
 
-Analysis mode reads `analysis_data.json` (full per-move analysis from the pipeline). In [demo] mode, a sample file is bundled. In [app] mode, served fresh via `GET /analysis_data.json`.
+Analysis mode reads `data/analysis_data.json` (full per-move analysis from the pipeline). In [demo] mode, a sample file is bundled. In [app] mode, served fresh via `GET /analysis_data.json`.

@@ -23,8 +23,8 @@ flowchart LR
     end
 
     subgraph Storage
-        AD[analysis_data.json<br/>all moves, max granularity]
-        TD[training_data.json<br/>filtered mistakes]
+        AD[data/analysis_data.json<br/>all moves, max granularity]
+        TD[data/training_data.json<br/>filtered mistakes]
         LS[localStorage<br/>SRS state per position]
     end
 

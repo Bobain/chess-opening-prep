@@ -13,7 +13,9 @@ from pathlib import Path
 import chess
 import pytest
 
-TRAINING_DATA_PATH = Path(__file__).parent.parent / "training_data.json"
+from chess_self_coach.config import DATA_DIR, TRAINING_DATA_FILE
+
+TRAINING_DATA_PATH = Path(__file__).parent.parent / DATA_DIR / TRAINING_DATA_FILE
 
 
 @pytest.fixture(scope="module")

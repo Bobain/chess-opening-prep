@@ -16,6 +16,7 @@ from pathlib import Path
 
 from playwright.sync_api import expect
 
+from chess_self_coach.config import DATA_DIR, TRAINING_DATA_FILE
 from tests.e2e.conftest import make_move
 
 BOARD_TIMEOUT = 20000
@@ -41,7 +42,7 @@ def _wait_for_animation(page):
 
 def _get_first_position():
     """Load the first position from real training data."""
-    data_path = PROJECT_ROOT / "training_data.json"
+    data_path = PROJECT_ROOT / DATA_DIR / TRAINING_DATA_FILE
     if not data_path.exists():
         return None
     with open(data_path) as f:

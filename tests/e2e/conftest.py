@@ -25,6 +25,13 @@ from unittest.mock import patch
 import pytest
 from playwright.sync_api import Page
 
+from chess_self_coach.config import (
+    ANALYSIS_DATA_FILE,
+    CONFIG_FILE,
+    DATA_DIR,
+    TRAINING_DATA_FILE,
+)
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 PWA_DIR = PROJECT_ROOT / "pwa"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -98,11 +105,11 @@ def pwa_real_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
 
     Skips if training_data.json doesn't exist.
     """
-    real_data = PROJECT_ROOT / "training_data.json"
+    real_data = PROJECT_ROOT / DATA_DIR / TRAINING_DATA_FILE
     if not real_data.exists():
-        pytest.skip("training_data.json not found (run train --prepare first)")
+        pytest.skip(f"{DATA_DIR}/{TRAINING_DATA_FILE} not found (run train --prepare first)")
     tmp_dir = tmp_path_factory.mktemp("pwa_e2e_real")
-    real_analysis = PROJECT_ROOT / "analysis_data.json"
+    real_analysis = PROJECT_ROOT / DATA_DIR / ANALYSIS_DATA_FILE
     _copy_pwa_files(
         tmp_dir,
         real_data,
@@ -125,12 +132,14 @@ def app_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
 
     from chess_self_coach.server import app
 
-    # Create temp dir mimicking project root
+    # Create temp dir mimicking project root with data/ subdirectory
     tmp_dir = tmp_path_factory.mktemp("app_e2e")
-    shutil.copy2(FIXTURES_DIR / "training_data.json", tmp_dir / "training_data.json")
-    analysis_fixture = FIXTURES_DIR / "analysis_data.json"
+    data_dir = tmp_dir / DATA_DIR
+    data_dir.mkdir()
+    shutil.copy2(FIXTURES_DIR / TRAINING_DATA_FILE, data_dir / TRAINING_DATA_FILE)
+    analysis_fixture = FIXTURES_DIR / ANALYSIS_DATA_FILE
     if analysis_fixture.exists():
-        shutil.copy2(analysis_fixture, tmp_dir / "analysis_data.json")
+        shutil.copy2(analysis_fixture, data_dir / ANALYSIS_DATA_FILE)
     for pgn in FIXTURES_DIR.glob("*.pgn"):
         shutil.copy2(pgn, tmp_dir / pgn.name)
     (tmp_dir / "pwa").symlink_to(PWA_DIR)
@@ -141,7 +150,7 @@ def app_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
         "players": {"lichess": "testuser", "chesscom": "testcom"},
         "analysis": {"default_depth": 18, "blunder_threshold": 1.0},
     }
-    (tmp_dir / "config.json").write_text(json.dumps(test_config, indent=2))
+    (data_dir / CONFIG_FILE).write_text(json.dumps(test_config, indent=2))
 
     # Find a free port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

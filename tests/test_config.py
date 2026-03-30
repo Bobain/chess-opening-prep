@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 
 from chess_self_coach.config import (
+    CONFIG_FILE,
+    DATA_DIR,
     load_config,
     load_lichess_token,
 )
@@ -27,7 +29,7 @@ def test_load_config_missing(tmp_path, monkeypatch):
 def test_load_config_invalid_json(tmp_project, monkeypatch):
     """Invalid JSON in config.json triggers SystemExit."""
     monkeypatch.setattr("chess_self_coach.config._find_project_root", lambda: tmp_project)
-    (tmp_project / "config.json").write_text("{invalid json!!!")
+    (tmp_project / DATA_DIR / CONFIG_FILE).write_text("{invalid json!!!")
     with pytest.raises(SystemExit):
         load_config()
 

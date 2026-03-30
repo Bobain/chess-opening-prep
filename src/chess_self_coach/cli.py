@@ -215,8 +215,8 @@ def _setup() -> None:
     import json
 
     from chess_self_coach.config import (
-        _find_project_root,
         check_stockfish_version,
+        config_path,
         find_stockfish,
     )
 
@@ -268,11 +268,11 @@ def _setup() -> None:
         sys.exit(1)
 
     # Write config
-    root = _find_project_root()
+    cfg_path = config_path()
+    cfg_path.parent.mkdir(parents=True, exist_ok=True)
     config: dict = {}
-    config_path = root / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
+    if cfg_path.exists():
+        with open(cfg_path) as f:
             config = json.load(f)
 
     config["stockfish"] = {"path": str(sf_path)}
@@ -286,18 +286,20 @@ def _setup() -> None:
     # Remove legacy studies section if present
     config.pop("studies", None)
 
-    with open(config_path, "w") as f:
+    with open(cfg_path, "w") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
     # Write .env if token provided
     if lichess_token:
-        env_path = root / ".env"
+        from chess_self_coach.config import _find_project_root
+
+        env_path = _find_project_root() / ".env"
         with open(env_path, "w") as f:
             f.write(f"LICHESS_API_TOKEN={lichess_token}\n")
         print(f"\n  ✓ Token saved to {env_path}")
 
-    print(f"  ✓ Config saved to {config_path}")
+    print(f"  ✓ Config saved to {cfg_path}")
     print("\n  Setup complete! Run 'chess-self-coach train --prepare' to start.\n")
 
 

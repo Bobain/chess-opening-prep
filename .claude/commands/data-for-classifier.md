@@ -5,13 +5,13 @@ Argument: $ARGUMENTS is the minimum number of ! (great) moves to include a game.
 ## Step 1: Find candidates using the REAL JS classifier
 
 Run a Python+Playwright script that:
-- Loads `analysis_data.json` and the existing ground truth from `tests/e2e/classification_cases.py`
+- Loads `data/analysis_data.json` and the existing ground truth from `tests/e2e/classification_cases.py`
 - Starts a Playwright browser, loads `http://localhost:8000` (the real PWA)
 - For EACH game not already in the ground truth:
   - Calls `window._classifyMove(m, side, prevMove)` on every move (the REAL classifier)
   - Counts brilliant (!!) and great (!) moves
 - Filters: games with ≥1 brilliant OR ≥N great (N from $ARGUMENTS, default 4)
-- **Game ID matching**: `analysis_data.json` uses URLs like `https://www.chess.com/game/live/123456`, ground truth uses `opponent_123456`. Extract the numeric ID from the URL and match against existing `game_id` values to avoid duplicates.
+- **Game ID matching**: `data/analysis_data.json` uses URLs like `https://www.chess.com/game/live/123456`, ground truth uses `opponent_123456`. Extract the numeric ID from the URL and match against existing `game_id` values to avoid duplicates.
 - Sorts: games with !! first, then by date (oldest first)
 - Prints summary: "Found X candidates (Y with !!, Z with ≥N !)"
 
@@ -33,7 +33,7 @@ For each candidate game, from oldest to newest (!! games first):
 
 After the user labels a game:
 
-1. Extract moves from `analysis_data.json` in the simplified format used by the ground truth:
+1. Extract moves from `data/analysis_data.json` in the simplified format used by the ground truth:
    - `fen_before`, `move_san`, `move_uci`, `side`, `in_opening`
    - `eval_before`: only `score_cp, is_mate, mate_in, best_move_uci, pv_uci, pv_san`
    - `eval_after`: only `score_cp, is_mate, mate_in`

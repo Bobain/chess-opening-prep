@@ -29,7 +29,7 @@ curl -H "Authorization: Bearer lip_your_token" https://lichess.org/api/account
 
 ```bash
 # Create your personal config from the template
-cp config.example.json config.json
+cp data/config.example.json data/config.json
 
 # Save your Lichess token
 cp .env.example .env
@@ -45,10 +45,10 @@ The `setup` command will:
 2. Download Syzygy endgame tablebases (3-5 pieces, ~1 GB) if not already installed
 3. Ask for your Lichess username and API token
 4. Ask for your chess.com username
-5. Save your personal configuration to `config.json`
+5. Save your personal configuration to `data/config.json`
 
 !!! note
-    Both `config.json` and `.env` are gitignored — they contain your personal data (API token, usernames) and will never be pushed to the repository.
+    Both `data/config.json` and `.env` are gitignored — they contain your personal data (API token, usernames) and will never be pushed to the repository.
 
 ## 4. Verify
 

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import chess.pgn
 
+from chess_self_coach.config import ANALYSIS_DATA_FILE, DATA_DIR, FETCHED_GAMES_FILE
 from chess_self_coach.game_cache import fetch_and_cache_games, get_unified_game_list
 
 
@@ -42,10 +43,12 @@ def _seed_cache(tmp_path: Path, games: list[dict]) -> None:
             "source": "chess.com",
         }
     cache = {"fetched_at": "2026-03-27T00:00:00+00:00", "games": cache_games}
-    (tmp_path / "fetched_games.json").write_text(json.dumps(cache))
+    data_dir = tmp_path / DATA_DIR
+    data_dir.mkdir(exist_ok=True)
+    (data_dir / FETCHED_GAMES_FILE).write_text(json.dumps(cache))
 
 
-@patch("chess_self_coach.game_cache._find_project_root")
+@patch("chess_self_coach.config._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
 def test_merge_preserves_existing_cache(mock_lichess, mock_root, tmp_path):
     """Fetching new games preserves previously cached games."""
@@ -65,7 +68,7 @@ def test_merge_preserves_existing_cache(mock_lichess, mock_root, tmp_path):
         summaries = fetch_and_cache_games("", "Player", max_games=10)
 
     # Cache should have 3 games total (2 old + 1 new)
-    cache = json.loads((tmp_path / "fetched_games.json").read_text())
+    cache = json.loads((tmp_path / DATA_DIR / FETCHED_GAMES_FILE).read_text())
     assert len(cache["games"]) == 3
     assert "https://chess.com/game/1" in cache["games"]
     assert "https://chess.com/game/2" in cache["games"]
@@ -75,7 +78,7 @@ def test_merge_preserves_existing_cache(mock_lichess, mock_root, tmp_path):
     assert len(summaries) == 3
 
 
-@patch("chess_self_coach.game_cache._find_project_root")
+@patch("chess_self_coach.config._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
 def test_fetch_count_includes_cache_size(mock_lichess, mock_root, tmp_path):
     """fetch_count passed to API = max_games + cached_count."""
@@ -101,7 +104,7 @@ def test_fetch_count_includes_cache_size(mock_lichess, mock_root, tmp_path):
 
 
 @patch("chess_self_coach.config.load_config", return_value={"players": {}})
-@patch("chess_self_coach.game_cache._find_project_root")
+@patch("chess_self_coach.config._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
 def test_unified_list_includes_cached_only_games(mock_lichess, mock_root, mock_config, tmp_path):
     """get_unified_game_list returns cached-but-not-analyzed games."""
@@ -113,14 +116,14 @@ def test_unified_list_includes_cached_only_games(mock_lichess, mock_root, mock_c
         for i in range(1, 4)
     ])
     # Empty analysis_data.json
-    (tmp_path / "analysis_data.json").write_text(json.dumps({"version": 1, "games": {}}))
+    (tmp_path / DATA_DIR / ANALYSIS_DATA_FILE).write_text(json.dumps({"version": 1, "games": {}}))
 
     summaries = get_unified_game_list(limit=9999)
     assert len(summaries) == 3
     assert all(not s.analyzed for s in summaries)
 
 
-@patch("chess_self_coach.game_cache._find_project_root")
+@patch("chess_self_coach.config._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
 def test_fetch_latest_adds_new_recent_games(mock_lichess, mock_root, tmp_path):
     """'Fetch latest' adds newly played games not yet in cache."""
@@ -142,12 +145,12 @@ def test_fetch_latest_adds_new_recent_games(mock_lichess, mock_root, tmp_path):
     with patch("chess_self_coach.importer.fetch_chesscom_games", return_value=games):
         summaries = fetch_and_cache_games("", "P", max_games=200)
 
-    cache = json.loads((tmp_path / "fetched_games.json").read_text())
+    cache = json.loads((tmp_path / DATA_DIR / FETCHED_GAMES_FILE).read_text())
     assert len(cache["games"]) == 3
     assert "https://chess.com/game/NEW" in cache["games"]
 
 
-@patch("chess_self_coach.game_cache._find_project_root")
+@patch("chess_self_coach.config._find_project_root")
 @patch("chess_self_coach.importer.fetch_lichess_games", return_value=[])
 def test_fetch_n_adds_older_games(mock_lichess, mock_root, tmp_path):
     """'Fetch N games' with large N adds older games beyond cache."""
@@ -170,7 +173,7 @@ def test_fetch_n_adds_older_games(mock_lichess, mock_root, tmp_path):
     with patch("chess_self_coach.importer.fetch_chesscom_games", return_value=games):
         summaries = fetch_and_cache_games("", "P", max_games=2)
 
-    cache = json.loads((tmp_path / "fetched_games.json").read_text())
+    cache = json.loads((tmp_path / DATA_DIR / FETCHED_GAMES_FILE).read_text())
     # Should have 4 total: 2 cached + 2 new older
     assert len(cache["games"]) == 4
     assert "https://chess.com/game/old1" in cache["games"]

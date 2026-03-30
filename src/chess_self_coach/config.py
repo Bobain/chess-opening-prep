@@ -16,12 +16,19 @@ from typing import Any, NoReturn
 
 from dotenv import load_dotenv
 
-# Resolve project root: walk up from this file to find config.json,
-# or fall back to cwd.
+# Resolve project root: walk up from cwd to find pyproject.toml,
+# or fall back to cwd. Data files live under DATA_DIR.
 _THIS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = _THIS_DIR.parent.parent  # src/chess_self_coach -> src -> root
 
+DATA_DIR = "data"
+
 CONFIG_FILE = "config.json"
+CONFIG_EXAMPLE_FILE = "config.example.json"
+ANALYSIS_DATA_FILE = "analysis_data.json"
+TRAINING_DATA_FILE = "training_data.json"
+FETCHED_GAMES_FILE = "fetched_games.json"
+
 ENV_FILE = ".env"
 ENV_EXAMPLE = ".env.example"
 
@@ -34,12 +41,57 @@ _SF_SEARCH_PATHS = [
 
 
 def _find_project_root() -> Path:
-    """Find the project root by looking for config.json, walking up from cwd."""
+    """Find the project root by looking for pyproject.toml, walking up from cwd."""
     cwd = Path.cwd()
     for parent in [cwd, *cwd.parents]:
-        if (parent / CONFIG_FILE).exists():
+        if (parent / "pyproject.toml").exists():
             return parent
     return cwd
+
+
+def data_dir() -> Path:
+    """Return the data directory path.
+
+    Returns:
+        Path to the data/ directory in the project root.
+    """
+    return _find_project_root() / DATA_DIR
+
+
+def config_path() -> Path:
+    """Return the path to config.json.
+
+    Returns:
+        Path to data/config.json.
+    """
+    return data_dir() / CONFIG_FILE
+
+
+def analysis_data_path() -> Path:
+    """Return the path to analysis_data.json.
+
+    Returns:
+        Path to data/analysis_data.json.
+    """
+    return data_dir() / ANALYSIS_DATA_FILE
+
+
+def training_data_path() -> Path:
+    """Return the path to training_data.json.
+
+    Returns:
+        Path to data/training_data.json.
+    """
+    return data_dir() / TRAINING_DATA_FILE
+
+
+def fetched_games_path() -> Path:
+    """Return the path to fetched_games.json.
+
+    Returns:
+        Path to data/fetched_games.json.
+    """
+    return data_dir() / FETCHED_GAMES_FILE
 
 
 def error_exit(message: str, hint: str | None = None, debug_cmd: str | None = None) -> NoReturn:
@@ -60,7 +112,7 @@ def error_exit(message: str, hint: str | None = None, debug_cmd: str | None = No
 
 
 def load_config() -> dict[str, Any]:
-    """Load config.json from the project root.
+    """Load config.json from the data directory.
 
     Returns:
         Parsed config dictionary.
@@ -68,23 +120,32 @@ def load_config() -> dict[str, Any]:
     Raises:
         SystemExit: If config.json is missing or invalid.
     """
-    root = _find_project_root()
-    config_path = root / CONFIG_FILE
+    cfg = config_path()
 
-    if not config_path.exists():
+    if not cfg.exists():
+        # Migration hint: detect old location at project root
+        root = _find_project_root()
+        old_path = root / CONFIG_FILE
+        if old_path.exists():
+            error_exit(
+                "config.json found at old location (project root).",
+                hint=f"Move it to the data directory:\n"
+                f"  mkdir -p {root / DATA_DIR}\n"
+                f"  mv {old_path} {cfg}",
+            )
         error_exit(
             "config.json not found.",
             hint=f"Run 'chess-self-coach setup' to create it,\n"
-            f"  or copy config.json.example to {config_path}",
+            f"  or copy {root / DATA_DIR / CONFIG_EXAMPLE_FILE} to {cfg}",
         )
 
     try:
-        with open(config_path) as f:
+        with open(cfg) as f:
             return json.load(f)
     except json.JSONDecodeError as e:
         error_exit(
             f"config.json is not valid JSON: {e}",
-            hint=f"Check the syntax in {config_path}",
+            hint=f"Check the syntax in {cfg}",
         )
 
 
@@ -94,12 +155,12 @@ def save_config(config: dict[str, Any]) -> None:
     Args:
         config: The config dictionary to save.
     """
-    root = _find_project_root()
-    config_path = root / CONFIG_FILE
-    with open(config_path, "w") as f:
+    cfg = config_path()
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    with open(cfg, "w") as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
         f.write("\n")
-    print(f"  Config saved to {config_path}")
+    print(f"  Config saved to {cfg}")
 
 
 def load_lichess_token(required: bool = True) -> str | None:

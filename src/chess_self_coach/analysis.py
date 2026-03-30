@@ -24,7 +24,7 @@ import chess.pgn
 
 from chess_self_coach import worker_count
 from chess_self_coach.cloud_eval import query_cloud_eval
-from chess_self_coach.config import _find_project_root
+from chess_self_coach.config import analysis_data_path as _default_analysis_path
 from chess_self_coach.constants import (
     ANALYSIS_LIMITS,
     ANALYSIS_TIME_LIMIT,
@@ -121,13 +121,13 @@ def load_analysis_data(path: Path | None = None) -> dict:
     """Load analysis_data.json, returning empty structure if not found.
 
     Args:
-        path: Path to analysis_data.json. Defaults to project root.
+        path: Path to analysis_data.json. Defaults to data directory.
 
     Returns:
         Parsed dict with at least {version, player, games}.
     """
     if path is None:
-        path = _find_project_root() / "analysis_data.json"
+        path = _default_analysis_path()
     if not path.exists():
         return {"version": "1.0", "player": {}, "games": {}}
     try:
@@ -143,21 +143,12 @@ def save_analysis_data(data: dict, path: Path | None = None) -> None:
 
     Args:
         data: Full analysis data dict.
-        path: Target path. Defaults to project root.
+        path: Target path. Defaults to data directory.
     """
     if path is None:
-        path = _find_project_root() / "analysis_data.json"
+        path = _default_analysis_path()
     data["version"] = "1.0"
     _atomic_write_json(path, data)
-
-
-def analysis_data_path() -> Path:
-    """Return the default path for analysis_data.json.
-
-    Returns:
-        Path to analysis_data.json in the project root.
-    """
-    return _find_project_root() / "analysis_data.json"
 
 
 def settings_match(stored: dict, current: dict) -> bool:
@@ -787,7 +778,7 @@ def analyze_games(
         cancel: Threading event for cancellation.
     """
     from chess_self_coach.config import (
-        _find_project_root,
+        analysis_data_path,
         check_stockfish_version,
         find_stockfish,
         load_config,
@@ -835,8 +826,7 @@ def analyze_games(
     # Load Lichess token for Opening Explorer
     lichess_token = load_lichess_token(required=False)
 
-    root = _find_project_root()
-    analysis_path = root / "analysis_data.json"
+    analysis_path = analysis_data_path()
 
     # Load existing analysis data
     existing_data = load_analysis_data(analysis_path)
@@ -1122,7 +1112,11 @@ def annotate_and_derive(
     """
     import hashlib
 
-    from chess_self_coach.config import _find_project_root, load_config
+    from chess_self_coach.config import (
+        analysis_data_path,
+        load_config,
+        training_data_path,
+    )
     from chess_self_coach.trainer import (
         _classify_mistake,
         _format_score_cp,
@@ -1131,11 +1125,10 @@ def annotate_and_derive(
         generate_explanation,
     )
 
-    root = _find_project_root()
     if analysis_path is None:
-        analysis_path = root / "analysis_data.json"
+        analysis_path = analysis_data_path()
     if output_path is None:
-        output_path = root / "training_data.json"
+        output_path = training_data_path()
 
     # Load analysis data
     analysis_data = load_analysis_data(analysis_path)

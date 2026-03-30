@@ -121,7 +121,7 @@ chess-self-coach setup                  # interactive configuration wizard
 ## Data & Privacy
 
 - Your games are fetched from public APIs (Lichess, chess.com)
-- `training_data.json` and `analysis_data.json` are stored locally (gitignored)
+- `data/training_data.json` and `data/analysis_data.json` are stored locally (gitignored)
 - Drill progress is in your browser's localStorage
 - No server, no account, no tracking
 
