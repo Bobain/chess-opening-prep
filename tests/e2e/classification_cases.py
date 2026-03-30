@@ -565,4 +565,14 @@ GAMES: list[dict] = [
             24: "Nc7 — great",
         },
     },
+    {
+        "game_id": "BogdanM55_165680289350",
+        "brilliant_indices": [34],  # 18.w Nxf5
+        "great_indices": [30, 36],  # 16.w Nd6, 19.w Be4
+        "notes": {
+            30: "Nd6 — great",
+            34: "Nxf5 — brilliant",
+            36: "Be4 — great",
+        },
+    },
 ]
