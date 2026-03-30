@@ -1,101 +1,129 @@
-Analyze classification errors across the full ground truth dataset using per-position chess analysis, find common patterns, and derive improved rules for the !! and ! classifier.
+Iteratively optimize the !! and ! classifier using parallel worktree experiments. Each iteration tests 4 hypotheses in isolated git worktrees, collects real scores, extracts learnings, and uses them to generate better hypotheses.
 
-**Goal**: maximize regularized score = macro_F1 - 0.10 × complexity / 50. Rules must be simple and explainable to a 1200 ELO player. NO OVERFITTING.
+**Goal**: maximize regularized score = macro_F1 - 0.10 * complexity / 50. Rules must be simple and explainable to a 1200 ELO player. NO OVERFITTING.
 
-**Macro F1 definition**: computed globally (all TP/FP/FN aggregated across ALL games, not per-game averages) for 2 classes: `brilliant` and `great`. F1 is calculated per class, then macro F1 = (F1_brilliant + F1_great) / 2. F1_other is excluded because it's ~0.97 constant (95% of moves are "other") and double-counts errors already penalized by F1_brilliant and F1_great (FP_great = FN_other).
+**Macro F1**: (F1_brilliant + F1_great) / 2, computed globally (aggregate TP/FP/FN across ALL games). F1_other excluded (redundant, double-counts errors).
 
-## Step 1: Collect data + BEFORE score
+**Limits**: max 20 total attempts (5 iterations x 4 parallel). Stop early if best score hasn't improved for 2 consecutive iterations.
 
-Run `/collect-classifier-data` to get all TP/FP/FN moves with enriched features.
+---
 
-This outputs:
-- `/tmp/classifier_data.json` — all !! and ! classified moves with features
-- Feature statistics printed to stdout (median/mean per TP/FP/FN for each feature)
-- `/tmp/batch_*.txt` — human-readable batches for agent analysis
+## Step 1: Collect data + BEFORE baseline
 
-**Features available per move** (computed by `collect_classifier_data.py`):
-- **Win probability**: `wp_before`, `wp_after`, `epl_lost`, `wp_gain`, `opp_epl`
-- **Centipawn**: `cp_gain` (raw cp change from player's perspective)
-- **Move properties**: `is_sacrifice` (from JS `isSacrifice()`), `is_recapture`, `is_capture`, `is_check`, `is_promotion`, `piece_moved`, `pv_len`
-- **Context**: `prev_classification`, `in_opening`, `is_best`
+Run `/collect-classifier-data` to get `/tmp/classifier_data.json` with enriched features.
 
-Also note the BEFORE baseline: macro F1, complexity breakdown, regularized score (from the test).
+Then run the regression test for the BEFORE baseline:
+```bash
+uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0
+```
 
-## Step 2: Feature analysis (data-driven)
+Record in `/tmp/optimizer_state.md`:
+- BEFORE score, macro_f1, complexity breakdown
+- Feature statistics summary (key separating features between TP/FP/FN)
+- Initial observations and promising directions
 
-**Before launching agents, analyze the feature statistics yourself.** The collection script prints distributions per TP/FP/FN for each feature. Look for:
+## Step 2: Generate 4 hypotheses
 
-1. **Separating features**: features where TP and FP/FN have very different distributions (e.g. "FP great have median opp_epl=0.03, TP great have median opp_epl=0.25" → the threshold 0.15 is too low)
-2. **Unused signals**: features that strongly correlate with ground truth but are NOT in the current classifier (e.g. `pv_len`, `cp_gain`, `piece_moved`)
-3. **Threshold tuning**: existing thresholds that could be tightened or relaxed based on the data
-4. **Feature combinations**: two features that together separate TP from FP better than either alone
+Based on feature statistics AND accumulated learnings from previous iterations, generate **4 distinct hypotheses**. Each hypothesis is a small, targeted change to `classifyMove()` in `pwa/app.js`.
 
-Write a summary of findings BEFORE proposing rules. This is the feature engineering step.
+For each hypothesis, write in `/tmp/optimizer_state.md`:
+- Plain language description
+- Pseudocode of the change
+- Which FP/FN it targets
+- Estimated complexity cost
 
-## Step 3: Per-position chess analysis (parallel agents)
+**Diversity**: the 4 hypotheses should explore different directions:
+- One might tune an existing threshold
+- One might add a new condition to reduce FP
+- One might add a new detection path to recover FN
+- One might simplify (remove conditions) to reduce complexity
 
-Read `/tmp/classifier_data.json`. Launch general-purpose agents in parallel to analyze FN and FP moves.
+## Step 3: Parallel worktree experiments
 
-**Focus on errors**: agents should analyze FP and FN moves, not TP (TP already works). For each error:
-- FP: why this is NOT really !! or ! — what makes it routine despite high metrics
-- FN: why this SHOULD be !! or ! — what signal the classifier is missing
+Launch **4 Agent calls in a single message** with `isolation: "worktree"`. Each agent receives:
 
-Each move includes all features listed above. The agent should identify which features could distinguish this error from correct classifications.
+```
+You are testing a classifier optimization hypothesis in an isolated worktree.
 
-**Batching**: ~10-15 positions per agent, mixing FP and FN.
+HYPOTHESIS: {description + pseudocode}
 
-## Step 4: Rule derivation
+INSTRUCTIONS:
+1. Edit `pwa/app.js` — modify the `classifyMove()` function according to the hypothesis above.
+   Only modify code between the brilliant detection section and the last `return { category: 'great'` line.
 
-Combine the feature statistics (Step 2) with the chess analysis (Step 3) to derive rules.
+2. Run the test:
+   uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0
 
-**Feature engineering first**: can an existing threshold be adjusted? Can a new feature (already computed) be added to an existing rule? These are cheaper than new rules.
+3. Parse the GLOBAL CLASSIFICATION SUMMARY from stdout and report EXACTLY this format:
 
-Requirements:
-- **Explainable**: a 1200 ELO player must understand why a move is !/!!
-- **General**: must apply to chess in general, not our specific games
-- **No overfitting**: reject rules that only help 2-3 positions
-- **Data-backed**: every rule must be justified by the feature statistics, not just chess intuition
+RESULT:
+hypothesis: {one-line description}
+score: {regularized score}
+macro_f1: {macro F1}
+brilliant_tp: {N} brilliant_fp: {N} brilliant_fn: {N} brilliant_f1: {F1}
+great_tp: {N} great_fp: {N} great_fn: {N} great_f1: {F1}
+complexity: {N} (thresholds: {N}, conditions: {N}, helpers: {N})
+status: {improved|regressed|error}
+diff:
+{the git diff of pwa/app.js}
+END_RESULT
 
-For each proposed rule:
-- The rule in plain language
-- Pseudocode
-- **Feature evidence**: which features separate TP from FP/FN, with numbers
-- Expected FN reduction and FP change (count specific moves affected)
-- **Complexity cost**: thresholds + conditions + helpers. Complexity is computed by `_count_classifier_complexity()` in `tests/e2e/test_review.py`:
-  - **Zone analyzed**: only the code from the start of `classifyMove()` up to and including the last `return { category: 'brilliant'` or `return { category: 'great'` — NOT the miss/best/excellent/etc. code after it.
-  - **Thresholds**: unique numeric constants in comparisons (e.g. `>= 0.15`, `< -0.005`). Integers ≤ 2 are excluded (loop indices). Reusing an existing threshold costs 0.
-  - **Conditions**: only RULE conditions count — `if()` statements containing numeric comparisons, function calls, or domain keywords (`isOpening`, `is_mate`, `isRecapture`, etc.). Pure null/type GUARDS (`if (!prevMove || score_cp == null)`) are NOT counted — they are defensive boilerplate, not classification logic.
-  - **Helpers**: functions called from the brilliant/great zone (e.g. `isSacrifice`, `winProb`). Discovered dynamically, not hardcoded.
-  - **Total** = thresholds + rule_conditions + helpers. Removing a redundant condition REDUCES complexity and improves the score.
-- **Expected score impact**: will regularized score improve? A rule adding 5 conditions for 0.01 F1 gain will LOWER the score.
+If the test errors or times out, report status: error with the error message.
+```
 
-Present rules to the user for validation before implementing.
+**Important**: all 4 agents must be launched in the SAME message for true parallelism.
 
-## Step 5: Implementation
+## Step 4: Collect results + extract learnings
 
-After user approval:
-1. Update `classifyMove()` in `pwa/app.js`
-2. Run `uv run pytest tests/e2e/test_review.py -v` — all tests must pass
-3. Run `uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0` for AFTER metrics
-4. Print BEFORE/AFTER comparison table:
-   ```
-   | Metric              | BEFORE | AFTER | Delta |
-   |---------------------|--------|-------|-------|
-   | Macro F1            |        |       |       |
-   | Thresholds          |        |       |       |
-   | Conditions          |        |       |       |
-   | Helpers             |        |       |       |
-   | Total complexity    |        |       |       |
-   | Penalty             |        |       |       |
-   | Regularized score   |        |       |       |
-   ```
-5. **AUTOMATIC ROLLBACK**: If regularized score decreases OR macro F1 decreases OR tests fail → immediately `git checkout pwa/app.js`. Do NOT try to fix forward. Report failure with the table showing why.
-6. Only if score strictly improves: commit with before/after scores in message.
+After all 4 agents complete:
+
+1. Parse each agent's RESULT block
+2. Record all 4 results in `/tmp/optimizer_state.md` under the current iteration
+3. **Synthesize learnings** — for each result, note:
+   - Did it improve or regress? By how much?
+   - Which FP/FN were affected? (compare TP/FP/FN to baseline)
+   - Was the complexity tradeoff worth it?
+   - What general principle does this teach? (e.g. "raising oppEpl threshold loses more TP than it removes FP")
+4. Update the **cumulative learnings** section:
+   - "WORKS": changes that improved score (keep exploring this direction)
+   - "DOESN'T WORK": changes that regressed (avoid in future iterations)
+   - "NEUTRAL": changes with no significant effect
+   - "PROMISING BUT COSTLY": good F1 improvement but too much complexity
+
+## Step 5: Iterate or stop
+
+**Stop conditions** (any of):
+- 20 total attempts reached (5 iterations done)
+- Best score hasn't improved for 2 consecutive iterations (8 attempts)
+- All 4 attempts in an iteration returned same or worse score
+
+If continuing: go back to Step 2. The new hypotheses MUST be informed by the accumulated learnings — do NOT repeat failed approaches.
+
+## Step 6: Apply best result
+
+Once the loop ends:
+1. Find the attempt with the highest score across ALL iterations
+2. If it improves over BEFORE baseline:
+   - Show BEFORE/AFTER comparison table
+   - Show the diff
+   - Ask the user for validation
+   - If approved: apply the diff to `pwa/app.js` on `dev`, run the full test suite (`uv run pytest tests/e2e/test_review.py -v`), commit with BEFORE/AFTER scores in message
+3. If no attempt improved: report this honestly with a summary of what was tried and why nothing worked
+
+## Complexity reference
+
+Complexity is computed by `_count_classifier_complexity()` in `tests/e2e/test_review.py`:
+- **Zone**: from start of `classifyMove()` to last `return { category: 'brilliant'` or `'great'`
+- **Thresholds**: unique numeric constants in comparisons (integers <= 2 excluded). Reusing an existing threshold costs 0.
+- **Conditions**: `if()` with numeric comparisons, function calls, or domain keywords. Null/type guards NOT counted.
+- **Helpers**: functions called from the zone (e.g. `isSacrifice`, `winProb`). Counted recursively.
+- **Total** = thresholds + conditions + helpers
 
 ## Important rules
 
-- NEVER use a Python proxy of the classifier. The `/collect-classifier-data` skill uses `window._classifyMove` via Playwright.
-- **BOTH SIDES**: all moves from both players are analyzed.
-- **NO OVERFITTING**: every rule must be a general chess principle.
-- **ROLLBACK ON REGRESSION**: revert immediately, analyze, try different approach.
-- Pay special attention to !! — rare, each error matters more.
+- All testing happens in **disposable worktrees** — `dev` is never modified until Step 6
+- All worktrees are cleaned up after each iteration (they are learning branches, not persistent)
+- NEVER use a Python proxy of the classifier — the test uses `window._classifyMove` via Playwright
+- **BOTH SIDES**: all moves from both players are classified
+- **NO OVERFITTING**: every rule must be a general chess principle
+- Pay special attention to !! — rare, each error matters disproportionately
