@@ -547,4 +547,13 @@ GAMES: list[dict] = [
             14: "Bxe7 — great",
         },
     },
+    {
+        "game_id": "michifuramirez_121720638400",
+        "brilliant_indices": [],
+        "great_indices": [36, 46],  # 19.w Nxc5, 24.w Nc5
+        "notes": {
+            36: "Nxc5 — great",
+            46: "Nc5 — great",
+        },
+    },
 ]
