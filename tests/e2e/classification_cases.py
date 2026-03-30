@@ -591,4 +591,12 @@ GAMES: list[dict] = [
             131: "Kd6 — great",
         },
     },
+    {
+        "game_id": "Silverstormer_166049060862",
+        "brilliant_indices": [52],  # 27.w Rxd5
+        "great_indices": [],
+        "notes": {
+            52: "Rxd5 — brilliant",
+        },
+    },
 ]
