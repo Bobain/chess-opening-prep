@@ -530,4 +530,13 @@ GAMES: list[dict] = [
             61: "Nf4+ — great",
         },
     },
+    {
+        "game_id": "eban0406_121031441578",
+        "brilliant_indices": [],
+        "great_indices": [13, 20],  # 7.b bxc4, 11.w Qf3
+        "notes": {
+            13: "bxc4 — great",
+            20: "Qf3 — great",
+        },
+    },
 ]
