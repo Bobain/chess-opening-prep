@@ -26,17 +26,32 @@ def fmt_move(moves: list[dict], idx: int) -> dict | None:
     m = moves[idx]
     eb = m.get("eval_before", {})
     ea = m.get("eval_after", {})
+    san = m.get("move_san", "?")
+
+    # Derive features from SAN notation
+    is_capture = "x" in san
+    is_check = "+" in san or "#" in san
+    is_promotion = "=" in san
+    # Piece moved: uppercase letter at start, or pawn if lowercase/none
+    piece_moved = san[0] if san and san[0].isupper() else "P"
+
     return {
         "label": f"{(idx // 2) + 1}.{'w' if idx % 2 == 0 else 'b'}",
-        "san": m.get("move_san", "?"),
+        "san": san,
         "fen": m.get("fen_before", ""),
         "cp_b": eb.get("score_cp"),
         "cp_a": ea.get("score_cp"),
         "is_mate": eb.get("is_mate", False),
         "mate_in": eb.get("mate_in"),
         "best": eb.get("best_move_san", "?"),
+        "best_uci": eb.get("best_move_uci"),
         "is_best": m.get("move_uci") == eb.get("best_move_uci"),
         "pv": " ".join(eb.get("pv_san", [])[:6]),
+        "pv_len": len(eb.get("pv_uci", [])),
+        "is_capture": is_capture,
+        "is_check": is_check,
+        "is_promotion": is_promotion,
+        "piece_moved": piece_moved,
     }
 
 
@@ -88,12 +103,16 @@ def main() -> None:
                     const side = m.side || (i % 2 === 0 ? 'white' : 'black');
                     const prevMove = i > 0 ? moves[i - 1] : null;
                     const cls = window._classifyMove(m, side, prevMove);
-                    return cls ? cls.category : 'other';
+                    const cat = cls ? cls.category : 'other';
+                    const sac = window._isSacrifice(m);
+                    return {{ category: cat, is_sacrifice: sac }};
                 }});
             }}"""
             )
 
-            for i, (m, predicted) in enumerate(zip(moves, classified)):
+            for i, (m, cls_result) in enumerate(zip(moves, classified)):
+                predicted = cls_result["category"]
+                is_sacrifice = cls_result["is_sacrifice"]
                 if predicted not in ("brilliant", "great"):
                     predicted = "other"
                 expected = (
@@ -129,11 +148,14 @@ def main() -> None:
 
                 eb = m.get("eval_before", {})
                 ea = m.get("eval_after", {})
-                wp_b = epl = None
+                wp_b = wp_a = epl = wp_gain = cp_gain = None
                 if eb.get("score_cp") is not None and not eb.get("is_mate"):
                     wp_b = round(wp(eb["score_cp"], sign), 4)
                     if ea.get("score_cp") is not None and not ea.get("is_mate"):
-                        epl = round(wp_b - wp(ea["score_cp"], sign), 4)
+                        wp_a = round(wp(ea["score_cp"], sign), 4)
+                        epl = round(wp_b - wp_a, 4)
+                        wp_gain = round(wp_a - wp_b, 4)
+                        cp_gain = (ea["score_cp"] - eb["score_cp"]) * sign
 
                 status = (
                     "TP"
@@ -146,13 +168,22 @@ def main() -> None:
                     else "great"
                 )
                 # Classification of the previous move (opponent's move)
-                prev_classification = classified[i - 1] if i > 0 else "other"
+                prev_cls_result = classified[i - 1] if i > 0 else {"category": "other"}
+                prev_classification = prev_cls_result["category"]
                 if prev_classification not in (
                     "brilliant", "great", "best", "excellent",
                     "good", "miss", "inaccuracy", "mistake", "blunder",
                 ):
                     prev_classification = "other"
 
+                # Is recapture? (same destination square as previous move)
+                is_recapture = False
+                if i > 0 and moves[i - 1].get("move_uci") and m.get("move_uci"):
+                    is_recapture = (
+                        moves[i - 1]["move_uci"][2:4] == m["move_uci"][2:4]
+                    )
+
+                move_fmt = fmt_move(moves, i)
                 results[cat].append(
                     {
                         "game": gid[:30],
@@ -160,12 +191,26 @@ def main() -> None:
                         "status": status,
                         "predicted": predicted,
                         "expected": expected,
+                        # Win probability features
                         "wp_before": wp_b,
+                        "wp_after": wp_a,
                         "epl_lost": epl,
+                        "wp_gain": wp_gain,
+                        "cp_gain": cp_gain,
                         "opp_epl": opp_epl,
+                        # Move features
+                        "is_sacrifice": is_sacrifice,
+                        "is_recapture": is_recapture,
+                        "is_capture": move_fmt.get("is_capture") if move_fmt else None,
+                        "is_check": move_fmt.get("is_check") if move_fmt else None,
+                        "piece_moved": move_fmt.get("piece_moved") if move_fmt else None,
+                        "pv_len": move_fmt.get("pv_len") if move_fmt else None,
+                        # Context
                         "prev_classification": prev_classification,
+                        "in_opening": m.get("in_opening", False),
+                        # Detailed move data
                         "before": fmt_move(moves, i - 1),
-                        "move": fmt_move(moves, i),
+                        "move": move_fmt,
                         "after": fmt_move(moves, i + 1),
                     }
                 )
@@ -221,9 +266,10 @@ def main() -> None:
             )
             prev_cls = e.get("prev_classification", "?")
             lines.append(
-                f'wp={e["wp_before"]} epl={e["epl_lost"]} '
-                f'oppEPL={e["opp_epl"]} is_best={m.get("is_best","?")} '
-                f'prev_move_class={prev_cls}'
+                f'wp={e["wp_before"]} epl={e["epl_lost"]} wpGain={e.get("wp_gain")} '
+                f'cpGain={e.get("cp_gain")} oppEPL={e["opp_epl"]} '
+                f'is_best={m.get("is_best","?")} sac={e.get("is_sacrifice")} '
+                f'recap={e.get("is_recapture")} prev_class={prev_cls}'
             )
             if b:
                 best_tag = "" if b.get("is_best") else f' (best: {b.get("best","?")})'
@@ -255,36 +301,86 @@ def main() -> None:
         f"(/tmp/batch_0.txt .. /tmp/batch_{len(batches)-1}.txt)"
     )
 
-    # Detailed analysis for rule derivation
-    print("\n=== ANALYSIS FOR RULE DERIVATION ===")
+    # === Feature statistics for rule derivation ===
+    print("\n=== FEATURE STATISTICS (TP vs FP vs FN) ===")
+
+    numeric_features = [
+        "wp_before", "wp_after", "epl_lost", "wp_gain", "cp_gain",
+        "opp_epl", "pv_len",
+    ]
+    boolean_features = [
+        "is_sacrifice", "is_recapture", "is_capture", "is_check", "in_opening",
+    ]
+    categorical_features = ["prev_classification", "piece_moved"]
 
     for cat in ("brilliant", "great"):
-        for status in ("TP", "FP", "FN"):
-            entries = [e for e in results[cat] if e["status"] == status]
-            if not entries:
-                continue
-            not_best = [
-                e for e in entries if e.get("move", {}).get("is_best") is False
-            ]
-            prev_counts: dict[str, int] = {}
-            for e in entries:
-                pc = e.get("prev_classification", "?")
-                prev_counts[pc] = prev_counts.get(pc, 0) + 1
-            print(f"\n{status} {cat} ({len(entries)}):")
-            print(f"  not_best: {len(not_best)}")
-            if not_best:
-                for e in not_best:
-                    m = e.get("move", {})
-                    print(
-                        f"    {e['game']} {m.get('label','?')} "
-                        f"{m.get('san','?')} epl={e['epl_lost']}"
-                    )
-            print(
-                f"  prev_class: "
-                + ", ".join(
-                    f"{k}={v}" for k, v in sorted(prev_counts.items(), key=lambda x: -x[1])
+        print(f"\n{'='*60}")
+        print(f"  {cat.upper()}")
+        print(f"{'='*60}")
+
+        by_status: dict[str, list[dict]] = {"TP": [], "FP": [], "FN": []}
+        for e in results[cat]:
+            by_status[e["status"]].append(e)
+
+        # Numeric features: show median/mean per status
+        for feat in numeric_features:
+            print(f"\n  {feat}:")
+            for status in ("TP", "FP", "FN"):
+                vals = [e[feat] for e in by_status[status] if e.get(feat) is not None]
+                if not vals:
+                    print(f"    {status}: (no data)")
+                    continue
+                vals.sort()
+                med = vals[len(vals) // 2]
+                avg = sum(vals) / len(vals)
+                lo, hi = vals[0], vals[-1]
+                print(f"    {status} (n={len(vals):>3}): med={med:>8.4f}  avg={avg:>8.4f}  [{lo:.4f} .. {hi:.4f}]")
+
+        # Boolean features: show % True per status
+        for feat in boolean_features:
+            print(f"\n  {feat}:")
+            for status in ("TP", "FP", "FN"):
+                entries = by_status[status]
+                if not entries:
+                    continue
+                true_count = sum(1 for e in entries if e.get(feat))
+                pct = 100 * true_count / len(entries) if entries else 0
+                print(f"    {status} (n={len(entries):>3}): {true_count:>3}/{len(entries)} = {pct:>5.1f}%")
+
+        # Categorical features: show distribution per status
+        for feat in categorical_features:
+            print(f"\n  {feat}:")
+            for status in ("TP", "FP", "FN"):
+                entries = by_status[status]
+                if not entries:
+                    continue
+                counts: dict[str, int] = {}
+                for e in entries:
+                    v = str(e.get(feat, "?"))
+                    counts[v] = counts.get(v, 0) + 1
+                dist = ", ".join(
+                    f"{k}={v}" for k, v in sorted(counts.items(), key=lambda x: -x[1])
                 )
-            )
+                print(f"    {status} (n={len(entries):>3}): {dist}")
+
+        # Per-move detail for small groups (FN, FP)
+        for status in ("FN", "FP"):
+            entries = by_status[status]
+            if not entries or len(entries) > 20:
+                continue
+            print(f"\n  --- {status} {cat} detail ({len(entries)} moves) ---")
+            for e in entries:
+                m = e.get("move") or {}
+
+                def _f(v: object) -> str:
+                    return f"{v:.4f}" if isinstance(v, float) else str(v) if v is not None else "?"
+
+                print(
+                    f"    {e['game']:<30s} {m.get('label','?'):>5} {m.get('san','?'):<8s} "
+                    f"wp={_f(e.get('wp_before')):>7} epl={_f(e.get('epl_lost')):>8} "
+                    f"wpG={_f(e.get('wp_gain')):>8} sac={e.get('is_sacrifice','?')} "
+                    f"recap={e.get('is_recapture','?')} prev={e.get('prev_classification','?')}"
+                )
 
 
 if __name__ == "__main__":

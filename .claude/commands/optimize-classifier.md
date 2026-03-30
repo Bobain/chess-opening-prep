@@ -6,49 +6,61 @@ Analyze classification errors across the full ground truth dataset using per-pos
 
 ## Step 1: Collect data + BEFORE score
 
-Run `/collect-classifier-data` to get all TP/FP/FN moves with 3-move context.
+Run `/collect-classifier-data` to get all TP/FP/FN moves with enriched features.
 
-This outputs `/tmp/classifier_data.json` with all !! and ! classified moves (by the REAL JS classifier via Playwright), their ground truth labels, and Stockfish evaluations.
+This outputs:
+- `/tmp/classifier_data.json` — all !! and ! classified moves with features
+- Feature statistics printed to stdout (median/mean per TP/FP/FN for each feature)
+- `/tmp/batch_*.txt` — human-readable batches for agent analysis
 
-Also note the BEFORE baseline: macro F1, complexity breakdown, regularized score.
+**Features available per move** (computed by `collect_classifier_data.py`):
+- **Win probability**: `wp_before`, `wp_after`, `epl_lost`, `wp_gain`, `opp_epl`
+- **Centipawn**: `cp_gain` (raw cp change from player's perspective)
+- **Move properties**: `is_sacrifice` (from JS `isSacrifice()`), `is_recapture`, `is_capture`, `is_check`, `is_promotion`, `piece_moved`, `pv_len`
+- **Context**: `prev_classification`, `in_opening`, `is_best`
 
-## Step 2: Per-position chess analysis with parallel agents
+Also note the BEFORE baseline: macro F1, complexity breakdown, regularized score (from the test).
 
-Read `/tmp/classifier_data.json`. Launch `chess-position-analyst` agents in parallel (use `subagent_type` from the `.claude/agents/` directory).
+## Step 2: Feature analysis (data-driven)
 
-**Batching**: group moves into batches of ~10-15 positions per agent to balance parallelism and context. Each batch should mix TP, FP, and FN to give the agent perspective on what works vs what doesn't.
+**Before launching agents, analyze the feature statistics yourself.** The collection script prints distributions per TP/FP/FN for each feature. Look for:
 
-Each agent receives the batch of moves with full context and must analyze each position individually, explaining:
-- TP: why the classification is correct (what chess principle)
-- FP: why this is NOT really !! or ! (what makes it routine)
-- FN: why this SHOULD be !! or ! (what the algorithm misses)
+1. **Separating features**: features where TP and FP/FN have very different distributions (e.g. "FP great have median opp_epl=0.03, TP great have median opp_epl=0.25" → the threshold 0.15 is too low)
+2. **Unused signals**: features that strongly correlate with ground truth but are NOT in the current classifier (e.g. `pv_len`, `cp_gain`, `piece_moved`)
+3. **Threshold tuning**: existing thresholds that could be tightened or relaxed based on the data
+4. **Feature combinations**: two features that together separate TP from FP better than either alone
 
-Each move includes `prev_move_class` — the classifier's category for the opponent's preceding move (blunder, mistake, inaccuracy, etc.). This is a key signal: exploiting a blunder (??) is different from finding a great move independently. A move that follows a blunder is a punishment (potentially !), not a discovery (!!).
+Write a summary of findings BEFORE proposing rules. This is the feature engineering step.
 
-For each move, the agent returns: chess analysis, key principle, and quantitative signal.
+## Step 3: Per-position chess analysis (parallel agents)
 
-## Step 3: Pattern synthesis
+Read `/tmp/classifier_data.json`. Launch general-purpose agents in parallel to analyze FN and FP moves.
 
-Collect all agent analyses. Group them:
+**Focus on errors**: agents should analyze FP and FN moves, not TP (TP already works). For each error:
+- FP: why this is NOT really !! or ! — what makes it routine despite high metrics
+- FN: why this SHOULD be !! or ! — what signal the classifier is missing
 
-**For !! moves**: what principles do TP brilliant share? What makes FP brilliant incorrect? What makes FN brilliant special?
+Each move includes all features listed above. The agent should identify which features could distinguish this error from correct classifications.
 
-**For ! moves**: what principles do TP great share? What makes FP great incorrect? What makes FN great special?
-
-Find COMMON patterns — principles that appear across multiple positions, not one-off explanations. These patterns become candidate rules.
+**Batching**: ~10-15 positions per agent, mixing FP and FN.
 
 ## Step 4: Rule derivation
 
-From the common patterns, derive quantitative rules. Requirements:
+Combine the feature statistics (Step 2) with the chess analysis (Step 3) to derive rules.
+
+**Feature engineering first**: can an existing threshold be adjusted? Can a new feature (already computed) be added to an existing rule? These are cheaper than new rules.
+
+Requirements:
 - **Explainable**: a 1200 ELO player must understand why a move is !/!!
 - **General**: must apply to chess in general, not our specific games
 - **No overfitting**: reject rules that only help 2-3 positions
-- **Quantitative**: must use available data (eval, PV, material, oppEPL, eplLost, wpBefore, is_best, is_capture, is_check)
+- **Data-backed**: every rule must be justified by the feature statistics, not just chess intuition
 
 For each proposed rule:
 - The rule in plain language
 - Pseudocode
-- Expected FN reduction and FP change
+- **Feature evidence**: which features separate TP from FP/FN, with numbers
+- Expected FN reduction and FP change (count specific moves affected)
 - **Complexity cost**: thresholds + conditions + helpers. Complexity is computed by `_count_classifier_complexity()` in `tests/e2e/test_review.py`:
   - **Zone analyzed**: only the code from the start of `classifyMove()` up to and including the last `return { category: 'brilliant'` or `return { category: 'great'` — NOT the miss/best/excellent/etc. code after it.
   - **Thresholds**: unique numeric constants in comparisons (e.g. `>= 0.15`, `< -0.005`). Integers ≤ 2 are excluded (loop indices). Reusing an existing threshold costs 0.
