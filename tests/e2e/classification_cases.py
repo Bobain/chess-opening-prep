@@ -491,6 +491,18 @@ GAMES: list[dict] = [
         },
     },
     {
+        "game_id": "abhi1146_120857473938",
+        "brilliant_indices": [],
+        "great_indices": [9, 26, 71, 82, 88],  # 5.b b5, 14.w Bxg7, 36.b Ke7, 42.w Nxf4+, 45.w Qb5+
+        "notes": {
+            9: "b5 — great",
+            26: "Bxg7 — great",
+            71: "Ke7 — great",
+            82: "Nxf4+ — great",
+            88: "Qb5+ — great",
+        },
+    },
+    {
         "game_id": "surangart_125132968589",
         "brilliant_indices": [],
         "great_indices": [17, 31],  # 9.b Bh2+, 16.b Qh4
