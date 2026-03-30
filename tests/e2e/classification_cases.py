@@ -521,4 +521,13 @@ GAMES: list[dict] = [
             47: "Rf6 — great",
         },
     },
+    {
+        "game_id": "D_03_125140734975",
+        "brilliant_indices": [],
+        "great_indices": [40, 61],  # 21.w Rd1, 31.b Nf4+
+        "notes": {
+            40: "Rd1 — great",
+            61: "Nf4+ — great",
+        },
+    },
 ]
