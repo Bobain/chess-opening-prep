@@ -52,10 +52,12 @@ chess-self-coach train --stats
 
 ### Two-phase pipeline
 
-`--prepare` runs two phases:
+`--prepare` runs four phases:
 
 1. **Phase 1 (collection)**: Lichess Opening Explorer (Masters primary, Lichess fallback) + Stockfish eval + Lichess Tablebase for each move. Opening book moves use cloud eval (fast); Stockfish runs from the theory departure onward. Only Masters-confirmed moves are marked as real theory (`in_opening=True`). Results stored in `data/analysis_data.json` (atomic write after each game, crash-safe).
-2. **Phase 2 (derivation)**: Filter player mistakes, generate explanations, write `data/training_data.json`.
+2. **Phase 2 (derivation)**: Filter player mistakes, generate explanations, write `data/training_data.json`. Runs after each game for live updates.
+3. **Phase 3 (tactical analysis)**: Detect 40 tactical motifs (forks, pins, sacrifices...) per move using python-chess. Parallel processing. Results stored in `data/tactics_data.json`.
+4. **Phase 4 (classification)**: Classify every move (brilliant, great, best, book, inaccuracy, mistake, blunder, miss) using evals + tactical motifs. Results stored in `data/classifications_data.json`.
 
 `--derive` runs Phase 2 only — useful to iterate on thresholds or explanations without re-running Stockfish.
 
