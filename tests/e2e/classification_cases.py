@@ -735,4 +735,13 @@ GAMES: list[dict] = [
             36: "Bxf4 — great",
         },
     },
+    {
+        "game_id": "kairrox_121746547822",
+        "brilliant_indices": [],
+        "great_indices": [20, 82],  # 11.w e5, 42.w Rxg6+
+        "notes": {
+            20: "e5 — great",
+            82: "Rxg6+ — great",
+        },
+    },
 ]
