@@ -784,4 +784,16 @@ GAMES: list[dict] = [
             31: "Nxd3 — great",
         },
     },
+    {
+        "game_id": "cosmos158_130354892009",
+        "brilliant_indices": [],
+        "great_indices": [27, 31, 54, 60, 95],  # 14.b Nxf3+, 16.b Bd4+, 28.w e6, 31.w Rf8, 48.b g3
+        "notes": {
+            27: "Nxf3+ — great",
+            31: "Bd4+ — great",
+            54: "e6 — great",
+            60: "Rf8 — great",
+            95: "g3 — great",
+        },
+    },
 ]
