@@ -938,4 +938,14 @@ GAMES: list[dict] = [
             15: "Nxe3 — great",
         },
     },
+    {
+        "game_id": "Alex-Master1951_129134628603",
+        "brilliant_indices": [41],  # 21.b O-O
+        "great_indices": [25, 45],  # 13.b Rxa6, 23.b Bb4+
+        "notes": {
+            41: "O-O — brilliant",
+            25: "Rxa6 — great",
+            45: "Bb4+ — great",
+        },
+    },
 ]
