@@ -11,7 +11,9 @@ from __future__ import annotations
 import json
 import pathlib
 
+
 from playwright.sync_api import sync_playwright
+
 
 
 def wp(cp: int, sign: int) -> float:
@@ -78,13 +80,15 @@ def main() -> None:
         browser = p.chromium.launch()
         page = browser.new_page()
         page.goto("http://localhost:8000")
-        # Wait for full app init: game cards rendered means chess.js is loaded
         page.wait_for_selector(".game-card", timeout=30000)
-        # Extra wait for JS init to complete
         page.wait_for_function(
-            "() => typeof window._classifyMove === 'function'",
+            "() => typeof window.analyzeMoveMotifs === 'function'",
             timeout=10000,
         )
+
+        # ── Pass 1: fast classification (all moves, no motifs) ──
+        # Collect per-game: classification results + which indices are interesting
+        game_data_list: list[dict] = []
 
         for game_gt in GAMES:
             gid = game_gt["game_id"]
@@ -109,6 +113,71 @@ def main() -> None:
                 }});
             }}"""
             )
+
+            # Identify interesting indices (TP/FP/FN)
+            interesting_indices = []
+            for i, cls_result in enumerate(classified):
+                predicted = cls_result["category"]
+                if predicted not in ("brilliant", "great"):
+                    predicted = "other"
+                expected = (
+                    "brilliant" if i in brilliant_set
+                    else "great" if i in great_set
+                    else "other"
+                )
+                if expected != "other" or predicted != "other":
+                    interesting_indices.append(i)
+
+            game_data_list.append({
+                "gid": gid,
+                "moves": moves,
+                "classified": classified,
+                "brilliant_set": brilliant_set,
+                "great_set": great_set,
+                "interesting_indices": interesting_indices,
+            })
+
+        total_interesting = sum(len(g["interesting_indices"]) for g in game_data_list)
+        print(f"Pass 1 done: {total_interesting} interesting moves across {len(game_data_list)} games")
+
+        # ── Pass 2: motif analysis (only interesting moves) ──
+        print(f"Pass 2: analyzing motifs for {total_interesting} moves...")
+        motifs_by_game: dict[str, dict[int, dict]] = {}
+
+        for game_info in game_data_list:
+            indices = game_info["interesting_indices"]
+            if not indices:
+                motifs_by_game[game_info["gid"]] = {}
+                continue
+            moves_json = json.dumps(game_info["moves"])
+            indices_json = json.dumps(indices)
+            motif_results = page.evaluate(
+                f"""() => {{
+                const moves = {moves_json};
+                const indices = {indices_json};
+                const results = {{}};
+                for (const i of indices) {{
+                    try {{
+                        results[i] = window.analyzeMoveMotifs(moves[i]);
+                    }} catch(e) {{
+                        results[i] = null;
+                    }}
+                }}
+                return results;
+            }}"""
+            )
+            motifs_by_game[game_info["gid"]] = {int(k): v for k, v in motif_results.items()}
+
+        print("Pass 2 done")
+
+        # ── Build results (merge pass 1 + pass 2) ──
+        for game_info in game_data_list:
+            gid = game_info["gid"]
+            moves = game_info["moves"]
+            classified = game_info["classified"]
+            brilliant_set = game_info["brilliant_set"]
+            great_set = game_info["great_set"]
+            game_motifs = motifs_by_game.get(gid, {})
 
             for i, (m, cls_result) in enumerate(zip(moves, classified)):
                 predicted = cls_result["category"]
@@ -208,6 +277,12 @@ def main() -> None:
                         # Context
                         "prev_classification": prev_classification,
                         "in_opening": m.get("in_opening", False),
+                        # Tactical motifs (on-move + PV lookahead)
+                        "motifs_on_move": (game_motifs.get(i) or {}).get("onMove", {}),
+                        "motifs_in_pv": (game_motifs.get(i) or {}).get("inPV", {}),
+                        "motifs_pv_depth": (game_motifs.get(i) or {}).get("pvDepth", {}),
+                        "has_tactic": (game_motifs.get(i) or {}).get("hasTactic", False),
+                        "best_tactic": (game_motifs.get(i) or {}).get("bestTactic"),
                         # Detailed move data
                         "before": fmt_move(moves, i - 1),
                         "move": move_fmt,
@@ -381,6 +456,71 @@ def main() -> None:
                     f"wpG={_f(e.get('wp_gain')):>8} sac={e.get('is_sacrifice','?')} "
                     f"recap={e.get('is_recapture','?')} prev={e.get('prev_classification','?')}"
                 )
+
+
+    # === Tactical motif analysis ===
+    print("\n\n=== TACTICAL MOTIF ANALYSIS (on-move + PV) ===")
+
+    for cat in ("brilliant", "great"):
+        print(f"\n{'='*60}")
+        print(f"  {cat.upper()} — TACTICAL MOTIFS")
+        print(f"{'='*60}")
+
+        by_status: dict[str, list[dict]] = {"TP": [], "FP": [], "FN": []}
+        for e in results[cat]:
+            by_status[e["status"]].append(e)
+
+        # Collect all motif names from the data
+        motif_names: set[str] = set()
+        for entries in by_status.values():
+            for e in entries:
+                motif_names.update(e.get("motifs_in_pv", {}).keys())
+
+        if not motif_names:
+            print("  (no motif data available)")
+            continue
+
+        # has_tactic summary
+        print(f"\n  has_tactic (any motif on-move or in PV):")
+        for status in ("TP", "FP", "FN"):
+            entries = by_status[status]
+            if not entries:
+                continue
+            has = sum(1 for e in entries if e.get("has_tactic"))
+            pct = 100 * has / len(entries) if entries else 0
+            print(f"    {status} (n={len(entries):>3}): {has:>3}/{len(entries)} = {pct:>5.1f}%")
+
+        # best_tactic distribution
+        print(f"\n  best_tactic distribution:")
+        for status in ("TP", "FP", "FN"):
+            entries = by_status[status]
+            if not entries:
+                continue
+            tactics: dict[str, int] = {}
+            for e in entries:
+                bt = e.get("best_tactic") or "none"
+                tactics[bt] = tactics.get(bt, 0) + 1
+            dist = ", ".join(f"{k}={v}" for k, v in sorted(tactics.items(), key=lambda x: -x[1]))
+            print(f"    {status} (n={len(entries):>3}): {dist}")
+
+        # Per-motif: % present in PV per status (only show motifs with >0 occurrences)
+        print(f"\n  Per-motif (in PV, % True per status):")
+        for name in sorted(motif_names):
+            counts = {}
+            for status in ("TP", "FP", "FN"):
+                entries = by_status[status]
+                if not entries:
+                    continue
+                has = sum(1 for e in entries if e.get("motifs_in_pv", {}).get(name))
+                if has > 0:
+                    counts[status] = (has, len(entries))
+            if counts:
+                parts = []
+                for s in ("TP", "FP", "FN"):
+                    if s in counts:
+                        h, n = counts[s]
+                        parts.append(f"{s}={h}/{n}({100*h/n:.0f}%)")
+                print(f"    {name:30s} {' '.join(parts)}")
 
 
 if __name__ == "__main__":

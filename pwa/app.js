@@ -2383,6 +2383,140 @@ window._tacticalHelpers = {
 };
 
 // ===========================================================================
+// Tactical motif analysis: on-move + PV (best line) lookahead
+// ===========================================================================
+
+/** Helpers to run on every position (cheap enough for PV lookahead). */
+const _TACTICAL_HELPERS = {
+  isFork, createsPin, isSkewer, isDiscoveredAttack, isDiscoveredCheck,
+  isDoubleCheck, createsMateThreat, isBackRankThreat, isSmotheredMate,
+  isTrappedPiece, isRemovalOfDefender, isOverloadedExploit,
+  isDesperado, isTacticalCheckmate, isTacticalCheck, destroysCastling,
+  createsPassedPawn, isTacticalPromotion, isUnderpromotion, isEnPassant,
+  isOutpost, isSeventhRankInvasion, isOpenFileControl,
+  isKingSafetyDegradation, isExchangeSacrifice, isQueenSacrifice,
+  isHangingCapture, isStalemateTrap, isQuietMove, isClearance,
+  isXrayAttack, isPieceActivity,
+};
+
+/** Helpers too expensive for PV lookahead (skip in PV, only run on-move). */
+const _EXPENSIVE_HELPERS = {
+  isDeflection, isDecoy, isWindmill, isPerpetualCheck, isOverloadedExploit,
+};
+
+/** Trivial helpers (always run, near-zero cost). */
+const _TRIVIAL_HELPERS = {
+  isCentralization, isPawnBreak, isCastling,
+};
+
+/**
+ * Analyze tactical motifs on a move AND in its principal variation.
+ *
+ * Runs all 40 helpers on the move itself, then plays through the PV
+ * (best line from eval_before) up to 3 of our moves (6 plies), running
+ * helpers at each of our positions.
+ *
+ * @param {Object} move - Move data with fen_before, move_uci, move_san, eval_before.
+ * @returns {Object} { onMove: {name: bool}, inPV: {name: bool}, pvDepth: {name: int}, hasTactic, bestTactic }
+ */
+function analyzeMoveMotifs(move) {
+  const onMove = {};
+  const inPV = {};
+  const pvDepth = {};
+
+  // --- Phase 1: run all helpers on the move itself ---
+  const allHelpers = { ..._TACTICAL_HELPERS, ..._EXPENSIVE_HELPERS, ..._TRIVIAL_HELPERS };
+  for (const [name, fn] of Object.entries(allHelpers)) {
+    try { onMove[name] = fn(move); } catch { onMove[name] = false; }
+    inPV[name] = onMove[name];
+    if (onMove[name]) pvDepth[name] = 0;
+  }
+
+  // --- Phase 2: play through PV and analyze our moves ---
+  const eb = move.eval_before;
+  if (eb && eb.pv_uci && eb.pv_uci.length >= 2) {
+    try {
+      const chess = new Chess(move.fen_before);
+      let ourMoveCount = 0;
+      const moverTurn = chess.turn(); // whose turn it is = the player who made this move
+
+      for (let i = 0; i < Math.min(eb.pv_uci.length, 6) && ourMoveCount < 3; i++) {
+        const pvUci = eb.pv_uci[i];
+        const from = pvUci.slice(0, 2);
+        const to = pvUci.slice(2, 4);
+        const promo = pvUci.length > 4 ? pvUci[4] : undefined;
+
+        const fenBefore = chess.fen();
+        const result = chess.move({ from, to, promotion: promo });
+        if (!result) break;
+
+        const currentTurn = fenBefore.split(' ')[1]; // turn BEFORE this PV move
+        const isOurMove = currentTurn === moverTurn;
+
+        if (isOurMove && i > 0) {
+          // Skip i=0 (that's the move itself, already analyzed)
+          ourMoveCount++;
+
+          // Build a synthetic move object for the helpers
+          const pvMove = {
+            fen_before: fenBefore,
+            move_uci: pvUci,
+            move_san: result.san,
+            eval_before: null, // no eval available for PV positions
+          };
+
+          // Run non-expensive helpers on this PV position
+          for (const [name, fn] of Object.entries(_TACTICAL_HELPERS)) {
+            if (inPV[name]) continue; // already found this motif earlier
+            try {
+              const found = fn(pvMove);
+              if (found) {
+                inPV[name] = true;
+                pvDepth[name] = i;
+              }
+            } catch { /* skip */ }
+          }
+
+          // Run trivial helpers too
+          for (const [name, fn] of Object.entries(_TRIVIAL_HELPERS)) {
+            if (inPV[name]) continue;
+            try {
+              const found = fn(pvMove);
+              if (found) {
+                inPV[name] = true;
+                pvDepth[name] = i;
+              }
+            } catch { /* skip */ }
+          }
+        }
+      }
+    } catch { /* PV parsing failed, keep on-move results only */ }
+  }
+
+  // --- Phase 3: summary ---
+  const tacticalNames = Object.keys(_TACTICAL_HELPERS);
+  const hasTactic = tacticalNames.some(n => inPV[n]);
+
+  // Best tactic: highest-value motif found (rough priority order)
+  const priority = [
+    'isSmotheredMate', 'isTacticalCheckmate', 'isDoubleCheck',
+    'createsMateThreat', 'isBackRankThreat', 'isFork', 'isSkewer',
+    'createsPin', 'isDiscoveredCheck', 'isDiscoveredAttack',
+    'isTrappedPiece', 'isRemovalOfDefender', 'isQueenSacrifice',
+    'isExchangeSacrifice', 'isHangingCapture', 'destroysCastling',
+    'createsPassedPawn', 'isOutpost', 'isSeventhRankInvasion',
+  ];
+  let bestTactic = null;
+  for (const name of priority) {
+    if (inPV[name]) { bestTactic = name; break; }
+  }
+
+  return { onMove, inPV, pvDepth, hasTactic, bestTactic };
+}
+
+window.analyzeMoveMotifs = analyzeMoveMotifs;
+
+// ===========================================================================
 
 /**
  * Classify a move based on expected points lost.
