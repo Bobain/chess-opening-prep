@@ -911,4 +911,13 @@ GAMES: list[dict] = [
             67: "Kf8 — great",
         },
     },
+    {
+        "game_id": "PrengPergjoni_120849931720",
+        "brilliant_indices": [],
+        "great_indices": [41, 46],  # 21.b Qa5, 24.w exf6
+        "notes": {
+            41: "Qa5 — great",
+            46: "exf6 — great",
+        },
+    },
 ]
