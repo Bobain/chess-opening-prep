@@ -920,4 +920,14 @@ GAMES: list[dict] = [
             46: "exf6 — great",
         },
     },
+    {
+        "game_id": "Michaeluuw_125132354459",
+        "brilliant_indices": [],
+        "great_indices": [17, 43, 45],  # 9.b dxe5, 22.b Rb8, 23.b Rb5
+        "notes": {
+            17: "dxe5 — great",
+            43: "Rb8 — great",
+            45: "Rb5 — great",
+        },
+    },
 ]
