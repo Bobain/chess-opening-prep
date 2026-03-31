@@ -122,7 +122,12 @@ def classify_move(
             opp_wp_after = _win_prob(pea["score_cp"], opp_sign)
             opp_epl = opp_wp_before - opp_wp_after
             if opp_epl >= 0.15:
-                return {"c": "great", **CATEGORIES["great"]}
+                # Filter trivial recaptures on the same square
+                prev_uci = prev_move.get("move_uci", "")
+                move_uci = move.get("move_uci", "")
+                is_recapture = prev_uci and move_uci and prev_uci[2:4] == move_uci[2:4]
+                if not is_recapture:
+                    return {"c": "great", **CATEGORIES["great"]}
 
     # Miss detection
     if not is_opening and epl_lost > 0.05 and prev_move:
