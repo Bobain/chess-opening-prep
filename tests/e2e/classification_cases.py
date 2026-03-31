@@ -870,4 +870,18 @@ GAMES: list[dict] = [
             35: "Qxd1 — great",
         },
     },
+    {
+        "game_id": "Ramadan0099_166067143160",
+        "brilliant_indices": [],
+        "great_indices": [49, 77, 81, 97, 99, 103, 107],  # 25.b Qc6+, 39.b g5, 41.b g6, 49.b Kf8, 50.b Kf7, 52.b Kf7, 54.b Kf7
+        "notes": {
+            49: "Qc6+ — great",
+            77: "g5 — great",
+            81: "g6 — great",
+            97: "Kf8 — great",
+            99: "Kf7 — great",
+            103: "Kf7 — great",
+            107: "Kf7 — great",
+        },
+    },
 ]
