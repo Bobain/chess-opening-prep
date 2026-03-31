@@ -626,4 +626,15 @@ GAMES: list[dict] = [
             19: "Bg4 — great",
         },
     },
+    {
+        "game_id": "ishu_2008_125069377731",
+        "brilliant_indices": [],
+        "great_indices": [47, 51, 54, 59],  # 24.b Bf6, 26.b Bxb2, 28.w g3, 30.b f5
+        "notes": {
+            47: "Bf6 — great",
+            51: "Bxb2 — great",
+            54: "g3 — great",
+            59: "f5 — great",
+        },
+    },
 ]
