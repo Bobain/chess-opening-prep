@@ -893,4 +893,12 @@ GAMES: list[dict] = [
             46: "Rh4 — great",
         },
     },
+    {
+        "game_id": "DaGangsta65_166532052878",
+        "brilliant_indices": [],
+        "great_indices": [56],  # 29.w Qxf2
+        "notes": {
+            56: "Qxf2 — great",
+        },
+    },
 ]
