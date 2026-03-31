@@ -930,4 +930,12 @@ GAMES: list[dict] = [
             45: "Rb5 — great",
         },
     },
+    {
+        "game_id": "shanmugasundaramganapathy_121694718318",
+        "brilliant_indices": [],
+        "great_indices": [15],  # 8.b Nxe3
+        "notes": {
+            15: "Nxe3 — great",
+        },
+    },
 ]
