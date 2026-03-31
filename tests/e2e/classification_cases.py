@@ -767,4 +767,13 @@ GAMES: list[dict] = [
             53: "Qb1# — great",
         },
     },
+    {
+        "game_id": "QB1Kenobi_129468234191",
+        "brilliant_indices": [],
+        "great_indices": [16, 28],  # 9.w Rxd1, 15.w Nxe5
+        "notes": {
+            16: "Rxd1 — great",
+            28: "Nxe5 — great",
+        },
+    },
 ]
