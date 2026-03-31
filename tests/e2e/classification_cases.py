@@ -668,4 +668,15 @@ GAMES: list[dict] = [
             62: "Qxc7+ — great",
         },
     },
+    {
+        "game_id": "1jbd_125241591367",
+        "brilliant_indices": [],
+        "great_indices": [35, 43, 47, 52],  # 18.b Qc5+, 22.b Nxf6, 24.b Re2, 27.w Kg1
+        "notes": {
+            35: "Qc5+ — great",
+            43: "Nxf6 — great",
+            47: "Re2 — great",
+            52: "Kg1 — great",
+        },
+    },
 ]
