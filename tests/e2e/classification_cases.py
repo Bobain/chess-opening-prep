@@ -755,4 +755,16 @@ GAMES: list[dict] = [
             67: "Nd5+ — great",
         },
     },
+    {
+        "game_id": "Meidinah_129128566291",
+        "brilliant_indices": [],
+        "great_indices": [35, 39, 44, 48, 53],  # 18.b Ne5, 20.b Qg6, 23.w Bxd3, 25.w Nf6+, 27.b Qb1#
+        "notes": {
+            35: "Ne5 — great",
+            39: "Qg6 — great",
+            44: "Bxd3 — great",
+            48: "Nf6+ — great",
+            53: "Qb1# — great",
+        },
+    },
 ]
