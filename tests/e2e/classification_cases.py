@@ -718,4 +718,13 @@ GAMES: list[dict] = [
             43: "Rxe1+ — great",
         },
     },
+    {
+        "game_id": "Elvenleos_121048021572",
+        "brilliant_indices": [],
+        "great_indices": [11, 44],  # 6.b Qxg5, 23.w Bxg5
+        "notes": {
+            11: "Qxg5 — great",
+            44: "Bxg5 — great",
+        },
+    },
 ]
