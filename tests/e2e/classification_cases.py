@@ -744,4 +744,15 @@ GAMES: list[dict] = [
             82: "Rxg6+ — great",
         },
     },
+    {
+        "game_id": "Sorokivskiy_129151372945",
+        "brilliant_indices": [],
+        "great_indices": [50, 53, 65, 67],  # 26.w Qxc6, 27.b Ne6, 33.b Nb6, 34.b Nd5+
+        "notes": {
+            50: "Qxc6 — great",
+            53: "Ne6 — great",
+            65: "Nb6 — great",
+            67: "Nd5+ — great",
+        },
+    },
 ]
