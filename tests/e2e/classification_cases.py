@@ -967,4 +967,14 @@ GAMES: list[dict] = [
             39: "Nxd4 — great",
         },
     },
+    {
+        "game_id": "Onegentlesoul_165649893790",
+        "brilliant_indices": [],
+        "great_indices": [64, 63, 69],  # 33.w Qf4+, 32.b Be6, 35.b Be6
+        "notes": {
+            64: "Qf4+ — great",
+            63: "Be6 — great",
+            69: "Be6 — great",
+        },
+    },
 ]
