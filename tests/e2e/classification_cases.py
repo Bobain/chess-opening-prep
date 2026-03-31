@@ -612,4 +612,10 @@ GAMES: list[dict] = [
             46: "Nd6 — brilliant",
         },
     },
+    {
+        "game_id": "Has101010_125083720203",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {},
+    },
 ]
