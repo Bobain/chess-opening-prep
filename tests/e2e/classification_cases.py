@@ -993,4 +993,10 @@ GAMES: list[dict] = [
             38: "Qxb7 — great",
         },
     },
+    {
+        "game_id": "Marekzkoz_166536046244",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {},
+    },
 ]
