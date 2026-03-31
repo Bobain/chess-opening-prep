@@ -977,4 +977,12 @@ GAMES: list[dict] = [
             69: "Be6 — great",
         },
     },
+    {
+        "game_id": "ACDRAGON777_166016258776",
+        "brilliant_indices": [],
+        "great_indices": [112],  # 57.w Bd3+
+        "notes": {
+            112: "Bd3+ — great",
+        },
+    },
 ]
