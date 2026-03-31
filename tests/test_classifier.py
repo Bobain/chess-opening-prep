@@ -84,6 +84,33 @@ def test_sacrifice_in_dominating_position_not_brilliant():
     assert result is None or result["c"] != "brilliant"
 
 
+def test_exchange_sacrifice_is_brilliant():
+    """An exchange sacrifice (rook for minor piece) with modest eval gain is brilliant."""
+    move = {
+        "eval_before": {"score_cp": -10, "is_mate": False, "mate_in": None},
+        "eval_after": {"score_cp": 0, "is_mate": False, "mate_in": None},
+        "in_opening": False,
+    }
+    tactics = {"isSacrifice": True, "isExchangeSacrifice": True}
+    result = classify_move(move, "white", None, tactics)
+    assert result is not None
+    assert result["c"] == "brilliant"
+
+
+def test_sacrifice_without_exchange_needs_strict_threshold():
+    """Non-exchange sacrifice with modest eval gain should NOT be brilliant."""
+    # epl ~ -0.007, passes relaxed (-0.005) but not strict (-0.012)
+    move = {
+        "eval_before": {"score_cp": 150, "is_mate": False, "mate_in": None},
+        "eval_after": {"score_cp": 160, "is_mate": False, "mate_in": None},
+        "in_opening": False,
+    }
+    tactics = {"isSacrifice": True, "isExchangeSacrifice": False}
+    result = classify_move(move, "white", None, tactics)
+    assert result is not None
+    assert result["c"] != "brilliant"
+
+
 # --- Great detection ---
 
 

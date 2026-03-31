@@ -279,6 +279,7 @@ def create_objective(
             "brilliant_epl_max": trial.suggest_float("brilliant_epl_max", -0.03, 0.0),
             "brilliant_wp_min": trial.suggest_float("brilliant_wp_min", 0.05, 0.50),
             "brilliant_wp_max": trial.suggest_float("brilliant_wp_max", 0.80, 1.0),
+            "brilliant_exchange_sac_epl_max": trial.suggest_float("brilliant_exchange_sac_epl_max", -0.02, 0.0),
             "great_epl_max": trial.suggest_float("great_epl_max", 0.0, 0.05),
             "great_opp_epl_min": trial.suggest_float("great_opp_epl_min", 0.05, 0.30),
             "great_filter_recapture": True,
@@ -359,6 +360,7 @@ def _trial_to_config(
         "brilliant_wp_min": params["brilliant_wp_min"],
         "brilliant_wp_max": params["brilliant_wp_max"],
         "brilliant_motifs": brilliant_motifs,
+        "brilliant_exchange_sac_epl_max": params["brilliant_exchange_sac_epl_max"],
         "great_epl_max": params["great_epl_max"],
         "great_opp_epl_min": params["great_opp_epl_min"],
         "great_filter_recapture": True,
@@ -533,6 +535,7 @@ def main() -> None:
         "brilliant_epl_max": float(DEFAULT_CONFIG["brilliant_epl_max"]),  # type: ignore[arg-type]
         "brilliant_wp_min": float(DEFAULT_CONFIG["brilliant_wp_min"]),  # type: ignore[arg-type]
         "brilliant_wp_max": float(DEFAULT_CONFIG["brilliant_wp_max"]),  # type: ignore[arg-type]
+        "brilliant_exchange_sac_epl_max": float(DEFAULT_CONFIG["brilliant_exchange_sac_epl_max"]),  # type: ignore[arg-type]
         "great_epl_max": float(DEFAULT_CONFIG["great_epl_max"]),  # type: ignore[arg-type]
         "great_opp_epl_min": float(DEFAULT_CONFIG["great_opp_epl_min"]),  # type: ignore[arg-type]
         "miss_epl_min": float(DEFAULT_CONFIG["miss_epl_min"]),  # type: ignore[arg-type]

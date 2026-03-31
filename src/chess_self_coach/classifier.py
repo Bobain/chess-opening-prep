@@ -53,6 +53,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "brilliant_wp_min": 0.17,           # wp_before > this
     "brilliant_wp_max": 0.95,           # wp_before < this
     "brilliant_motifs": ["isSacrifice"],  # motifs that trigger brilliant
+    # Brilliant detection (exchange sacrifice path — relaxed threshold)
+    "brilliant_exchange_sac_epl_max": -0.005,  # relaxed epl for exchange sacrifice
     # Great detection (opp_epl path)
     "great_epl_max": 0.012,            # epl_lost <= this
     "great_opp_epl_min": 0.15,         # opp_epl >= this
@@ -138,6 +140,13 @@ def classify_move(
         if not has_motif and tactics is None:
             has_motif = _is_sacrifice_fallback(move)
         if has_motif:
+            return {"c": "brilliant", **CATEGORIES["brilliant"]}
+
+    # Brilliant detection (exchange sacrifice path: relaxed threshold)
+    brilliant_es_epl_max = float(cfg["brilliant_exchange_sac_epl_max"])  # type: ignore[arg-type]
+    if epl_lost < brilliant_es_epl_max and wp_before > brilliant_wp_min and wp_before < brilliant_wp_max and not is_opening:
+        tact = tactics or {}
+        if tact.get("isExchangeSacrifice", False) and tact.get("isSacrifice", False):
             return {"c": "brilliant", **CATEGORIES["brilliant"]}
 
     # Great detection (opp_epl path: good response to opponent blunder)
@@ -411,6 +420,7 @@ def count_config_complexity(config: dict[str, Any] | None = None) -> tuple[int, 
     # Thresholds: only brilliant/great zone (miss thresholds are outside)
     threshold_keys = [
         "brilliant_epl_max", "brilliant_wp_min", "brilliant_wp_max",
+        "brilliant_exchange_sac_epl_max",
         "great_epl_max", "great_opp_epl_min",
     ]
     n_thresholds = len(threshold_keys)
@@ -418,14 +428,15 @@ def count_config_complexity(config: dict[str, Any] | None = None) -> tuple[int, 
     # Conditions: must match count_complexity() for DEFAULT_CONFIG.
     # The regex counts if-statements with numeric/domain/call content.
     # Base conditions in brilliant/great zone (from source analysis):
-    #   brilliant: main guard (1) + motif check (1) + fallback guard (1) + has_motif (1)
+    #   brilliant main: guard (1) + motif check (1) + fallback guard (1) + has_motif (1)
+    #   brilliant exchange sac: guard (1) + motif check (1)
     #   great opp_epl: main guard (1) + score guards (1) + opp_epl check (1)
     #                + recapture filter (1) + not is_recapture (1)
     #   great motifs: guard (1) + motif any() (1) + recapture (1)
     #                + not is_recapture (1)
     # Plus domain-keyword conditions detected by regex.
     # Calibrated to match count_complexity() on DEFAULT_CONFIG.
-    n_base_conditions = 16
+    n_base_conditions = 18
     brilliant_motifs: list[str] = cfg.get("brilliant_motifs", [])  # type: ignore[assignment]
     great_motifs: list[str] = cfg.get("great_motifs", [])  # type: ignore[assignment]
     # Extra motifs beyond the default add complexity
