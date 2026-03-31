@@ -660,4 +660,12 @@ GAMES: list[dict] = [
         "great_indices": [],
         "notes": {},
     },
+    {
+        "game_id": "zhangchenrui0324_125243345725",
+        "brilliant_indices": [],
+        "great_indices": [62],  # 32.w Qxc7+
+        "notes": {
+            62: "Qxc7+ — great",
+        },
+    },
 ]
