@@ -831,4 +831,13 @@ GAMES: list[dict] = [
             72: "Qe6+ — great",
         },
     },
+    {
+        "game_id": "Peorael_165225961362",
+        "brilliant_indices": [],
+        "great_indices": [18, 79],  # 10.w e4, 40.b Bxc4
+        "notes": {
+            18: "e4 — great",
+            79: "Bxc4 — great",
+        },
+    },
 ]
