@@ -61,10 +61,11 @@ def _copy_pwa_files(
     tmp_dir: Path,
     training_data_path: Path,
     analysis_data_path: Path | None = None,
+    classifications_data_path: Path | None = None,
 ) -> None:
-    """Copy PWA files + training data to a temp directory."""
+    """Copy PWA files + data to a temp directory."""
     for f in PWA_DIR.iterdir():
-        if f.is_file() and f.name not in ("training_data.json", "analysis_data.json"):
+        if f.is_file() and f.name not in ("training_data.json", "analysis_data.json", "classifications_data.json"):
             shutil.copy2(f, tmp_dir / f.name)
 
     # Copy Stockfish WASM directory if present
@@ -83,16 +84,22 @@ def _copy_pwa_files(
     if analysis_data_path and analysis_data_path.exists():
         shutil.copy2(analysis_data_path, tmp_dir / "analysis_data.json")
 
+    # Copy classifications data if provided
+    if classifications_data_path and classifications_data_path.exists():
+        shutil.copy2(classifications_data_path, tmp_dir / "classifications_data.json")
+
 
 @pytest.fixture(scope="session")
 def pwa_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
     """Serve the PWA with test fixture data (simplified positions)."""
     tmp_dir = tmp_path_factory.mktemp("pwa_e2e")
     analysis_fixture = FIXTURES_DIR / "analysis_data.json"
+    classifications_fixture = FIXTURES_DIR / "classifications_data.json"
     _copy_pwa_files(
         tmp_dir,
         FIXTURES_DIR / "training_data.json",
         analysis_fixture if analysis_fixture.exists() else None,
+        classifications_fixture if classifications_fixture.exists() else None,
     )
     url, server = _serve_pwa_dir(tmp_dir)
     yield url
@@ -110,10 +117,12 @@ def pwa_real_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
         pytest.skip(f"{DATA_DIR}/{TRAINING_DATA_FILE} not found (run train --prepare first)")
     tmp_dir = tmp_path_factory.mktemp("pwa_e2e_real")
     real_analysis = PROJECT_ROOT / DATA_DIR / ANALYSIS_DATA_FILE
+    real_classifications = PROJECT_ROOT / DATA_DIR / "classifications_data.json"
     _copy_pwa_files(
         tmp_dir,
         real_data,
         real_analysis if real_analysis.exists() else None,
+        real_classifications if real_classifications.exists() else None,
     )
     url, server = _serve_pwa_dir(tmp_dir)
     yield url
@@ -140,6 +149,9 @@ def app_url(tmp_path_factory: pytest.TempPathFactory) -> Generator[str]:
     analysis_fixture = FIXTURES_DIR / ANALYSIS_DATA_FILE
     if analysis_fixture.exists():
         shutil.copy2(analysis_fixture, data_dir / ANALYSIS_DATA_FILE)
+    classifications_fixture = FIXTURES_DIR / "classifications_data.json"
+    if classifications_fixture.exists():
+        shutil.copy2(classifications_fixture, data_dir / "classifications_data.json")
     for pgn in FIXTURES_DIR.glob("*.pgn"):
         shutil.copy2(pgn, tmp_dir / pgn.name)
     (tmp_dir / "pwa").symlink_to(PWA_DIR)

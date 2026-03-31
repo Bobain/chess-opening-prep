@@ -120,6 +120,8 @@ let statusFilter = 'all';
 let trainingGameFilter = null;
 /** @type {?Object} Parsed analysis_data.json */
 let analysisData = null;
+/** @type {?Object} Parsed classifications_data.json — pre-computed move categories */
+let classificationsData = null;
 /** @type {?Object} Currently selected game for review */
 let reviewGame = null;
 /** @type {number} Current ply in review (0 = starting position) */
@@ -1424,6 +1426,7 @@ async function loadAnalysisData() {
       analysisData = await resp.json();
     }
     console.log(`[loadAnalysisData] Loaded ${Object.keys(analysisData.games || {}).length} game(s)`);
+    await loadClassificationsData();
     await showGameSelector();
   } catch (err) {
     console.error('[loadAnalysisData] Failed:', err);
@@ -1433,268 +1436,49 @@ async function loadAnalysisData() {
 }
 
 /**
- * Compute win probability from centipawn score (chess.com model).
- * @param {number} cp - Centipawn score from white's perspective.
- * @returns {number} Win probability for the side (0-1).
+ * Load classifications_data.json (pre-computed move categories).
+ * Called after loadAnalysisData — classifications are keyed by game URL.
  */
+async function loadClassificationsData() {
+  console.log('[loadClassificationsData] Fetching...');
+  try {
+    const resp = await fetch('classifications_data.json?t=' + Date.now());
+    if (!resp.ok) {
+      console.log('[loadClassificationsData] Not found:', resp.status);
+      classificationsData = null;
+    } else {
+      classificationsData = await resp.json();
+      console.log(`[loadClassificationsData] Loaded for ${Object.keys(classificationsData.games || {}).length} game(s)`);
+    }
+  } catch (err) {
+    console.error('[loadClassificationsData] Failed:', err);
+    classificationsData = null;
+  }
+}
+
+/**
+ * Get pre-computed classifications for a game, or classify at runtime (fallback).
+ * @param {string} gameId - Game URL (key in classificationsData).
+ * @param {Array} moves - Move array from analysis_data.
+ * @param {string} playerColor - 'white' or 'black'.
+ * @returns {Array} Array of classification objects.
+ */
+function getClassifications(gameId, moves, playerColor) {
+  // Prefer pre-computed classifications
+  if (classificationsData && classificationsData.games && classificationsData.games[gameId]) {
+    return classificationsData.games[gameId].map(cls => {
+      if (!cls) return null;
+      return { category: cls.c, symbol: cls.s, color: cls.co };
+    });
+  }
+  // No pre-computed classifications — return null array (no classification display)
+  console.warn('[getClassifications] No pre-computed data for', gameId);
+  return moves.map(() => null);
+}
+
+/** Win probability from centipawn score (logistic model, used for accuracy). */
 function winProb(cp) {
   return 1 / (1 + Math.pow(10, -cp / 400));
-}
-
-/** Piece values in pawns (used for sacrifice detection). */
-const PIECE_VALUES = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-
-/**
- * Detect whether a move is a sacrifice or tactical trap.
- * Simulates the full PV recapture chain on the destination square.
- * Returns true for:
- *   - Genuine sacrifice: full chain loses material (e.g. Nxf7, Rxf7 → net -2)
- *   - Tactical trap: first move appears to sacrifice, but full chain gains more
- *     than the apparent sacrifice (e.g. Rxe3 chain → apparent -2, net +3)
- * @param {Object} move - Move data with fen_before, move_san, move_uci, eval_before.
- * @returns {boolean} True if the move is a sacrifice or tactical trap.
- */
-function isSacrifice(move) {
-  if (!move.fen_before || !move.move_san || !move.move_uci) return false;
-
-  const eb = move.eval_before;
-  // PV must show at least one move beyond the recapture — a 2-move PV
-  // (capture + recapture) indicates a simple exchange with no hidden depth
-  if (!eb || !eb.pv_uci || eb.pv_uci.length < 3 || !eb.best_move_uci) return false;
-
-  // Must be the engine's best move (PV is only valid for that move)
-  if (move.move_uci !== eb.best_move_uci) return false;
-
-  // Opponent must recapture on the same square in the PV
-  const ourDest = move.move_uci.slice(2, 4);
-  const oppDest = eb.pv_uci[1].slice(2, 4);
-  if (oppDest !== ourDest) return false;
-
-  // Simulate full recapture chain on destination square
-  const chess = new Chess(move.fen_before);
-  let materialBalance = 0;
-  let firstCapturedValue = 0;
-  let firstPieceValue = 0;
-
-  for (let k = 0; k < eb.pv_uci.length; k++) {
-    const pvDest = eb.pv_uci[k].slice(2, 4);
-    if (k > 0 && pvDest !== ourDest) break;
-
-    const from = eb.pv_uci[k].slice(0, 2);
-    const to = pvDest;
-    const promo = eb.pv_uci[k].length > 4 ? eb.pv_uci[k][4] : undefined;
-    const result = chess.move({ from, to, promotion: promo });
-    if (!result) break;
-
-    if (result.captured) {
-      const sign = (k % 2 === 0) ? 1 : -1;
-      materialBalance += sign * PIECE_VALUES[result.captured];
-    }
-
-    if (k === 0) {
-      firstCapturedValue = result.captured ? PIECE_VALUES[result.captured] : 0;
-      firstPieceValue = PIECE_VALUES[result.piece];
-    }
-  }
-
-  const firstMoveNet = firstCapturedValue - firstPieceValue;
-
-  // Pawn sacrifices are not brilliant — must sacrifice a piece (value > 2)
-  if (firstPieceValue <= 2) return false;
-
-  // Genuine sacrifice: full chain loses material
-  if (materialBalance < -0.5) return true;
-
-  // Tactical trap: first move appears to sacrifice, but full chain gains
-  // more than the apparent sacrifice (exploiting mate threats, forks, etc.)
-  if (firstMoveNet < -0.5 && materialBalance > Math.abs(firstMoveNet)) return true;
-
-  return false;
-}
-
-/**
- * Check if the engine's best move was a capture winning material (missed opportunity).
- * Simulates the best move and follows the PV up to 8 plies, tracking all captures
- * on any square (an exchange can remove a defender, enabling a capture elsewhere).
- * @param {Object} move - Move data (must have fen_before, move_uci, eval_before with PV).
- * @returns {boolean} True if best move was a capture with net material gain.
- */
-function isMissedCapture(move) {
-  if (!move.fen_before || !move.move_uci) return false;
-  const eb = move.eval_before;
-  if (!eb || !eb.pv_uci || !eb.pv_uci.length || !eb.best_move_uci) return false;
-
-  // Player must NOT have played the best move (otherwise no miss)
-  if (move.move_uci === eb.best_move_uci) return false;
-
-  // Simulate best move on the board
-  try {
-    const chess = new Chess(move.fen_before);
-    const bestTo = eb.best_move_uci.slice(2, 4);
-    const bestPromo = eb.best_move_uci.length > 4 ? eb.best_move_uci[4] : undefined;
-    const firstResult = chess.move({
-      from: eb.best_move_uci.slice(0, 2), to: bestTo, promotion: bestPromo,
-    });
-    if (!firstResult || !firstResult.captured) return false;
-
-    // Follow the PV up to 8 plies, tracking all captures on any square.
-    // An exchange on one square can leave another piece undefended elsewhere.
-    let materialBalance = PIECE_VALUES[firstResult.captured];
-    const MAX_PLIES = 8;
-
-    for (let k = 1; k < Math.min(eb.pv_uci.length, MAX_PLIES); k++) {
-      const promo = eb.pv_uci[k].length > 4 ? eb.pv_uci[k][4] : undefined;
-      const result = chess.move({
-        from: eb.pv_uci[k].slice(0, 2),
-        to: eb.pv_uci[k].slice(2, 4),
-        promotion: promo,
-      });
-      if (!result) break;
-      if (result.captured) {
-        const capSign = (k % 2 === 0) ? 1 : -1;
-        materialBalance += capSign * PIECE_VALUES[result.captured];
-      }
-    }
-
-    return materialBalance > 0;
-  } catch {
-    return false;
-  }
-}
-
-// Tactical motifs are pre-computed in Python (tactics.py → tactics_data.json).
-
-// ===========================================================================
-
-/**
- * Classify a move based on expected points lost.
- * @param {Object} move - Move data from analysis_data.json.
- * @param {string} playerColor - 'white' or 'black'.
- * @returns {{category: string, symbol: string, color: string}}
- */
-function classifyMove(move, playerColor, prevMove) {
-  // Book moves: only classify as book if no eval data is available
-  const isBook = move.in_opening !== undefined ? move.in_opening : (move.eval_source === 'opening_explorer');
-  if (isBook) {
-    const eb = move.eval_before;
-    const ea = move.eval_after;
-    if (!eb || eb.score_cp == null || !ea || ea.score_cp == null) {
-      return { category: 'book', symbol: '\u2657', color: '#a88764' };
-    }
-    // Has eval data — fall through to normal classification
-  }
-
-  const evalBefore = move.eval_before;
-  const evalAfter = move.eval_after;
-
-  // No eval data available
-  if (!evalBefore || evalBefore.score_cp == null || !evalAfter || evalAfter.score_cp == null) {
-    return null;
-  }
-
-  // Mate detection
-  if (evalBefore.is_mate && evalBefore.mate_in != null) {
-    const mateForPlayer = (playerColor === 'white') ? evalBefore.mate_in > 0 : evalBefore.mate_in < 0;
-    if (mateForPlayer) {
-      // Player had mate, check if they played best
-      if (evalAfter.is_mate && evalAfter.mate_in != null) {
-        // mate_in === 0 means checkmate delivered — best possible move
-        if (evalAfter.mate_in === 0) {
-          return { category: 'best', symbol: '\u2605', color: '#96bc4b' };
-        }
-        const stillMate = (playerColor === 'white') ? evalAfter.mate_in > 0 : evalAfter.mate_in < 0;
-        if (!stillMate) {
-          return { category: 'miss', symbol: '\u00d7', color: '#e06666' };
-        }
-      } else {
-        return { category: 'miss', symbol: '\u00d7', color: '#e06666' };
-      }
-    }
-  }
-
-  // Win probability model
-  const sign = playerColor === 'white' ? 1 : -1;
-  const wpBefore = winProb(evalBefore.score_cp * sign);
-  const wpAfter = winProb(evalAfter.score_cp * sign);
-  const eplLost = wpBefore - wpAfter;
-  const isOpening = move.in_opening !== undefined ? move.in_opening : false;
-
-  // Brilliant detection: sacrifice that improves the position
-  // - Must measurably improve position (eplLost < -0.005, not just maintain)
-  // - Not in a hopeless position (wpBefore > 0.20) or already dominating (< 0.95)
-  // - Not opening theory
-  // - Must be a genuine sacrifice (piece given up for non-obvious compensation)
-  if (eplLost < -0.005 && wpBefore > 0.20 && wpBefore < 0.95 && !isOpening && isSacrifice(move)) {
-    return { category: 'brilliant', symbol: '!!', color: '#1baca6' };
-  }
-
-  // Great detection: best/near-best move exploiting opponent's mistake
-  // Opponent lost significant win probability, player finds correct response
-  if (eplLost <= 0.02 && !isOpening) {
-    if (prevMove && prevMove.eval_before && prevMove.eval_after
-        && prevMove.eval_before.score_cp != null && prevMove.eval_after.score_cp != null
-        && !prevMove.eval_before.is_mate && !prevMove.eval_after.is_mate) {
-      const oppSign = -sign;
-      const oppWpBefore = winProb(prevMove.eval_before.score_cp * oppSign);
-      const oppWpAfter = winProb(prevMove.eval_after.score_cp * oppSign);
-      const oppEpl = oppWpBefore - oppWpAfter;
-      // Opponent lost >= 15% win probability
-      // Player's response is good (outer gate eplLost <= 0.02 already applied)
-      if (oppEpl >= 0.15) {
-        return { category: 'great', symbol: '!', color: '#5c9ced' };
-      }
-    }
-  }
-
-  // Miss detection: opponent blundered and there was a simple capture to win
-  // material, but the player didn't see it.
-  // Requires: opponent lost ≥15% wp + player lost >5% wp + best move was a
-  // capture winning net material in ≤3 exchanges on the same square.
-  if (!isOpening && eplLost > 0.05 && isMissedCapture(move) && prevMove
-      && prevMove.eval_before && prevMove.eval_after
-      && prevMove.eval_before.score_cp != null && prevMove.eval_after.score_cp != null
-      && !prevMove.eval_before.is_mate && !prevMove.eval_after.is_mate) {
-    const oppSign = -sign;
-    const oppWpBefore = winProb(prevMove.eval_before.score_cp * oppSign);
-    const oppWpAfter = winProb(prevMove.eval_after.score_cp * oppSign);
-    const oppEpl = oppWpBefore - oppWpAfter;
-    if (oppEpl >= 0.15) {
-      return { category: 'miss', symbol: '\u00d7', color: '#e06666' };
-    }
-  }
-
-  if (eplLost <= 0) {
-    return { category: 'best', symbol: '\u2605', color: '#96bc4b' };
-  } else if (eplLost <= 0.02) {
-    return { category: 'excellent', symbol: '\u2191', color: '#96bc4b' };
-  } else if (eplLost <= 0.05) {
-    return { category: 'good', symbol: '\u2713', color: '#95b776' };
-  } else if (eplLost <= 0.10) {
-    return { category: 'inaccuracy', symbol: '?!', color: '#f7c631' };
-  } else if (eplLost <= 0.20) {
-    return { category: 'mistake', symbol: '?', color: '#e6912a' };
-  } else {
-    return { category: 'blunder', symbol: '??', color: '#ca3431' };
-  }
-}
-
-// Expose for E2E testing (module-scoped functions are not accessible from page.evaluate)
-window._classifyMove = classifyMove;
-window._isSacrifice = isSacrifice;
-window._isMissedCapture = isMissedCapture;
-
-/**
- * Classify all moves in a game for both players.
- * @param {Array} moves - Array of move objects.
- * @param {string} playerColor - Player's color.
- * @returns {Array} Array of classification objects (one per move, null if unclassifiable).
- */
-function classifyAllMoves(moves, playerColor) {
-  return moves.map((move, i) => {
-    const color = move.side;
-    const prevMove = i > 0 ? moves[i - 1] : null;
-    return classifyMove(move, color, prevMove);
-  });
 }
 
 /**
@@ -2015,7 +1799,7 @@ async function showGameSelector() {
     }
 
     const opponentColor = game.player_color === 'white' ? 'black' : 'white';
-    const classified = classifyAllMoves(game.moves, game.player_color);
+    const classified = getClassifications(gameId, game.moves, game.player_color);
     const playerAcc = computeAccuracy(game.moves, classified, game.player_color);
     const opponentAcc = computeAccuracy(game.moves, classified, opponentColor);
     // Badge categories in display order (positive → negative).
@@ -2111,7 +1895,7 @@ function selectGame(gameId) {
   reviewOrientation = reviewGame.player_color;
 
   // Classify all moves
-  classifiedMoves = classifyAllMoves(reviewGame.moves, reviewGame.player_color);
+  classifiedMoves = getClassifications(reviewGame._id, reviewGame.moves, reviewGame.player_color);
 
   // Hide selector and toolbar, show review
   document.getElementById('game-selector').classList.add('hidden');
