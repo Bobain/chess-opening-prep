@@ -637,4 +637,12 @@ GAMES: list[dict] = [
             59: "f5 — great",
         },
     },
+    {
+        "game_id": "Andre_Scobling_120850950366",
+        "brilliant_indices": [],
+        "great_indices": [31],  # 16.b Bh5
+        "notes": {
+            31: "Bh5 — great",
+        },
+    },
 ]
