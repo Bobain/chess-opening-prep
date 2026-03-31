@@ -840,4 +840,13 @@ GAMES: list[dict] = [
             79: "Bxc4 — great",
         },
     },
+    {
+        "game_id": "IGINO51_165628312728",
+        "brilliant_indices": [],
+        "great_indices": [41, 48],  # 21.b Qxf5, 25.w Bxf3
+        "notes": {
+            41: "Qxf5 — great",
+            48: "Bxf3 — great",
+        },
+    },
 ]
