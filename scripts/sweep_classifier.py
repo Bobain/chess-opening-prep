@@ -489,8 +489,8 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description="Optimize classifier with Bayesian search (Optuna TPE)")
-    parser.add_argument("--trials", type=int, default=5000,
-                        help="Number of Optuna trials (default: 5000)")
+    parser.add_argument("--trials", type=int, default=1000,
+                        help="Number of Optuna trials (default: 1000)")
     args = parser.parse_args()
 
     t0 = time.monotonic()
