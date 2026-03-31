@@ -679,4 +679,18 @@ GAMES: list[dict] = [
             52: "Kg1 — great",
         },
     },
+    {
+        "game_id": "SendFeetPicsPleasee_120856975142",
+        "brilliant_indices": [],
+        "great_indices": [23, 41, 45, 68, 90, 104, 106],  # 12.b Nc6, 21.b Bc6, 23.b Bb5, 35.w Nd6+, 46.w bxc3+, 53.w Nc1, 54.w Ne2
+        "notes": {
+            23: "Nc6 — great",
+            41: "Bc6 — great",
+            45: "Bb5 — great",
+            68: "Nd6+ — great",
+            90: "bxc3+ — great",
+            104: "Nc1 — great",
+            106: "Ne2 — great",
+        },
+    },
 ]
