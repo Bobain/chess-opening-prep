@@ -618,4 +618,12 @@ GAMES: list[dict] = [
         "great_indices": [],
         "notes": {},
     },
+    {
+        "game_id": "shivauttangi_125080133625",
+        "brilliant_indices": [],
+        "great_indices": [19],  # 10.b Bg4
+        "notes": {
+            19: "Bg4 — great",
+        },
+    },
 ]
