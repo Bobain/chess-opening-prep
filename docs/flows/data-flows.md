@@ -24,8 +24,13 @@ flowchart LR
 
     subgraph Storage
         AD[data/analysis_data.json<br/>all moves, max granularity]
+        TAC[data/tactic_data.json<br/>40 tactical motifs per move]
         TD[data/training_data.json<br/>filtered mistakes]
         LS[localStorage<br/>SRS state per position]
+    end
+
+    subgraph "Phase 1b — Tactical analysis"
+        TACT[tactics.py<br/>forks, pins, mates...<br/>parallel, python-chess]
     end
 
     subgraph "Phase 2 — Derivation"
@@ -50,6 +55,8 @@ flowchart LR
     SF --> AD
     TB --> AD
     OE --> AD
+    AD --> TACT
+    TACT --> TAC
     AD --> DER
     DER --> TD
     TD --> SEL
@@ -64,7 +71,8 @@ flowchart LR
 
 | File | Content | Used by |
 |------|---------|---------|
-| `analysis_data.json` | All moves, all evals, per game | Phase 2 derivation + Analysis mode (game review UI) |
+| `analysis_data.json` | All moves, all evals, per game | Tactical analysis + Phase 2 derivation + Analysis mode |
+| `tactic_data.json` | 40 tactical motifs per move (forks, pins, mates...) | Classifier optimization |
 | `training_data.json` | Filtered mistakes (unchanged schema) | App + Demo |
 
 Phase 2 can be re-run cheaply without re-running Stockfish (`chess-self-coach train --derive`).
