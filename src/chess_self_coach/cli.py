@@ -199,6 +199,14 @@ def main(argv: list[str] | None = None) -> None:
             except (FileNotFoundError, RuntimeError, ExplorerAPIError) as e:
                 print(f"  {e}", file=sys.stderr)
                 sys.exit(1)
+
+            from chess_self_coach.tactics import run_tactical_analysis
+
+            run_tactical_analysis()
+
+            from chess_self_coach.classifier import run_classification
+
+            run_classification()
         elif args.serve:
             print("  Tip: you can now just run `chess-self-coach` directly.\n")
             _launch_server()
