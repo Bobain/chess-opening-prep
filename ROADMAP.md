@@ -19,6 +19,27 @@ Chess.com reference: [docs/ux/chess-com-reference.md](docs/ux/chess-com-referenc
 
 _(No open items — 6a completed 2026-03-25)_
 
+## 7. Hybrid Classifier (rules + ML)
+
+Goal: improve great move detection from F1=0.395 to ~0.650 using a hybrid approach.
+Brilliant stays rule-based (F1=0.870). Great switches to XGBoost with MultiPV features.
+Exploration branch: `explore` worktree. Results validated with LOGO cross-validation.
+
+### Prerequisites (in progress)
+- [>] 7a. MultiPV enrichment: re-analyze all 14959 Stockfish positions with MultiPV=3 at production depths (18/40/50/60)
+  - Script: `scripts/analyze_multipv.py` (explore worktree)
+  - Writes `multipv_before` into `analysis_data.json` (compact format: PV1 line + move_gap + n_good_moves + alt_uci)
+  - ETA: ~12-14h
+
+### After MultiPV enrichment
+- [ ] 7b. Re-run ML Phase 2 (`scripts/train_classifier_ml.py`) with production-depth MultiPV data — confirm Great F1 ≥ 0.649
+- [ ] 7c. Re-run classification on all 367 games with the improved great detection
+- [ ] 7d. Integrate MultiPV=3 into production pipeline (`analysis.py`) — already done in explore worktree, merge to dev
+- [ ] 7e. Train final XGBoost model on full dataset, serialize it (joblib or xgboost native format)
+- [ ] 7f. Implement hybrid classifier: rules for brilliant → XGBoost for great → standard classification
+- [ ] 7g. Update `derive.py` / `training_data.json` to use hybrid classifier output
+- [ ] 7h. Update tests: add MultiPV-aware classification test cases
+
 ## Existing but undocumented features
 These are implemented and working but not tracked as roadmap items:
 - Tablebase integration (≤7 pieces, Lichess API)
