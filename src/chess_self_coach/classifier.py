@@ -268,6 +268,44 @@ def _classify_game(args: tuple[str, dict, list[dict] | None]) -> tuple[str, list
     return game_id, results
 
 
+def classify_game_single(
+    game_id: str,
+    game_data: dict[str, Any],
+    game_tactics: list[dict[str, Any]] | None = None,
+    output_path: Path | None = None,
+) -> list[dict[str, Any] | None]:
+    """Classify all moves of a single game and update classifications_data.json.
+
+    Calls ``_classify_game`` directly (no multiprocessing pool), then merges
+    the result into the existing classifications data file.
+
+    Args:
+        game_id: Game identifier (key in classifications_data.json).
+        game_data: Full game dict from analysis_data.json.
+        game_tactics: Optional motif list from tactics_data.json for this game.
+        output_path: Path to classifications_data.json. Defaults to config.
+
+    Returns:
+        List of classification dicts (one per move), also written to disk.
+    """
+    if output_path is None:
+        output_path = classifications_data_path()
+
+    _, classifications = _classify_game((game_id, game_data, game_tactics))
+
+    # Read existing, update single game, write back
+    if output_path.exists():
+        with open(output_path) as f:
+            existing = json.load(f)
+    else:
+        existing = {"version": "1.0", "games": {}}
+
+    existing["games"][game_id] = classifications
+    atomic_write_json(output_path, existing)
+
+    return classifications
+
+
 def run_classification(
     analysis_path: Path | None = None,
     tactics_path: Path | None = None,
