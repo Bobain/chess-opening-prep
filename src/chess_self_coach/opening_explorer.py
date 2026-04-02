@@ -1,16 +1,11 @@
-"""Lichess Opening Explorer API client.
+"""Lichess Masters Opening Explorer API client.
 
-Queries the Lichess opening explorer to identify opening names, ECO codes,
-and move popularity statistics for each position. Used during Phase 1 analysis
-to detect when players depart from known theory.
-
-Two endpoints are used:
-- Masters (primary): OTB games from FIDE 2200+ players — defines "real theory".
-- Lichess (fallback): all online Lichess games — used for cloud eval speedup only.
+Queries the Lichess Masters opening explorer (FIDE 2200+ OTB games) to identify
+opening names, ECO codes, and move popularity statistics for each position.
+Used during Phase 1 analysis to detect when players depart from known theory.
 
 A move is considered "in opening" (in_opening=True) only if it appears in the
-Masters database.  The Lichess endpoint is a performance fallback: when Masters
-has no data, Lichess can still provide cloud eval, but in_opening stays False.
+Masters database.
 """
 
 from __future__ import annotations
@@ -31,10 +26,6 @@ _log = logging.getLogger(__name__)
 # Masters endpoint: FIDE 2200+ OTB games (real opening theory)
 _MASTERS_PRIMARY = "https://explorer.lichess.ovh/masters"
 _MASTERS_FALLBACK = "https://explorer.lichess.org/masters"
-
-# Lichess endpoint: all online games (fallback for cloud eval)
-_LICHESS_PRIMARY = "https://explorer.lichess.ovh/lichess"
-_LICHESS_FALLBACK = "https://explorer.lichess.org/lichess"
 
 # Request timeout (seconds)
 _TIMEOUT = 10.0
@@ -98,82 +89,81 @@ def _query_endpoint(
     )
 
 
-def query_opening(fen: str, token: str, endpoint: str = "masters") -> dict | None:
-    """Query the Lichess Opening Explorer for a position.
+def query_opening(fen: str, token: str) -> dict | None:
+    """Query the Lichess Masters Opening Explorer for a position.
 
     Args:
         fen: FEN string of the position to query.
         token: Lichess API personal access token.
-        endpoint: "masters" (FIDE 2200+ OTB) or "lichess" (all online games).
 
     Returns:
-        Dict with {opening, white, draws, black, moves[]} or None.
+        Dict with {opening, white, draws, black, moves[]} or None if position
+        has zero games in Masters database.
+
+    Raises:
+        ExplorerAPIError: If both primary/fallback endpoints fail.
     """
-    if endpoint == "masters":
-        return _query_endpoint(fen, token, _MASTERS_PRIMARY, _MASTERS_FALLBACK, {"fen": fen})
-    return _query_endpoint(fen, token, _LICHESS_PRIMARY, _LICHESS_FALLBACK, {"variant": "standard", "fen": fen})
+    return _query_endpoint(fen, token, _MASTERS_PRIMARY, _MASTERS_FALLBACK, {"fen": fen})
 
 
 def query_opening_sequence(
     fens_and_moves: list[tuple[str, str]],
     token: str,
+    *,
+    existing_results: list[dict | None] | None = None,
 ) -> list[dict | None]:
-    """Query the Opening Explorer for a sequence of positions until theory departure.
+    """Query the Masters Opening Explorer for a sequence of positions.
 
-    Tries Masters first (defines in_opening=True). When Masters departs, falls
-    back to Lichess for cloud eval data (in_opening=False). Stops entirely when
-    both endpoints have departed.
+    Queries Masters until the played move is not found (theory departure).
+    Each returned dict has ``_source="masters"``.
 
-    Each returned dict has a "_source" key ("masters" or "lichess") indicating
-    which endpoint provided the data.
+    When *existing_results* is provided (re-analysis), positions that already
+    have Masters data are preserved without API calls.  Querying resumes from
+    the first position without Masters data (breakpoint re-testing).
 
     Args:
         fens_and_moves: List of (fen_before, move_uci) tuples for each ply.
         token: Lichess API personal access token.
+        existing_results: Previous opening_explorer data per ply (from a prior
+            analysis).  Entries with ``_source="masters"`` are kept as-is.
 
     Returns:
         List of explorer responses (same length as input). None entries mean
-        the position was past all theory departure or the API was unavailable.
+        the position was past theory departure.
     """
     results: list[dict | None] = []
     masters_departed = False
-    lichess_departed = False
 
-    for fen, move_uci in fens_and_moves:
-        if masters_departed and lichess_departed:
+    for i, (fen, move_uci) in enumerate(fens_and_moves):
+        # Re-analysis: preserve existing masters data
+        if (
+            not masters_departed
+            and existing_results is not None
+            and i < len(existing_results)
+        ):
+            existing = existing_results[i]
+            if existing is not None and existing.get("_source") == "masters":
+                results.append(existing)
+                continue
+            # No existing masters data → fall through to query
+
+        if masters_departed:
             results.append(None)
             continue
 
-        data: dict | None = None
-        source = "none"
-
-        # Try Masters first
-        if not masters_departed:
-            md = query_opening(fen, token, "masters")
-            if md is not None:
-                known = {m["uci"] for m in md.get("moves", [])}
-                if move_uci in known:
-                    data, source = md, "masters"
-                else:
-                    masters_departed = True
+        md = query_opening(fen, token)
+        if md is not None:
+            known = {m["uci"] for m in md.get("moves", [])}
+            if move_uci in known:
+                md["_source"] = "masters"
+                results.append(md)
             else:
                 masters_departed = True
+                results.append(None)
+        else:
+            masters_departed = True
+            results.append(None)
 
-        # Lichess fallback (for cloud eval speed)
-        if source != "masters" and not lichess_departed:
-            ld = query_opening(fen, token, "lichess")
-            if ld is not None:
-                known = {m["uci"] for m in ld.get("moves", [])}
-                if move_uci in known:
-                    data, source = ld, "lichess"
-                else:
-                    lichess_departed = True
-            else:
-                lichess_departed = True
-
-        if data is not None:
-            data["_source"] = source
-        results.append(data)
         time.sleep(_RATE_LIMIT_DELAY)
 
     return results
@@ -240,7 +230,7 @@ def refresh_opening_data(
 
                 # ExplorerAPIError propagates — never silently treat API
                 # failure as "not in theory"
-                md = query_opening(fen, token, "masters")
+                md = query_opening(fen, token)
                 if md is not None:
                     known = {m["uci"] for m in md.get("moves", [])}
                     if move_uci in known:

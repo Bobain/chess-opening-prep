@@ -78,32 +78,24 @@ def test_query_opening_network_error_raises(mock_get: MagicMock):
 @patch("chess_self_coach.opening_explorer.query_opening")
 @patch("chess_self_coach.opening_explorer.time.sleep")
 def test_sequence_stops_at_departure(mock_sleep: MagicMock, mock_query: MagicMock):
-    """Stops querying after both Masters and Lichess depart."""
-    # Position 1: e4 is in Masters, move e5 is known
+    """Stops querying after Masters departs."""
     masters_resp1 = {
         "opening": {"eco": "B00", "name": "King's Pawn"},
         "white": 100, "draws": 50, "black": 80,
         "moves": [{"uci": "e7e5", "san": "e5"}],
     }
-    # Position 2: after e5, Masters has d4 but NOT Nf6 → masters departure
+    # Position 2: Masters has d4 but NOT Nf6 → masters departure
     masters_resp2 = {
         "opening": {"eco": "C20", "name": "King's Pawn Game"},
         "white": 50, "draws": 20, "black": 30,
         "moves": [{"uci": "d2d4", "san": "d4"}],
     }
-    # Position 2 Lichess fallback: also doesn't have Nf6 → lichess departure
-    lichess_resp2 = {
-        "opening": {"eco": "C20", "name": "King's Pawn Game"},
-        "white": 5000, "draws": 2000, "black": 3000,
-        "moves": [{"uci": "d2d4", "san": "d4"}],
-    }
 
-    # Masters called for pos1, Masters called for pos2, Lichess called for pos2
-    mock_query.side_effect = [masters_resp1, masters_resp2, lichess_resp2]
+    mock_query.side_effect = [masters_resp1, masters_resp2]
 
     fens_and_moves = [
         ("startpos_fen", "e7e5"),
-        ("after_e5_fen", "g8f6"),  # Nf6 not in either database → both depart
+        ("after_e5_fen", "g8f6"),  # Nf6 not in Masters → departure
         ("after_nf6_fen", "d2d4"),  # Should not be queried
     ]
 
@@ -111,47 +103,50 @@ def test_sequence_stops_at_departure(mock_sleep: MagicMock, mock_query: MagicMoc
     assert len(results) == 3
     assert results[0] is not None
     assert results[0]["_source"] == "masters"
-    assert results[1] is None  # Both departed, move not found
+    assert results[1] is None  # Masters departed
     assert results[2] is None  # Past departure: not queried
-    assert mock_query.call_count == 3  # Masters x2 + Lichess x1
+    assert mock_query.call_count == 2
 
 
 @patch("chess_self_coach.opening_explorer.query_opening")
 @patch("chess_self_coach.opening_explorer.time.sleep")
-def test_sequence_lichess_fallback(mock_sleep: MagicMock, mock_query: MagicMock):
-    """Lichess provides data when Masters departs but move is in Lichess."""
-    masters_resp = {
-        "opening": {"eco": "B00"}, "white": 100, "draws": 50, "black": 80,
-        "moves": [{"uci": "e7e5", "san": "e5"}],
-    }
-    # Masters doesn't know d7d5 but Lichess does
-    lichess_resp = {
-        "opening": {"eco": "C20"}, "white": 5000, "draws": 2000, "black": 3000,
+def test_sequence_preserves_existing_masters(mock_sleep: MagicMock, mock_query: MagicMock):
+    """Re-analysis preserves existing masters data and re-tests at breakpoint."""
+    # Existing data: masters for ply 0, nothing for ply 1+
+    existing = [
+        {"_source": "masters", "opening": {"eco": "B00"}, "moves": [{"uci": "e7e5"}]},
+        None,  # ply 1 had no masters data
+    ]
+
+    # At ply 1 (breakpoint), masters now has the move → extension
+    new_masters_resp = {
+        "opening": {"eco": "C20"}, "white": 50, "draws": 20, "black": 30,
         "moves": [{"uci": "d7d5", "san": "d5"}],
     }
 
-    mock_query.side_effect = [masters_resp, None, lichess_resp]
+    mock_query.side_effect = [new_masters_resp]
 
     fens_and_moves = [
-        ("fen1", "e7e5"),  # Masters match
-        ("fen2", "d7d5"),  # Masters=None → departed, Lichess has d5
+        ("fen1", "e7e5"),  # Existing masters → preserved, no API call
+        ("fen2", "d7d5"),  # No existing → query masters → found!
     ]
 
-    results = query_opening_sequence(fens_and_moves, "token")
-    assert results[0]["_source"] == "masters"
-    assert results[1]["_source"] == "lichess"
+    results = query_opening_sequence(fens_and_moves, "token", existing_results=existing)
+    assert results[0]["_source"] == "masters"  # Preserved
+    assert results[0] is existing[0]  # Same object, not re-fetched
+    assert results[1] is not None
+    assert results[1]["_source"] == "masters"  # Extended!
+    assert mock_query.call_count == 1  # Only queried at breakpoint
 
 
 @patch("chess_self_coach.opening_explorer.query_opening")
 @patch("chess_self_coach.opening_explorer.time.sleep")
-def test_sequence_stops_when_api_returns_none(mock_sleep: MagicMock, mock_query: MagicMock):
-    """Stops querying when both endpoints return None (position not in any database)."""
+def test_sequence_stops_when_masters_returns_none(mock_sleep: MagicMock, mock_query: MagicMock):
+    """Stops querying when Masters returns None (position not in database)."""
     mock_query.side_effect = [
         # Pos1 Masters: has e7e5
         {"opening": None, "white": 100, "draws": 50, "black": 80, "moves": [{"uci": "e7e5"}]},
-        # Pos2 Masters: None (not in database)
-        None,
-        # Pos2 Lichess: also None
+        # Pos2 Masters: None (not in database) → departure
         None,
     ]
 
@@ -165,4 +160,4 @@ def test_sequence_stops_when_api_returns_none(mock_sleep: MagicMock, mock_query:
     assert results[0] is not None
     assert results[1] is None
     assert results[2] is None
-    assert mock_query.call_count == 3  # Masters x2 + Lichess x1
+    assert mock_query.call_count == 2  # Masters x2, then departed
