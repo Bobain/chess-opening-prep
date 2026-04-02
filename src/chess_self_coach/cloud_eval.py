@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
+from typing import Any
 
 import requests
 
@@ -27,14 +29,18 @@ _TIMEOUT = 10.0
 _RATE_LIMIT_DELAY = 0.1
 
 # Exponential backoff for transient errors (429, 5xx, network).
-_BACKOFF_BASE = 2.0   # seconds — doubles each retry: 2, 4, 8, 16, 32, 64...
+_BACKOFF_BASE = 60.0   # seconds — Lichess recommends ≥1 min wait after 429
 _BACKOFF_MAX = 120.0   # cap at 2 minutes between retries
 
 # Timestamp of the last request, for rate limiting.
 _last_request_time: float = 0.0
 
 
-def query_cloud_eval(fen: str, multi_pv: int = 1) -> dict | None:
+def query_cloud_eval(
+    fen: str,
+    multi_pv: int = 1,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any] | None:
     """Query the Lichess Cloud database for a position.
 
     Retries indefinitely on transient errors (429, 5xx, network) with
@@ -43,6 +49,8 @@ def query_cloud_eval(fen: str, multi_pv: int = 1) -> dict | None:
     Args:
         fen: FEN string of the position to query.
         multi_pv: Number of principal variations to request.
+        on_wait: Optional callback(attempt, delay_seconds) called before
+            each retry sleep, so callers can surface the wait to the UI.
 
     Returns:
         API response dict with {fen, knodes, depth, pvs[]} or None if
@@ -84,6 +92,8 @@ def query_cloud_eval(fen: str, multi_pv: int = 1) -> dict | None:
                 "    cloud %s → HTTP %d, retrying in %.0fs (attempt %d)",
                 fen[:40], resp.status_code, delay, attempt + 1,
             )
+            if on_wait:
+                on_wait(attempt + 1, delay)
             time.sleep(delay)
             attempt += 1
 
@@ -93,5 +103,7 @@ def query_cloud_eval(fen: str, multi_pv: int = 1) -> dict | None:
                 "    cloud %s → %s, retrying in %.0fs (attempt %d)",
                 fen[:40], exc, delay, attempt + 1,
             )
+            if on_wait:
+                on_wait(attempt + 1, delay)
             time.sleep(delay)
             attempt += 1

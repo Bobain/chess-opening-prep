@@ -426,6 +426,7 @@ def collect_game_data(
     lichess_token: str | None = None,
     game_id: str = "",
     existing_moves: list[dict[str, Any]] | None = None,
+    on_wait: Callable[[int, float], None] | None = None,
 ) -> dict[str, Any]:
     """Collect full per-move analysis data for one game (Phase 1).
 
@@ -449,6 +450,8 @@ def collect_game_data(
             sends ucinewgame between different games (hash table reset).
         existing_moves: Previous per-move data from a prior analysis. When set,
             preserves API data and only re-tests breakpoints + re-runs Stockfish.
+        on_wait: Optional callback(attempt, delay_seconds) called when an API
+            request is retrying after a transient error (429, 5xx).
 
     Returns:
         Dict with game headers, settings, and moves[] array ready for
@@ -557,7 +560,7 @@ def collect_game_data(
             if existing and existing.get("tablebase_before"):
                 _tb_probed = existing["tablebase_before"]
             else:
-                _tb_probed = probe_position_full(board.fen())
+                _tb_probed = probe_position_full(board.fen(), on_wait=on_wait)
 
             t0 = _time.time()
             if cached_eval is not None and cached_tb is not None:
@@ -584,7 +587,7 @@ def collect_game_data(
             if existing and existing.get("tablebase_after"):
                 _tb_probed_after = existing["tablebase_after"]
             elif pc_after <= MAX_PIECES:
-                _tb_probed_after = probe_position_full(board_after_fen)
+                _tb_probed_after = probe_position_full(board_after_fen, on_wait=on_wait)
 
             t0 = _time.time()
             if _tb_probed_after is not None:
@@ -653,7 +656,7 @@ def collect_game_data(
                     mpv_before = cached_mpv
                     _eb_src = "cache"
                 else:
-                    cloud = query_cloud_eval(board.fen())
+                    cloud = query_cloud_eval(board.fen(), on_wait=on_wait)
                     if cloud:
                         score_before = _cloud_eval_to_eval(cloud, board)
                         _eb_src = "cloud_eval"
@@ -669,7 +672,7 @@ def collect_game_data(
                 score_before_ms = (_time.time() - t0) * 1000
 
                 t0 = _time.time()
-                cloud_after = query_cloud_eval(board_after_fen)
+                cloud_after = query_cloud_eval(board_after_fen, on_wait=on_wait)
                 if cloud_after:
                     score_after = _cloud_eval_to_eval(cloud_after, board_after)
                     _ea_src = "cloud_eval"
@@ -721,7 +724,7 @@ def collect_game_data(
                     mpv_before = cached_mpv
                     _eb_src = "cache"
                 else:
-                    cloud = query_cloud_eval(board.fen())
+                    cloud = query_cloud_eval(board.fen(), on_wait=on_wait)
                     if cloud:
                         score_before = _cloud_eval_to_eval(cloud, board)
                         _eb_src = "cloud_eval"
@@ -737,7 +740,7 @@ def collect_game_data(
                 score_before_ms = (_time.time() - t0) * 1000
 
                 t0 = _time.time()
-                cloud_after = query_cloud_eval(board_after_fen)
+                cloud_after = query_cloud_eval(board_after_fen, on_wait=on_wait)
                 if cloud_after:
                     score_after = _cloud_eval_to_eval(cloud_after, board_after)
                     _ea_src = "cloud_eval"
@@ -1162,6 +1165,13 @@ def analyze_games(
             if reanalyze_all and game_id and game_id in existing_games:
                 prev_moves = existing_games[game_id].get("moves")
 
+            def _on_wait(attempt: int, delay: float) -> None:
+                _emit({
+                    "phase": "analyze",
+                    "message": f"API rate limit, retry #{attempt} in {delay:.0f}s ({label})",
+                    "waiting": True,
+                })
+
             start = _time.time()
             try:
                 game_data = collect_game_data(
@@ -1172,6 +1182,7 @@ def analyze_games(
                     lichess_token,
                     game_id=game_id,
                     existing_moves=prev_moves,
+                    on_wait=_on_wait,
                 )
             except Exception as exc:
                 print(f"  [{done_count}/{total_tasks}] Error analyzing {label}: {exc}")

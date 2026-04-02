@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -38,7 +39,7 @@ MAX_PIECES = ENDGAME_PIECES_MAX
 _RATE_LIMIT_DELAY = 0.1
 
 # Exponential backoff for transient errors (429, 5xx, network).
-_BACKOFF_BASE = 2.0   # seconds — doubles each retry: 2, 4, 8, 16, 32, 64...
+_BACKOFF_BASE = 60.0   # seconds — Lichess recommends ≥1 min wait after 429
 _BACKOFF_MAX = 120.0   # cap at 2 minutes between retries
 
 # Timestamp of the last request, for rate limiting.
@@ -81,7 +82,10 @@ class TablebaseResult:
         return tier
 
 
-def _fetch_tablebase(fen: str) -> dict[str, Any] | None:
+def _fetch_tablebase(
+    fen: str,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any] | None:
     """Fetch tablebase data with retry and exponential backoff.
 
     Retries indefinitely on transient errors (429, 5xx, network) with
@@ -89,6 +93,8 @@ def _fetch_tablebase(fen: str) -> dict[str, Any] | None:
 
     Args:
         fen: FEN string of the position to query.
+        on_wait: Optional callback(attempt, delay_seconds) called before
+            each retry sleep, so callers can surface the wait to the UI.
 
     Returns:
         API response dict or None if the position is not in the database (404).
@@ -129,6 +135,8 @@ def _fetch_tablebase(fen: str) -> dict[str, Any] | None:
                 "    tablebase %s → HTTP %d, retrying in %.0fs (attempt %d)",
                 fen[:40], resp.status_code, delay, attempt + 1,
             )
+            if on_wait:
+                on_wait(attempt + 1, delay)
             time.sleep(delay)
             attempt += 1
 
@@ -138,6 +146,8 @@ def _fetch_tablebase(fen: str) -> dict[str, Any] | None:
                 "    tablebase %s → %s, retrying in %.0fs (attempt %d)",
                 fen[:40], exc, delay, attempt + 1,
             )
+            if on_wait:
+                on_wait(attempt + 1, delay)
             time.sleep(delay)
             attempt += 1
 
@@ -182,7 +192,10 @@ def probe_position(fen: str) -> TablebaseResult | None:
     )
 
 
-def probe_position_full(fen: str) -> dict[str, Any] | None:
+def probe_position_full(
+    fen: str,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any] | None:
     """Probe the Lichess tablebase API and return the complete response.
 
     Unlike probe_position() which returns a simplified TablebaseResult,
@@ -194,6 +207,8 @@ def probe_position_full(fen: str) -> dict[str, Any] | None:
 
     Args:
         fen: FEN string of the position.
+        on_wait: Optional callback(attempt, delay_seconds) called before
+            each retry sleep, so callers can surface the wait to the UI.
 
     Returns:
         Full API response dict (category, dtm, dtz, precise_dtz, dtw, dtc,
@@ -203,7 +218,7 @@ def probe_position_full(fen: str) -> dict[str, Any] | None:
     if len(board.piece_map()) > MAX_PIECES:
         return None
 
-    data = _fetch_tablebase(fen)
+    data = _fetch_tablebase(fen, on_wait=on_wait)
     if data is None:
         return None
 

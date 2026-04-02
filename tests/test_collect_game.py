@@ -226,8 +226,9 @@ def _make_mock_engine() -> MagicMock:
     return engine
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_move_count(mock_tb: MagicMock):
+def test_collect_game_data_move_count(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Collects correct number of moves from mini.pgn (5 half-moves)."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -238,8 +239,9 @@ def test_collect_game_data_move_count(mock_tb: MagicMock):
     assert result["player_color"] == "white"
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_field_presence(mock_tb: MagicMock):
+def test_collect_game_data_field_presence(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Each move has all required fields."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -274,8 +276,9 @@ def test_collect_game_data_field_presence(mock_tb: MagicMock):
         assert "alt" in mpv
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_ply_sequence(mock_tb: MagicMock):
+def test_collect_game_data_ply_sequence(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Ply numbers are sequential 1..N."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -286,8 +289,9 @@ def test_collect_game_data_ply_sequence(mock_tb: MagicMock):
     assert plies == [1, 2, 3, 4, 5]
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_alternating_sides(mock_tb: MagicMock):
+def test_collect_game_data_alternating_sides(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Sides alternate white/black."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -298,8 +302,9 @@ def test_collect_game_data_alternating_sides(mock_tb: MagicMock):
     assert sides == ["white", "black", "white", "black", "white"]
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_headers(mock_tb: MagicMock):
+def test_collect_game_data_headers(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Game headers are extracted correctly."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
