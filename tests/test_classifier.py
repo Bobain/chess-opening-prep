@@ -6,6 +6,8 @@ Tests classify_move() directly — no Playwright, no browser.
 
 from __future__ import annotations
 
+from unittest.mock import patch
+
 from chess_self_coach.classifier import classify_move, score_classifier, MIN_SCORE
 
 
@@ -114,14 +116,13 @@ def test_sacrifice_without_exchange_needs_strict_threshold():
 # --- Great detection ---
 
 
-def test_response_to_blunder_is_great():
-    """A good response to opponent's blunder (oppEpl >= 0.15) is great."""
-    # Opponent (black) blunders: was ahead (-200cp), now behind (+200cp)
+@patch("chess_self_coach.classifier._predict_great", return_value=True)
+def test_response_to_blunder_is_great(_mock_predict):
+    """When XGBoost predicts great, classify_move returns great."""
     prev_move = {
         "eval_before": {"score_cp": -200, "is_mate": False, "mate_in": None},
         "eval_after": {"score_cp": 200, "is_mate": False, "mate_in": None},
     }
-    # White responds well: maintains the advantage
     move = {
         "eval_before": {"score_cp": 200, "is_mate": False, "mate_in": None},
         "eval_after": {"score_cp": 195, "is_mate": False, "mate_in": None},

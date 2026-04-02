@@ -28,6 +28,157 @@ from chess_self_coach.io import atomic_write_json
 
 _log = logging.getLogger(__name__)
 
+# ── XGBoost model for great detection (loaded lazily) ──
+
+_great_model: Any = None
+_great_meta: dict[str, Any] | None = None
+_MODELS_DIR = Path(__file__).parent.parent.parent / "data" / "models"
+_MISSING_VALUE = -999
+
+
+def _load_great_model() -> tuple[Any, dict[str, Any]] | None:
+    """Load serialized XGBoost model for great detection.
+
+    Returns:
+        (model, meta) tuple, or None if model files don't exist.
+    """
+    global _great_model, _great_meta
+    if _great_model is not None and _great_meta is not None:
+        return _great_model, _great_meta
+
+    model_path = _MODELS_DIR / "great_xgb.json"
+    meta_path = _MODELS_DIR / "great_xgb_meta.json"
+    if not model_path.exists() or not meta_path.exists():
+        return None
+
+    from xgboost import XGBClassifier
+
+    _great_model = XGBClassifier()
+    _great_model.load_model(str(model_path))
+    with open(meta_path) as f:
+        _great_meta = json.load(f)
+    _log.info("Loaded great detection model: %s", model_path)
+    assert _great_meta is not None  # just loaded
+    return _great_model, _great_meta
+
+
+def _predict_great(
+    move: dict[str, Any],
+    player_color: str,
+    prev_move: dict[str, Any] | None,
+    tactics: dict[str, Any] | None,
+    wp_before: float,
+    wp_after: float,
+    epl_lost: float,
+) -> bool:
+    """Predict whether a move is 'great' using the XGBoost model.
+
+    Args:
+        move: Move data from analysis_data.json.
+        player_color: 'white' or 'black'.
+        prev_move: Previous move data (opponent's), or None.
+        tactics: Tactical motifs for this move.
+        wp_before: Win probability before the move.
+        wp_after: Win probability after the move.
+        epl_lost: Expected points lost (wp_before - wp_after).
+
+    Returns:
+        True if the model predicts great with probability >= threshold.
+    """
+    loaded = _load_great_model()
+    if loaded is None:
+        return False
+    model, meta = loaded
+
+    features = meta["features"]
+    threshold = meta["threshold"]
+    mv = _MISSING_VALUE
+
+    eb = move.get("eval_before", {})
+    ea = move.get("eval_after", {})
+    sign = 1 if player_color == "white" else -1
+    cp_before = eb.get("score_cp")
+    cp_after = ea.get("score_cp")
+
+    # Opponent EPL
+    opp_epl = mv
+    if prev_move:
+        peb = prev_move.get("eval_before", {})
+        pea = prev_move.get("eval_after", {})
+        prev_cp_b = peb.get("score_cp")
+        prev_cp_a = pea.get("score_cp")
+        if prev_cp_b is not None and prev_cp_a is not None:
+            opp_sign = -sign
+            opp_wp_b = _win_prob(prev_cp_b, opp_sign)
+            opp_wp_a = _win_prob(prev_cp_a, opp_sign)
+            opp_epl = opp_wp_b - opp_wp_a
+
+    move_san = move.get("move_san", "")
+    is_capture = int("x" in move_san)
+    is_recapture = 0
+    if prev_move and is_capture:
+        prev_san = prev_move.get("move_san", "")
+        if "x" in prev_san:
+            is_recapture = 1
+
+    # MultiPV features
+    mpv = move.get("multipv_before") or {}
+    alt = mpv.get("alt", [])
+
+    tact = tactics or {}
+
+    # Motif keys must match training order exactly
+    motif_keys = [
+        "isFork", "createsPin", "isSkewer", "isDiscoveredAttack",
+        "isDiscoveredCheck", "isDoubleCheck", "createsMateThreat",
+        "isBackRankThreat", "isSmotheredMate", "isTrappedPiece",
+        "isRemovalOfDefender", "isDesperado", "isCheckmate", "isCheck",
+        "destroysCastling", "isWindmill", "isPerpetualCheck",
+        "createsPassedPawn", "isPromotion", "isUnderpromotion",
+        "isPawnBreak", "isEnPassant", "isOutpost", "isCentralization",
+        "isSeventhRankInvasion", "isOpenFileControl",
+        "isKingSafetyDegradation", "isXrayAttack", "isPieceActivity",
+        "isExchangeSacrifice", "isQueenSacrifice", "isHangingCapture",
+        "isStalemateTrap", "isQuietMove", "isClearance", "isCastling",
+        "isSacrifice", "isMissedCapture",
+    ]
+
+    # PV motif count
+    pv_dict = tact.get("_pv", {})
+    pv_motif_count = (
+        sum(1 for v in pv_dict.values() if isinstance(v, dict) and any(v.values()))
+        if isinstance(pv_dict, dict) else 0
+    )
+
+    # Build feature vector in training order
+    row: dict[str, float] = {
+        "cp_before": cp_before if cp_before is not None else mv,
+        "cp_after": cp_after if cp_after is not None else mv,
+        "wp_before": wp_before,
+        "wp_after": wp_after,
+        "epl_lost": epl_lost,
+        "opp_epl": opp_epl,
+        "abs_cp_before": abs(cp_before) if cp_before is not None else mv,
+        "is_capture": is_capture,
+        "is_recapture": is_recapture,
+        "depth_before": eb.get("depth", mv),
+        "pv_length": len(eb.get("pv_uci", [])),
+    }
+    for key in motif_keys:
+        row[f"motif_{key}"] = int(bool(tact.get(key, False)))
+    row["pv_motif_count"] = pv_motif_count
+    row["move_gap"] = float(mpv["move_gap"]) if mpv.get("move_gap") is not None else mv
+    row["n_good_moves"] = float(mpv["n_good_moves"]) if mpv.get("n_good_moves") is not None else mv
+    row["second_cp"] = alt[0]["cp"] if len(alt) >= 1 else mv
+    row["third_cp"] = alt[1]["cp"] if len(alt) >= 2 else mv
+
+    # Predict
+    import numpy as np
+    x = np.array([[row.get(f, mv) for f in features]])
+    prob = model.predict_proba(x)[0][1]
+    return bool(prob >= threshold)
+
+
 # ── Classification symbols and colors (match JS output) ──
 
 CATEGORIES = {
@@ -146,48 +297,12 @@ def classify_move(
         if tact.get("isExchangeSacrifice", False) and tact.get("isSacrifice", False):
             return {"c": "brilliant", **CATEGORIES["brilliant"]}
 
-    # Great detection (opp_epl path: good response to opponent blunder)
-    great_epl_max = float(cfg["great_epl_max"])  # type: ignore[arg-type]
-    great_opp_epl_min = float(cfg["great_opp_epl_min"])  # type: ignore[arg-type]
-    great_check_opp_epl_min = float(cfg["great_check_opp_epl_min"])  # type: ignore[arg-type]
-    great_filter_recapture: bool = cfg["great_filter_recapture"]  # type: ignore[assignment]
-
-    if epl_lost <= great_epl_max and not is_opening and prev_move:
-        peb = prev_move.get("eval_before", {})
-        pea = prev_move.get("eval_after", {})
-        if (peb.get("score_cp") is not None and pea.get("score_cp") is not None
-                and not peb.get("is_mate") and not pea.get("is_mate")):
-            opp_sign = -sign
-            opp_wp_before = _win_prob(peb["score_cp"], opp_sign)
-            opp_wp_after = _win_prob(pea["score_cp"], opp_sign)
-            opp_epl = opp_wp_before - opp_wp_after
-            is_check = (tactics or {}).get("isCheck", False) or move.get("move_san", "").endswith(("+", "#"))
-            opp_threshold = great_check_opp_epl_min if is_check else great_opp_epl_min
-            if opp_epl >= opp_threshold:
-                if great_filter_recapture:
-                    prev_uci = prev_move.get("move_uci", "")
-                    move_uci = move.get("move_uci", "")
-                    is_recapture = prev_uci and move_uci and prev_uci[2:4] == move_uci[2:4]
-                else:
-                    is_recapture = False
-                if is_recapture and is_check:
-                    is_recapture = False
-                if not is_recapture:
-                    return {"c": "great", **CATEGORIES["great"]}
-
-    # Great detection (motif path: strong tactical move regardless of opp_epl)
-    great_motifs: list[str] = cfg["great_motifs"]  # type: ignore[assignment]
-    if great_motifs and epl_lost <= great_epl_max and not is_opening:
-        tact = tactics or {}
-        if any(tact.get(m, False) for m in great_motifs):
-            if great_filter_recapture and prev_move:
-                prev_uci = prev_move.get("move_uci", "")
-                move_uci = move.get("move_uci", "")
-                is_recapture = prev_uci and move_uci and prev_uci[2:4] == move_uci[2:4]
-            else:
-                is_recapture = False
-            if not is_recapture:
-                return {"c": "great", **CATEGORIES["great"]}
+    # Great detection (XGBoost hybrid — replaces rule-based great)
+    if not is_opening and _predict_great(
+        move, player_color, prev_move, tactics,
+        wp_before, wp_after, epl_lost,
+    ):
+        return {"c": "great", **CATEGORIES["great"]}
 
     # Miss detection
     miss_epl_min = float(cfg["miss_epl_min"])  # type: ignore[arg-type]
@@ -294,6 +409,7 @@ def classify_game_single(
     _, classifications = _classify_game((game_id, game_data, game_tactics))
 
     # Read existing, update single game, write back
+    existing: dict[str, Any]
     if output_path.exists():
         with open(output_path) as f:
             existing = json.load(f)
