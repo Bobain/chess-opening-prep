@@ -16,6 +16,18 @@ from typing import Any, NoReturn
 
 from dotenv import load_dotenv
 
+
+class ConfigError(Exception):
+    """Raised when config.json is missing, invalid, or unreadable.
+
+    Attributes:
+        hint: Optional fix suggestion for the user.
+    """
+
+    def __init__(self, message: str, hint: str | None = None) -> None:
+        super().__init__(message)
+        self.hint = hint
+
 # Resolve project root: walk up from cwd to find pyproject.toml,
 # or fall back to cwd. Data files live under DATA_DIR.
 _THIS_DIR = Path(__file__).resolve().parent
@@ -137,7 +149,7 @@ def load_config() -> dict[str, Any]:
         Parsed config dictionary.
 
     Raises:
-        SystemExit: If config.json is missing or invalid.
+        ConfigError: If config.json is missing or invalid.
     """
     cfg = config_path()
 
@@ -146,13 +158,13 @@ def load_config() -> dict[str, Any]:
         root = _find_project_root()
         old_path = root / CONFIG_FILE
         if old_path.exists():
-            error_exit(
+            raise ConfigError(
                 "config.json found at old location (project root).",
                 hint=f"Move it to the data directory:\n"
                 f"  mkdir -p {root / DATA_DIR}\n"
                 f"  mv {old_path} {cfg}",
             )
-        error_exit(
+        raise ConfigError(
             "config.json not found.",
             hint=f"Run 'chess-self-coach setup' to create it,\n"
             f"  or copy {root / DATA_DIR / CONFIG_EXAMPLE_FILE} to {cfg}",
@@ -162,10 +174,10 @@ def load_config() -> dict[str, Any]:
         with open(cfg) as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        error_exit(
+        raise ConfigError(
             f"config.json is not valid JSON: {e}",
             hint=f"Check the syntax in {cfg}",
-        )
+        ) from e
 
 
 def save_config(config: dict[str, Any]) -> None:

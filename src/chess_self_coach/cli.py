@@ -149,9 +149,12 @@ def main(argv: list[str] | None = None) -> None:
                 print(f"  ❌ {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.action == "status":
-            from chess_self_coach.config import load_config
+            from chess_self_coach.config import ConfigError, error_exit, load_config
 
-            config = load_config()
+            try:
+                config = load_config()
+            except ConfigError as e:
+                error_exit(str(e), hint=e.hint)
             status = syzygy_status(config)
             if status["found"]:
                 print(f"  Path: {status['path']}")
@@ -180,9 +183,12 @@ def main(argv: list[str] | None = None) -> None:
             from chess_self_coach.opening_explorer import ExplorerAPIError
 
             # Build settings from config, with CLI overrides
-            from chess_self_coach.config import load_config
+            from chess_self_coach.config import ConfigError, error_exit, load_config
 
-            config = load_config()
+            try:
+                config = load_config()
+            except ConfigError as e:
+                error_exit(str(e), hint=e.hint)
             settings = AnalysisSettings.from_config(config)
             if args.threads is not None:
                 settings.threads = args.threads
@@ -222,6 +228,7 @@ def main(argv: list[str] | None = None) -> None:
 def _setup() -> None:
     """Interactive setup: Stockfish, Syzygy, game platforms."""
     from chess_self_coach.config import (
+        ConfigError,
         check_stockfish_version,
         config_path,
         find_stockfish,
@@ -281,7 +288,7 @@ def _setup() -> None:
     cfg.parent.mkdir(parents=True, exist_ok=True)
     try:
         config = load_config()
-    except SystemExit:
+    except ConfigError:
         config = {}
 
     config["stockfish"] = {"path": str(sf_path)}

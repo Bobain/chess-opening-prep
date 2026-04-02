@@ -26,7 +26,7 @@ import uuid
 import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import chess
 import chess.engine
@@ -41,6 +41,7 @@ from chess_self_coach.config import (
     ANALYSIS_DATA_FILE,
     CLASSIFICATIONS_DATA_FILE,
     CONFIG_FILE,
+    ConfigError,
     DATA_DIR,
     TRAINING_DATA_FILE,
     _find_project_root,
@@ -96,6 +97,15 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(ConfigError)
+async def _config_error_handler(request: Request, exc: ConfigError) -> JSONResponse:
+    """Convert ConfigError to a 503 response instead of crashing the server."""
+    detail = str(exc)
+    if exc.hint:
+        detail += f" {exc.hint}"
+    return JSONResponse(status_code=503, content={"detail": detail})
 
 
 # --- Crash reporter ---
@@ -494,7 +504,7 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
 
         status = load_pipeline_status()
 
-        def _run_downstream(game_id: str, game_data: dict) -> None:  # type: ignore[type-arg]
+        def _run_downstream(game_id: str, game_data: dict[str, Any]) -> None:
             """Run tactics → classification → training for one game."""
             # Tactics
             _push({"phase": "tactics", "message": "Tactical analysis...", "game_id": game_id})
@@ -557,7 +567,7 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
             save_pipeline_status(status)
 
         # --- Per-game callback: analysis + all downstream phases ---
-        def _on_game_done(game_id: str, game_data: dict) -> None:  # type: ignore[type-arg]
+        def _on_game_done(game_id: str, game_data: dict[str, Any]) -> None:
             mark_analyzed(status, game_id, game_data.get("analyzed_at", ""))
             save_pipeline_status(status)
             _run_downstream(game_id, game_data)
