@@ -34,6 +34,8 @@ from chess_self_coach.tablebase import MAX_PIECES, probe_position_full
 
 _log = logging.getLogger(__name__)
 
+MULTIPV = 3  # number of principal variations for MultiPV analysis
+
 
 @dataclass
 class AnalysisSettings:
@@ -289,6 +291,44 @@ def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
     }
 
 
+def _extract_multipv(
+    infos: list[chess.engine.InfoDict], board: chess.Board,
+) -> dict:
+    """Extract compact MultiPV data from engine.analyse(multipv=N) results.
+
+    PV1 data is NOT stored here — it lives in eval_before (score_cp, pv_uci,
+    best_move_uci). This function only stores derived features and alternatives.
+
+    Args:
+        infos: List of info dicts from engine.analyse(multipv=N).
+        board: Board position analyzed.
+
+    Returns:
+        Compact dict with move_gap, n_good_moves, and alt moves with scores.
+    """
+    scores: list[tuple[int | None, str | None]] = []  # (cp, first_move_uci)
+    for info in infos:
+        score = info.get("score")
+        if score is None:
+            continue
+        cp, _, _ = _score_to_cp(score)
+        pv = info.get("pv", [])
+        first_move = pv[0].uci() if pv else None
+        scores.append((cp, first_move))
+
+    if not scores:
+        return {"move_gap": None, "n_good_moves": 0, "alt": []}
+
+    best_cp = scores[0][0]
+    move_gap = (best_cp - scores[1][0]) if len(scores) >= 2 and best_cp is not None and scores[1][0] is not None else None
+    n_good = (
+        sum(1 for cp, _ in scores if cp is not None and best_cp is not None and abs(cp - best_cp) <= 50)
+    )
+    alt = [{"move": m, "cp": cp} for cp, m in scores[1:] if m is not None]
+
+    return {"move_gap": move_gap, "n_good_moves": n_good, "alt": alt}
+
+
 def _tb_to_eval(tb_data: dict, board_turn: chess.Color) -> dict:
     """Convert tablebase data to a pseudo eval_before/eval_after dict.
 
@@ -420,6 +460,7 @@ def collect_game_data(
     # Cache: eval_before for current position (reused as eval_after of previous move)
     cached_eval: dict | None = None
     cached_tb: dict | None = None
+    cached_mpv: dict | None = None
     prev_player_clock: float | None = None
     prev_opponent_clock: float | None = None
 
@@ -480,9 +521,11 @@ def collect_game_data(
             # eval_source is set below based on actual evaluation provider
 
             # eval_before
+            mpv_before: dict | None = None
             t0 = _time.time()
             if cached_eval is not None:
                 eval_before = cached_eval
+                mpv_before = cached_mpv
                 _eb_src = "cache"
             else:
                 cloud = query_cloud_eval(board.fen())
@@ -490,28 +533,33 @@ def collect_game_data(
                     eval_before = _cloud_eval_to_eval(cloud, board)
                     _eb_src = "cloud_eval"
                 else:
-                    info = engine.analyse(
+                    infos = engine.analyse(
                         board,
                         _analysis_limit_from_settings(board, limits),
+                        multipv=MULTIPV,
                         game=game_id,
                     )
-                    eval_before = _extract_eval(info, board)
+                    eval_before = _extract_eval(infos[0], board)
+                    mpv_before = _extract_multipv(infos, board)
                     _eb_src = "sf_fallback"
             eval_before_ms = (_time.time() - t0) * 1000
 
             # eval_after
+            mpv_after: dict | None = None
             t0 = _time.time()
             cloud_after = query_cloud_eval(board_after_fen)
             if cloud_after:
                 eval_after = _cloud_eval_to_eval(cloud_after, board_after)
                 _ea_src = "cloud_eval"
             else:
-                info_after = engine.analyse(
+                infos_after = engine.analyse(
                     board_after,
                     _analysis_limit_from_settings(board_after, limits),
+                    multipv=MULTIPV,
                     game=game_id,
                 )
-                eval_after = _extract_eval(info_after, board_after)
+                eval_after = _extract_eval(infos_after[0], board_after)
+                mpv_after = _extract_multipv(infos_after, board_after)
                 _ea_src = "sf_fallback"
             eval_after_ms = (_time.time() - t0) * 1000
 
@@ -531,6 +579,7 @@ def collect_game_data(
 
             cached_eval = eval_after
             cached_tb = None
+            cached_mpv = mpv_after
             cp_loss = 0
             tb_before_stored = None
             tb_after_stored = None
@@ -539,12 +588,14 @@ def collect_game_data(
             eval_source = "stockfish"
 
             # eval_before (+ tablebase probe)
+            mpv_before = None
             t0 = _time.time()
             if piece_count <= MAX_PIECES:
                 tb_before = probe_position_full(board.fen())
 
             if cached_eval is not None:
                 eval_before = cached_eval
+                mpv_before = cached_mpv
                 _eb_src = "cache"
                 if cached_tb is not None:
                     tb_before = cached_tb
@@ -558,16 +609,19 @@ def collect_game_data(
                 eval_source = "tablebase"
                 _eb_src = "tablebase"
             else:
-                info = engine.analyse(
-                    board, _analysis_limit_from_settings(board, limits), game=game_id
+                infos = engine.analyse(
+                    board, _analysis_limit_from_settings(board, limits),
+                    multipv=MULTIPV, game=game_id,
                 )
-                eval_before = _extract_eval(info, board)
+                eval_before = _extract_eval(infos[0], board)
+                mpv_before = _extract_multipv(infos, board)
                 _eb_src = "stockfish"
                 if tb_before:
                     eval_source = "stockfish+tablebase"
             eval_before_ms = (_time.time() - t0) * 1000
 
             # --- Eval after actual move (will be cached as eval_before for next ply) ---
+            mpv_after: dict | None = None
             t0 = _time.time()
             pc_after = len(board_after.piece_map())
             tb_after = None
@@ -579,16 +633,18 @@ def collect_game_data(
                 eval_after = _tb_to_eval(tb_after, board_after.turn)
                 cached_eval = eval_after
                 cached_tb = tb_after
+                cached_mpv = None
                 _ea_src = "tablebase"
             else:
-                info_after = engine.analyse(
-                    board_after,
-                    _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
+                infos_after = engine.analyse(
+                    board_after, _analysis_limit_from_settings(board_after, limits),
+                    multipv=MULTIPV, game=game_id,
                 )
-                eval_after = _extract_eval(info_after, board_after)
+                eval_after = _extract_eval(infos_after[0], board_after)
+                mpv_after = _extract_multipv(infos_after, board_after)
                 cached_eval = eval_after
                 cached_tb = None
+                cached_mpv = mpv_after
                 _ea_src = "stockfish"
             eval_after_ms = (_time.time() - t0) * 1000
 
@@ -636,6 +692,7 @@ def collect_game_data(
             "in_opening": in_opening,
             "eval_before": eval_before,
             "eval_after": eval_after,
+            "multipv_before": mpv_before,
             "tablebase_before": tb_before_stored,
             "tablebase_after": tb_after_stored,
             "opening_explorer": explorer_data,
