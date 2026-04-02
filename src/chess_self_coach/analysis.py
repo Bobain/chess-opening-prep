@@ -376,11 +376,19 @@ def collect_game_data(
     settings: AnalysisSettings,
     lichess_token: str | None = None,
     game_id: str = "",
+    existing_moves: list[dict] | None = None,
 ) -> dict:
     """Collect full per-move analysis data for one game (Phase 1).
 
-    Runs Stockfish, Lichess tablebase, and Opening Explorer on every position.
-    Stores all raw data with maximum granularity — no filtering, no annotation.
+    Source hierarchy per move:
+      1. Tablebase (priority if ≤7 pieces — perfect information)
+      2. Masters opening explorer (in_opening=True, cp_loss=0)
+      3. Cloud eval (depth 50-70, cp_loss computed)
+      4. Stockfish (fallback, always re-run on re-analysis)
+
+    When *existing_moves* is provided (re-analysis), API data (masters,
+    cloud eval, tablebase) is preserved and only breakpoints are re-tested.
+    Stockfish positions are always re-run regardless.
 
     Args:
         game: Parsed PGN game.
@@ -390,6 +398,8 @@ def collect_game_data(
         lichess_token: Lichess API token for Opening Explorer. None to skip.
         game_id: Unique game identifier. Passed to engine.analyse() so python-chess
             sends ucinewgame between different games (hash table reset).
+        existing_moves: Previous per-move data from a prior analysis. When set,
+            preserves API data and only re-tests breakpoints + re-runs Stockfish.
 
     Returns:
         Dict with game headers, settings, and moves[] array ready for
@@ -407,12 +417,19 @@ def collect_game_data(
         fens_and_moves.append((board.fen(), next_node.move.uci()))
         node = next_node
 
-    # Query Opening Explorer for opening-phase positions (stops at departure)
+    # Query Masters Opening Explorer (stops at departure)
     explorer_results: list[dict | None] = [None] * len(fens_and_moves)
     if lichess_token:
         from chess_self_coach.opening_explorer import query_opening_sequence
 
-        explorer_results = query_opening_sequence(fens_and_moves, lichess_token)
+        existing_explorer = (
+            [m.get("opening_explorer") for m in existing_moves]
+            if existing_moves
+            else None
+        )
+        explorer_results = query_opening_sequence(
+            fens_and_moves, lichess_token, existing_results=existing_explorer
+        )
 
     # Walk through the game and collect eval data for each move
     node = game
@@ -420,6 +437,7 @@ def collect_game_data(
     # Cache: eval_before for current position (reused as eval_after of previous move)
     cached_eval: dict | None = None
     cached_tb: dict | None = None
+    cloud_departed = False
     prev_player_clock: float | None = None
     prev_opponent_clock: float | None = None
 
@@ -459,125 +477,60 @@ def collect_game_data(
             if opponent_clock is not None and prev_opponent_clock is not None:
                 time_spent = prev_opponent_clock - opponent_clock
 
-        # --- Opening Explorer: determine if move is in opening theory ---
+        # --- Opening Explorer: determine if move is in Masters theory ---
         explorer_data = explorer_results[ply] if ply < len(explorer_results) else None
-        in_opening = False
-        use_cloud_eval = False
-        if explorer_data is not None:
-            known_moves_uci = {m["uci"] for m in explorer_data.get("moves", [])}
-            is_known_move = actual_move.uci() in known_moves_uci
-            if is_known_move:
-                use_cloud_eval = True
-                # in_opening only if Masters confirmed this move as real theory
-                in_opening = explorer_data.get("_source") == "masters"
+        in_opening = (
+            explorer_data is not None
+            and explorer_data.get("_source") == "masters"
+        )
 
-        # --- Eval: board_after_fen needed by both branches ---
+        # --- Existing move data (re-analysis) ---
+        existing = (
+            existing_moves[ply]
+            if existing_moves is not None and ply < len(existing_moves)
+            else None
+        )
+
+        # --- board_after_fen needed by all tiers ---
         board_after_fen = board_after.fen()
 
-        # --- Eval source + eval_before / eval_after ---
-        if use_cloud_eval:
-            # Opening book move: use Lichess Cloud Eval (fast), fall back to Stockfish
-            # eval_source is set below based on actual evaluation provider
+        # --- Tier dispatch: tablebase → masters+cloud → cloud → stockfish ---
+        tb_before: dict | None = None
+        tb_after: dict | None = None
+        pc_after = len(board_after.piece_map())
 
-            # eval_before
+        if piece_count <= MAX_PIECES:
+            # ── Tier 1: Tablebase (priority, ≤7 pieces, perfect information) ──
             t0 = _time.time()
-            if cached_eval is not None:
-                eval_before = cached_eval
-                _eb_src = "cache"
+            if existing and existing.get("tablebase_before"):
+                tb_before = existing["tablebase_before"]
             else:
-                cloud = query_cloud_eval(board.fen())
-                if cloud:
-                    eval_before = _cloud_eval_to_eval(cloud, board)
-                    _eb_src = "cloud_eval"
-                else:
-                    info = engine.analyse(
-                        board,
-                        _analysis_limit_from_settings(board, limits),
-                        game=game_id,
-                    )
-                    eval_before = _extract_eval(info, board)
-                    _eb_src = "sf_fallback"
-            eval_before_ms = (_time.time() - t0) * 1000
-
-            # eval_after
-            t0 = _time.time()
-            cloud_after = query_cloud_eval(board_after_fen)
-            if cloud_after:
-                eval_after = _cloud_eval_to_eval(cloud_after, board_after)
-                _ea_src = "cloud_eval"
-            else:
-                info_after = engine.analyse(
-                    board_after,
-                    _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
-                )
-                eval_after = _extract_eval(info_after, board_after)
-                _ea_src = "sf_fallback"
-            eval_after_ms = (_time.time() - t0) * 1000
-
-            eval_source = "cloud_eval" if _ea_src == "cloud_eval" else "stockfish"
-
-            _log.info(
-                "  ply %d %s: opening — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s)",
-                ply + 1,
-                board.san(actual_move),
-                _eb_src,
-                eval_before_ms,
-                eval_before.get("score_cp"),
-                _ea_src,
-                eval_after_ms,
-                eval_after.get("score_cp"),
-            )
-
-            cached_eval = eval_after
-            cached_tb = None
-            cp_loss = 0
-            tb_before_stored = None
-            tb_after_stored = None
-        else:
-            tb_before = None
-            eval_source = "stockfish"
-
-            # eval_before (+ tablebase probe)
-            t0 = _time.time()
-            if piece_count <= MAX_PIECES:
                 tb_before = probe_position_full(board.fen())
 
-            if cached_eval is not None:
-                eval_before = cached_eval
+            if cached_eval is not None and cached_tb is not None:
+                score_before = cached_eval
+                tb_before = cached_tb
                 _eb_src = "cache"
-                if cached_tb is not None:
-                    tb_before = cached_tb
-                    eval_source = (
-                        "tablebase"
-                        if cached_eval.get("depth") is None
-                        else "stockfish+tablebase"
-                    )
             elif tb_before:
-                eval_before = _tb_to_eval(tb_before, board.turn)
-                eval_source = "tablebase"
+                score_before = _tb_to_eval(tb_before, board.turn)
                 _eb_src = "tablebase"
             else:
                 info = engine.analyse(
                     board, _analysis_limit_from_settings(board, limits), game=game_id
                 )
-                eval_before = _extract_eval(info, board)
-                _eb_src = "stockfish"
-                if tb_before:
-                    eval_source = "stockfish+tablebase"
-            eval_before_ms = (_time.time() - t0) * 1000
+                score_before = _extract_eval(info, board)
+                _eb_src = "sf_fallback"
+            score_before_ms = (_time.time() - t0) * 1000
 
-            # --- Eval after actual move (will be cached as eval_before for next ply) ---
             t0 = _time.time()
-            pc_after = len(board_after.piece_map())
-            tb_after = None
-
-            if pc_after <= MAX_PIECES:
+            if existing and existing.get("tablebase_after"):
+                tb_after = existing["tablebase_after"]
+            elif pc_after <= MAX_PIECES:
                 tb_after = probe_position_full(board_after_fen)
 
             if tb_after:
-                eval_after = _tb_to_eval(tb_after, board_after.turn)
-                cached_eval = eval_after
+                score_after = _tb_to_eval(tb_after, board_after.turn)
+                cached_eval = score_after
                 cached_tb = tb_after
                 _ea_src = "tablebase"
             else:
@@ -586,18 +539,183 @@ def collect_game_data(
                     _analysis_limit_from_settings(board_after, limits),
                     game=game_id,
                 )
-                eval_after = _extract_eval(info_after, board_after)
-                cached_eval = eval_after
+                score_after = _extract_eval(info_after, board_after)
+                cached_eval = score_after
                 cached_tb = None
                 _ea_src = "stockfish"
-            eval_after_ms = (_time.time() - t0) * 1000
+            score_after_ms = (_time.time() - t0) * 1000
 
-            # --- cp_loss ---
-            cp_loss = 0
+            tier_source = "tablebase" if tb_before and tb_after else (
+                "stockfish+tablebase" if tb_before or tb_after else "stockfish"
+            )
+
+        else:
+            # ── Tiers 2-4: Cloud scoring / Stockfish (>7 pieces) ──
+            tier_source = "stockfish"  # default, overridden below
+
+            # Can we reuse preserved cloud scoring data?
+            _preserved_cloud = (
+                existing is not None
+                and existing.get("eval_source") == "cloud_eval"
+            )
+
+            if in_opening and _preserved_cloud:
+                # ── Tier 2a: Masters move with preserved cloud scoring ──
+                t0 = _time.time()
+                score_before = cached_eval if cached_eval is not None else existing["eval_before"]
+                _eb_src = "cache" if cached_eval is not None else "preserved"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                score_after = existing["eval_after"]
+                _ea_src = "preserved"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval"
+                cached_eval = score_after
+                cached_tb = None
+
+            elif in_opening:
+                # ── Tier 2b: Masters move, fresh cloud scoring query ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    _eb_src = "cache"
+                else:
+                    cloud = query_cloud_eval(board.fen())
+                    if cloud:
+                        score_before = _cloud_eval_to_eval(cloud, board)
+                        _eb_src = "cloud_eval"
+                    else:
+                        info = engine.analyse(
+                            board,
+                            _analysis_limit_from_settings(board, limits),
+                            game=game_id,
+                        )
+                        score_before = _extract_eval(info, board)
+                        _eb_src = "sf_fallback"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                cloud_after = query_cloud_eval(board_after_fen)
+                if cloud_after:
+                    score_after = _cloud_eval_to_eval(cloud_after, board_after)
+                    _ea_src = "cloud_eval"
+                else:
+                    info_after = engine.analyse(
+                        board_after,
+                        _analysis_limit_from_settings(board_after, limits),
+                        game=game_id,
+                    )
+                    score_after = _extract_eval(info_after, board_after)
+                    _ea_src = "sf_fallback"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval" if _ea_src == "cloud_eval" else "stockfish"
+                cached_eval = score_after
+                cached_tb = None
+
+            elif not cloud_departed and _preserved_cloud:
+                # ── Tier 3a: Post-masters, preserved cloud scoring ──
+                t0 = _time.time()
+                score_before = cached_eval if cached_eval is not None else existing["eval_before"]
+                _eb_src = "cache" if cached_eval is not None else "preserved"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                score_after = existing["eval_after"]
+                _ea_src = "preserved"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval"
+                cached_eval = score_after
+                cached_tb = None
+
+            elif not cloud_departed:
+                # ── Tier 3b: Post-masters, fresh cloud scoring query ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    _eb_src = "cache"
+                else:
+                    cloud = query_cloud_eval(board.fen())
+                    if cloud:
+                        score_before = _cloud_eval_to_eval(cloud, board)
+                        _eb_src = "cloud_eval"
+                    else:
+                        info = engine.analyse(
+                            board,
+                            _analysis_limit_from_settings(board, limits),
+                            game=game_id,
+                        )
+                        score_before = _extract_eval(info, board)
+                        _eb_src = "sf_fallback"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                cloud_after = query_cloud_eval(board_after_fen)
+                if cloud_after:
+                    score_after = _cloud_eval_to_eval(cloud_after, board_after)
+                    _ea_src = "cloud_eval"
+                    tier_source = "cloud_eval"
+                else:
+                    cloud_departed = True
+                    info_after = engine.analyse(
+                        board_after,
+                        _analysis_limit_from_settings(board_after, limits),
+                        game=game_id,
+                    )
+                    score_after = _extract_eval(info_after, board_after)
+                    _ea_src = "stockfish"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                cached_eval = score_after
+                cached_tb = None
+
+            else:
+                # ── Tier 4: Stockfish (fallback, always re-run) ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    _eb_src = "cache"
+                else:
+                    info = engine.analyse(
+                        board,
+                        _analysis_limit_from_settings(board, limits),
+                        game=game_id,
+                    )
+                    score_before = _extract_eval(info, board)
+                    _eb_src = "stockfish"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                info_after = engine.analyse(
+                    board_after,
+                    _analysis_limit_from_settings(board_after, limits),
+                    game=game_id,
+                )
+                score_after = _extract_eval(info_after, board_after)
+                _ea_src = "stockfish"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                cached_eval = score_after
+                cached_tb = None
+
+        # --- Unified variable names for the rest of the loop ---
+        eval_before = score_before
+        eval_after = score_after
+        eval_before_ms = score_before_ms
+        eval_after_ms = score_after_ms
+        eval_source = tier_source
+        tb_before_stored = tb_before
+        tb_after_stored = tb_after
+
+        # --- cp_loss: 0 for opening (masters), computed for everything else ---
+        cp_loss = 0
+        if not in_opening:
             before_cp = eval_before.get("score_cp")
             after_cp = eval_after.get("score_cp")
             if before_cp is not None and after_cp is not None:
-                # If the player delivered checkmate, cp_loss is 0 by definition
                 best_uci = eval_before.get("best_move_uci", "")
                 if best_uci and actual_move == chess.Move.from_uci(best_uci):
                     cp_loss = 0
@@ -606,23 +724,19 @@ def collect_game_data(
                 else:
                     cp_loss = max(0, after_cp - before_cp)
 
-            _log.info(
-                "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d",
-                ply + 1,
-                board.san(actual_move),
-                eval_source,
-                _eb_src,
-                eval_before_ms,
-                eval_before.get("score_cp"),
-                _ea_src,
-                eval_after_ms,
-                eval_after.get("score_cp"),
-                cp_loss,
-            )
-
-            # --- Tablebase: store full responses ---
-            tb_before_stored = tb_before
-            tb_after_stored = tb_after
+        _log.info(
+            "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d",
+            ply + 1,
+            board.san(actual_move),
+            eval_source,
+            _eb_src,
+            eval_before_ms,
+            eval_before.get("score_cp"),
+            _ea_src,
+            eval_after_ms,
+            eval_after.get("score_cp"),
+            cp_loss,
+        )
 
         # --- Build move dict ---
         move_dict = {
@@ -980,8 +1094,8 @@ def analyze_games(
 
             # Per-game summary
             _moves = game_data["moves"]
-            _opening = [m for m in _moves if m["eval_source"] == "opening_explorer"]
-            _other = [m for m in _moves if m["eval_source"] != "opening_explorer"]
+            _opening = [m for m in _moves if m.get("in_opening")]
+            _other = [m for m in _moves if not m.get("in_opening")]
             _log.info(
                 "Game %d/%d: %s — %d moves in %.1fs",
                 done_count,
