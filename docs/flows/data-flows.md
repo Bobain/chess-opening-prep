@@ -19,7 +19,8 @@ flowchart LR
         IMP[Importer<br/>fetch games]
         SF[Stockfish 18<br/>N-1 threads, 1GB hash]
         TB[Lichess Tablebase<br/>≤7 pieces]
-        OE[Lichess Opening Explorer<br/>Masters primary, Lichess fallback]
+        OE[Lichess Masters Explorer]
+        CE[Lichess Cloud Eval<br/>all positions post-masters]
     end
 
     subgraph Storage
@@ -57,9 +58,11 @@ flowchart LR
     IMP --> SF
     IMP --> TB
     IMP --> OE
+    IMP --> CE
     SF --> AD
     TB --> AD
     OE --> AD
+    CE --> AD
     AD --> TACT
     TACT --> TAC
     AD --> CLASS
