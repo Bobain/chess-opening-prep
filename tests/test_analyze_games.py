@@ -162,16 +162,18 @@ def test_analyze_games_incremental_skips_analyzed(mock_popen, mock_tb, mock_syz,
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_analyze_games_reanalyze_different_settings(mock_popen, mock_tb, mock_syz, tmp_path):
-    """reanalyze_all=True re-analyzes games with different settings."""
+def test_analyze_games_reanalyze_always_reruns(mock_popen, mock_tb, mock_syz, tmp_path):
+    """reanalyze_all=True always re-runs, even with identical settings."""
     mock_popen.return_value = _mock_engine()
 
+    # Existing game with SAME settings as we'll request
+    same_settings = {"threads": 1, "hash_mb": 64, "limits": {"default": {"depth": 5}}}
     existing_data = {
         "version": "1.0",
         "player": {"lichess": "testplayer"},
         "games": {
             "https://lichess.org/test123": {
-                "settings": {"threads": 1, "hash_mb": 64, "limits": {"default": {"depth": 5}}},
+                "settings": same_settings,
                 "moves": [],
             }
         },
@@ -191,11 +193,10 @@ def test_analyze_games_reanalyze_different_settings(mock_popen, mock_tb, mock_sy
          patch("chess_self_coach.analysis.load_analysis_data", return_value=existing_data), \
          patch("chess_self_coach.analysis.save_analysis_data", side_effect=mock_save):
 
-        # Different settings → should re-analyze
-        new_settings = AnalysisSettings(threads=4, hash_mb=2048, limits={"default": {"depth": 18}})
-        analyze_games(max_games=1, reanalyze_all=True, settings=new_settings)
+        # Same settings → should STILL re-analyze (CPU conditions may differ)
+        settings = AnalysisSettings(threads=1, hash_mb=64, limits={"default": {"depth": 5}})
+        analyze_games(max_games=1, reanalyze_all=True, settings=settings)
 
     assert "games" in saved_data
     game_data = list(saved_data["games"].values())[0]
-    # Settings should be the new ones
-    assert game_data["settings"]["hash_mb"] == 2048
+    assert len(game_data["moves"]) == 5  # Re-analyzed, not skipped
