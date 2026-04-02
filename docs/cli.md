@@ -90,7 +90,7 @@ chess-self-coach syzygy download    # download tables to ~/.local/share/syzygy/
 chess-self-coach syzygy status      # show installed tables info
 ```
 
-Stockfish uses these tables during search for faster, exact endgame analysis. Tables are also downloaded automatically during `setup` and `install.sh`.
+Stockfish uses these tables during search for faster, exact endgame analysis. Tables are also downloaded automatically during `setup` and `install.sh`. Both `download` and `setup` prompt for the installation directory (saved to `config.json`).
 
 ## cloud-eval
 
@@ -101,5 +101,5 @@ chess-self-coach cloud-eval download    # stream import into SQLite (~4-8h)
 chess-self-coach cloud-eval status      # show DB path, position count, size
 ```
 
-When present, the analysis pipeline checks the local database first (instant lookup) and only falls back to the Lichess API for positions not in the DB. This eliminates 429 rate-limit bans during batch analysis. The database is also offered during `setup`.
+When present, the analysis pipeline checks the local database first (instant lookup) and only falls back to the Lichess API for positions not in the DB. This eliminates 429 rate-limit bans during batch analysis. Both `download` and `setup` prompt for the installation directory (saved to `config.json`).
 

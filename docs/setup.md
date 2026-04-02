@@ -42,8 +42,8 @@ chess-self-coach setup
 The `setup` command will:
 
 1. Check Stockfish availability
-2. Download Syzygy endgame tablebases (3-5 pieces, ~1 GB) if not already installed
-3. Offer to download the Lichess cloud evaluation database (369M positions, ~20 GB) for rate-limit-free analysis
+2. Download Syzygy endgame tablebases (3-5 pieces, ~1 GB) — prompts for installation directory
+3. Offer to download the Lichess cloud evaluation database (369M positions, ~20 GB) — prompts for installation directory
 4. Ask for your Lichess username and API token
 5. Ask for your chess.com username
 6. Save your personal configuration to `data/config.json`
