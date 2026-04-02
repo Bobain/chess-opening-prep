@@ -65,6 +65,14 @@ def query_cloud_eval(
     Raises:
         RateLimitExhaustedError: If rate limit persists after max backoff.
     """
+    # Try local DB first (no network, no rate limit)
+    from chess_self_coach.cloud_eval_db import lookup_cloud_eval as _db_lookup
+
+    local = _db_lookup(fen, multi_pv=multi_pv)
+    if local is not None:
+        _log.info("    cloud %s → local DB hit (depth=%s)", fen[:40], local.get("depth"))
+        return local
+
     global _last_request_time
     params = {"fen": fen, "multiPv": multi_pv}
     attempt = 0
