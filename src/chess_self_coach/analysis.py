@@ -14,6 +14,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import chess
 import chess.engine
@@ -33,6 +34,8 @@ from chess_self_coach.io import atomic_write_json
 from chess_self_coach.tablebase import MAX_PIECES, probe_position_full
 
 _log = logging.getLogger(__name__)
+
+MULTIPV = 3  # number of principal variations for MultiPV analysis
 
 
 @dataclass
@@ -289,6 +292,52 @@ def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
     }
 
 
+def _extract_multipv(
+    infos: list[chess.engine.InfoDict], board: chess.Board,
+) -> dict:
+    """Extract compact MultiPV data from engine.analyse(multipv=N) results.
+
+    PV1 data is NOT stored here — it lives in eval_before (score_cp, pv_uci,
+    best_move_uci). This function only stores derived features and alternatives.
+
+    Args:
+        infos: List of info dicts from engine.analyse(multipv=N).
+        board: Board position analyzed.
+
+    Returns:
+        Compact dict with move_gap, n_good_moves, and alt moves with scores.
+    """
+    scores: list[tuple[int | None, str | None]] = []  # (cp, first_move_uci)
+    for info in infos:
+        score = info.get("score")
+        if score is None:
+            continue
+        cp, _, _ = _score_to_cp(score)
+        pv = info.get("pv", [])
+        first_move = pv[0].uci() if pv else None
+        scores.append((cp, first_move))
+
+    if not scores:
+        return {"move_gap": None, "n_good_moves": 0, "alt": []}
+
+    best_cp = scores[0][0]
+    move_gap = (
+        (best_cp - scores[1][0])
+        if len(scores) >= 2
+        and best_cp is not None
+        and scores[1][0] is not None
+        else None
+    )
+    n_good = sum(
+        1
+        for cp, _ in scores
+        if cp is not None and best_cp is not None and abs(cp - best_cp) <= 50
+    )
+    alt = [{"move": m, "cp": cp} for cp, m in scores[1:] if m is not None]
+
+    return {"move_gap": move_gap, "n_good_moves": n_good, "alt": alt}
+
+
 def _tb_to_eval(tb_data: dict, board_turn: chess.Color) -> dict:
     """Convert tablebase data to a pseudo eval_before/eval_after dict.
 
@@ -376,8 +425,8 @@ def collect_game_data(
     settings: AnalysisSettings,
     lichess_token: str | None = None,
     game_id: str = "",
-    existing_moves: list[dict] | None = None,
-) -> dict:
+    existing_moves: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """Collect full per-move analysis data for one game (Phase 1).
 
     Source hierarchy per move:
@@ -435,8 +484,9 @@ def collect_game_data(
     node = game
     ply = 0
     # Cache: eval_before for current position (reused as eval_after of previous move)
-    cached_eval: dict | None = None
-    cached_tb: dict | None = None
+    cached_eval: dict[str, Any] | None = None
+    cached_tb: dict[str, Any] | None = None
+    cached_mpv: dict[str, Any] | None = None
     cloud_departed = False
     prev_player_clock: float | None = None
     prev_opponent_clock: float | None = None
@@ -485,7 +535,7 @@ def collect_game_data(
         )
 
         # --- Existing move data (re-analysis) ---
-        existing = (
+        existing: dict[str, Any] | None = (
             existing_moves[ply]
             if existing_moves is not None and ply < len(existing_moves)
             else None
@@ -495,58 +545,70 @@ def collect_game_data(
         board_after_fen = board_after.fen()
 
         # --- Tier dispatch: tablebase → masters+cloud → cloud → stockfish ---
-        tb_before: dict | None = None
-        tb_after: dict | None = None
+        tb_before: dict[str, Any] | None = None
+        tb_after: dict[str, Any] | None = None
+        mpv_before: dict[str, Any] | None = None
         pc_after = len(board_after.piece_map())
 
         if piece_count <= MAX_PIECES:
             # ── Tier 1: Tablebase (priority, ≤7 pieces, perfect information) ──
-            t0 = _time.time()
+            # Probe tablebase for current position
+            _tb_probed: dict[str, Any] | None = None
             if existing and existing.get("tablebase_before"):
-                tb_before = existing["tablebase_before"]
+                _tb_probed = existing["tablebase_before"]
             else:
-                tb_before = probe_position_full(board.fen())
+                _tb_probed = probe_position_full(board.fen())
 
+            t0 = _time.time()
             if cached_eval is not None and cached_tb is not None:
                 score_before = cached_eval
                 tb_before = cached_tb
+                mpv_before = cached_mpv
                 _eb_src = "cache"
-            elif tb_before:
-                score_before = _tb_to_eval(tb_before, board.turn)
+            elif _tb_probed is not None:
+                tb_before = _tb_probed
+                score_before = _tb_to_eval(_tb_probed, board.turn)
                 _eb_src = "tablebase"
             else:
-                info = engine.analyse(
-                    board, _analysis_limit_from_settings(board, limits), game=game_id
+                infos = engine.analyse(
+                    board, _analysis_limit_from_settings(board, limits),
+                    multipv=MULTIPV, game=game_id,
                 )
-                score_before = _extract_eval(info, board)
+                score_before = _extract_eval(infos[0], board)
+                mpv_before = _extract_multipv(infos, board)
                 _eb_src = "sf_fallback"
             score_before_ms = (_time.time() - t0) * 1000
 
-            t0 = _time.time()
+            # Probe tablebase for position after move
+            _tb_probed_after: dict[str, Any] | None = None
             if existing and existing.get("tablebase_after"):
-                tb_after = existing["tablebase_after"]
+                _tb_probed_after = existing["tablebase_after"]
             elif pc_after <= MAX_PIECES:
-                tb_after = probe_position_full(board_after_fen)
+                _tb_probed_after = probe_position_full(board_after_fen)
 
-            if tb_after:
-                score_after = _tb_to_eval(tb_after, board_after.turn)
+            t0 = _time.time()
+            if _tb_probed_after is not None:
+                tb_after = _tb_probed_after
+                score_after = _tb_to_eval(_tb_probed_after, board_after.turn)
                 cached_eval = score_after
-                cached_tb = tb_after
+                cached_tb = _tb_probed_after
+                cached_mpv = None
                 _ea_src = "tablebase"
             else:
-                info_after = engine.analyse(
+                infos_after = engine.analyse(
                     board_after,
                     _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
+                    multipv=MULTIPV, game=game_id,
                 )
-                score_after = _extract_eval(info_after, board_after)
+                score_after = _extract_eval(infos_after[0], board_after)
                 cached_eval = score_after
                 cached_tb = None
+                cached_mpv = _extract_multipv(infos_after, board_after)
                 _ea_src = "stockfish"
             score_after_ms = (_time.time() - t0) * 1000
 
-            tier_source = "tablebase" if tb_before and tb_after else (
-                "stockfish+tablebase" if tb_before or tb_after else "stockfish"
+            tier_source = "tablebase" if tb_before is not None and tb_after is not None else (
+                "stockfish+tablebase" if tb_before is not None or tb_after is not None else "stockfish"
             )
 
         else:
@@ -561,9 +623,16 @@ def collect_game_data(
 
             if in_opening and _preserved_cloud:
                 # ── Tier 2a: Masters move with preserved cloud scoring ──
+                assert existing is not None  # guaranteed by _preserved_cloud
                 t0 = _time.time()
-                score_before = cached_eval if cached_eval is not None else existing["eval_before"]
-                _eb_src = "cache" if cached_eval is not None else "preserved"
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    score_before = existing["eval_before"]
+                    mpv_before = existing.get("multipv_before")
+                    _eb_src = "preserved"
                 score_before_ms = (_time.time() - t0) * 1000
 
                 t0 = _time.time()
@@ -574,12 +643,14 @@ def collect_game_data(
                 tier_source = "cloud_eval"
                 cached_eval = score_after
                 cached_tb = None
+                cached_mpv = None
 
             elif in_opening:
                 # ── Tier 2b: Masters move, fresh cloud scoring query ──
                 t0 = _time.time()
                 if cached_eval is not None:
                     score_before = cached_eval
+                    mpv_before = cached_mpv
                     _eb_src = "cache"
                 else:
                     cloud = query_cloud_eval(board.fen())
@@ -587,12 +658,13 @@ def collect_game_data(
                         score_before = _cloud_eval_to_eval(cloud, board)
                         _eb_src = "cloud_eval"
                     else:
-                        info = engine.analyse(
+                        infos = engine.analyse(
                             board,
                             _analysis_limit_from_settings(board, limits),
-                            game=game_id,
+                            multipv=MULTIPV, game=game_id,
                         )
-                        score_before = _extract_eval(info, board)
+                        score_before = _extract_eval(infos[0], board)
+                        mpv_before = _extract_multipv(infos, board)
                         _eb_src = "sf_fallback"
                 score_before_ms = (_time.time() - t0) * 1000
 
@@ -601,13 +673,15 @@ def collect_game_data(
                 if cloud_after:
                     score_after = _cloud_eval_to_eval(cloud_after, board_after)
                     _ea_src = "cloud_eval"
+                    cached_mpv = None
                 else:
-                    info_after = engine.analyse(
+                    infos_after = engine.analyse(
                         board_after,
                         _analysis_limit_from_settings(board_after, limits),
-                        game=game_id,
+                        multipv=MULTIPV, game=game_id,
                     )
-                    score_after = _extract_eval(info_after, board_after)
+                    score_after = _extract_eval(infos_after[0], board_after)
+                    cached_mpv = _extract_multipv(infos_after, board_after)
                     _ea_src = "sf_fallback"
                 score_after_ms = (_time.time() - t0) * 1000
 
@@ -617,9 +691,16 @@ def collect_game_data(
 
             elif not cloud_departed and _preserved_cloud:
                 # ── Tier 3a: Post-masters, preserved cloud scoring ──
+                assert existing is not None  # guaranteed by _preserved_cloud
                 t0 = _time.time()
-                score_before = cached_eval if cached_eval is not None else existing["eval_before"]
-                _eb_src = "cache" if cached_eval is not None else "preserved"
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    score_before = existing["eval_before"]
+                    mpv_before = existing.get("multipv_before")
+                    _eb_src = "preserved"
                 score_before_ms = (_time.time() - t0) * 1000
 
                 t0 = _time.time()
@@ -630,12 +711,14 @@ def collect_game_data(
                 tier_source = "cloud_eval"
                 cached_eval = score_after
                 cached_tb = None
+                cached_mpv = None
 
             elif not cloud_departed:
                 # ── Tier 3b: Post-masters, fresh cloud scoring query ──
                 t0 = _time.time()
                 if cached_eval is not None:
                     score_before = cached_eval
+                    mpv_before = cached_mpv
                     _eb_src = "cache"
                 else:
                     cloud = query_cloud_eval(board.fen())
@@ -643,12 +726,13 @@ def collect_game_data(
                         score_before = _cloud_eval_to_eval(cloud, board)
                         _eb_src = "cloud_eval"
                     else:
-                        info = engine.analyse(
+                        infos = engine.analyse(
                             board,
                             _analysis_limit_from_settings(board, limits),
-                            game=game_id,
+                            multipv=MULTIPV, game=game_id,
                         )
-                        score_before = _extract_eval(info, board)
+                        score_before = _extract_eval(infos[0], board)
+                        mpv_before = _extract_multipv(infos, board)
                         _eb_src = "sf_fallback"
                 score_before_ms = (_time.time() - t0) * 1000
 
@@ -658,14 +742,16 @@ def collect_game_data(
                     score_after = _cloud_eval_to_eval(cloud_after, board_after)
                     _ea_src = "cloud_eval"
                     tier_source = "cloud_eval"
+                    cached_mpv = None
                 else:
                     cloud_departed = True
-                    info_after = engine.analyse(
+                    infos_after = engine.analyse(
                         board_after,
                         _analysis_limit_from_settings(board_after, limits),
-                        game=game_id,
+                        multipv=MULTIPV, game=game_id,
                     )
-                    score_after = _extract_eval(info_after, board_after)
+                    score_after = _extract_eval(infos_after[0], board_after)
+                    cached_mpv = _extract_multipv(infos_after, board_after)
                     _ea_src = "stockfish"
                 score_after_ms = (_time.time() - t0) * 1000
 
@@ -677,29 +763,32 @@ def collect_game_data(
                 t0 = _time.time()
                 if cached_eval is not None:
                     score_before = cached_eval
+                    mpv_before = cached_mpv
                     _eb_src = "cache"
                 else:
-                    info = engine.analyse(
+                    infos = engine.analyse(
                         board,
                         _analysis_limit_from_settings(board, limits),
-                        game=game_id,
+                        multipv=MULTIPV, game=game_id,
                     )
-                    score_before = _extract_eval(info, board)
+                    score_before = _extract_eval(infos[0], board)
+                    mpv_before = _extract_multipv(infos, board)
                     _eb_src = "stockfish"
                 score_before_ms = (_time.time() - t0) * 1000
 
                 t0 = _time.time()
-                info_after = engine.analyse(
+                infos_after = engine.analyse(
                     board_after,
                     _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
+                    multipv=MULTIPV, game=game_id,
                 )
-                score_after = _extract_eval(info_after, board_after)
+                score_after = _extract_eval(infos_after[0], board_after)
                 _ea_src = "stockfish"
                 score_after_ms = (_time.time() - t0) * 1000
 
                 cached_eval = score_after
                 cached_tb = None
+                cached_mpv = _extract_multipv(infos_after, board_after)
 
         # --- Unified variable names for the rest of the loop ---
         eval_before = score_before
@@ -750,6 +839,7 @@ def collect_game_data(
             "in_opening": in_opening,
             "eval_before": eval_before,
             "eval_after": eval_after,
+            "multipv_before": mpv_before,
             "tablebase_before": tb_before_stored,
             "tablebase_after": tb_after_stored,
             "opening_explorer": explorer_data,
