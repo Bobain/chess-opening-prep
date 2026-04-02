@@ -1166,11 +1166,9 @@ def analyze_games(
                 prev_moves = existing_games[game_id].get("moves")
 
             def _on_wait(attempt: int, delay: float) -> None:
-                _emit({
-                    "phase": "analyze",
-                    "message": f"API rate limit, retry #{attempt} in {delay:.0f}s ({label})",
-                    "waiting": True,
-                })
+                msg = f"API rate limit, retry #{attempt} in {delay:.0f}s ({label})"
+                print(f"  ⏳ {msg}")
+                _emit({"phase": "analyze", "message": msg, "waiting": True})
 
             start = _time.time()
             try:
