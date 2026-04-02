@@ -1185,6 +1185,7 @@ def analyze_games(
                     on_wait=_on_wait,
                 )
             except Exception as exc:
+                _emit({"phase": "analyze", "message": str(exc), "error": True})
                 print(f"  [{done_count}/{total_tasks}] Error analyzing {label}: {exc}")
                 continue
 

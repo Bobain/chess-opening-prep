@@ -26,14 +26,19 @@ _URL = "https://lichess.org/api/cloud-eval"
 _TIMEOUT = 10.0
 
 # Delay between consecutive requests to avoid saturating the API.
-_RATE_LIMIT_DELAY = 0.1
+# Lichess cloud-eval is meant for "a few positions here and there", not batch use.
+_RATE_LIMIT_DELAY = 1.0
 
 # Exponential backoff for transient errors (429, 5xx, network).
 _BACKOFF_BASE = 60.0   # seconds — Lichess recommends ≥1 min wait after 429
-_BACKOFF_MAX = 120.0   # cap at 2 minutes between retries
+_BACKOFF_MAX = 7680.0  # 128 minutes — raise error if still failing after this
 
 # Timestamp of the last request, for rate limiting.
 _last_request_time: float = 0.0
+
+
+class RateLimitExhaustedError(Exception):
+    """Raised when the API rate limit persists after maximum backoff (128 min)."""
 
 
 def query_cloud_eval(
@@ -43,8 +48,9 @@ def query_cloud_eval(
 ) -> dict[str, Any] | None:
     """Query the Lichess Cloud database for a position.
 
-    Retries indefinitely on transient errors (429, 5xx, network) with
-    exponential backoff. Only returns None for a genuine cache miss (404).
+    Retries on transient errors (429, 5xx, network) with exponential backoff
+    up to 128 minutes. Raises RateLimitExhaustedError if still failing after
+    a retry at max backoff. Only returns None for a genuine cache miss (404).
 
     Args:
         fen: FEN string of the position to query.
@@ -55,10 +61,14 @@ def query_cloud_eval(
     Returns:
         API response dict with {fen, knodes, depth, pvs[]} or None if
         the position is not in the database (404).
+
+    Raises:
+        RateLimitExhaustedError: If rate limit persists after max backoff.
     """
     global _last_request_time
     params = {"fen": fen, "multiPv": multi_pv}
     attempt = 0
+    at_max_count = 0
 
     while True:
         # Rate limit: wait between consecutive requests
@@ -88,6 +98,12 @@ def query_cloud_eval(
 
             # Transient error (429, 5xx, etc.) — retry with backoff
             delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Cloud eval rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg)
             _log.warning(
                 "    cloud %s → HTTP %d, retrying in %.0fs (attempt %d)",
                 fen[:40], resp.status_code, delay, attempt + 1,
@@ -99,6 +115,12 @@ def query_cloud_eval(
 
         except (requests.RequestException, ValueError) as exc:
             delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Cloud eval rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg) from exc
             _log.warning(
                 "    cloud %s → %s, retrying in %.0fs (attempt %d)",
                 fen[:40], exc, delay, attempt + 1,

@@ -36,11 +36,15 @@ _TIMEOUT = 10.0
 MAX_PIECES = ENDGAME_PIECES_MAX
 
 # Delay between consecutive requests to avoid saturating the API.
-_RATE_LIMIT_DELAY = 0.1
+_RATE_LIMIT_DELAY = 1.0
 
 # Exponential backoff for transient errors (429, 5xx, network).
 _BACKOFF_BASE = 60.0   # seconds — Lichess recommends ≥1 min wait after 429
-_BACKOFF_MAX = 120.0   # cap at 2 minutes between retries
+_BACKOFF_MAX = 7680.0  # 128 minutes — raise error if still failing after this
+
+
+class RateLimitExhaustedError(Exception):
+    """Raised when the API rate limit persists after maximum backoff (128 min)."""
 
 # Timestamp of the last request, for rate limiting.
 _last_request_time: float = 0.0
@@ -98,10 +102,14 @@ def _fetch_tablebase(
 
     Returns:
         API response dict or None if the position is not in the database (404).
+
+    Raises:
+        RateLimitExhaustedError: If rate limit persists after max backoff.
     """
     global _last_request_time
     params = {"fen": fen}
     attempt = 0
+    at_max_count = 0
 
     while True:
         # Rate limit: wait between consecutive requests
@@ -131,6 +139,12 @@ def _fetch_tablebase(
 
             # Transient error (429, 5xx, etc.) — retry with backoff
             delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Tablebase rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg)
             _log.warning(
                 "    tablebase %s → HTTP %d, retrying in %.0fs (attempt %d)",
                 fen[:40], resp.status_code, delay, attempt + 1,
@@ -142,6 +156,12 @@ def _fetch_tablebase(
 
         except (requests.RequestException, ValueError) as exc:
             delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Tablebase rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg) from exc
             _log.warning(
                 "    tablebase %s → %s, retrying in %.0fs (attempt %d)",
                 fen[:40], exc, delay, attempt + 1,
