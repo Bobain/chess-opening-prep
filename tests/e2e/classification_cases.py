@@ -1402,4 +1402,12 @@ GAMES: list[dict] = [
             32: "Nf7+ — great",
         },
     },
+    {
+        "game_id": "anujpilania_129634134979",
+        "brilliant_indices": [],
+        "great_indices": [12],  # 7.w Bf4
+        "notes": {
+            12: "Bf4 — great",
+        },
+    },
 ]
