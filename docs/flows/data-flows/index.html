@@ -911,17 +911,28 @@
         IMP[Importer&lt;br/&gt;fetch games]
         SF[Stockfish 18&lt;br/&gt;N-1 threads, 1GB hash]
         TB[Lichess Tablebase&lt;br/&gt;≤7 pieces]
-        OE[Lichess Opening Explorer&lt;br/&gt;theory detection]
+        OE[Lichess Masters Explorer]
+        CE[Lichess Cloud Eval API]
     end
 
     subgraph Storage
-        AD[analysis_data.json&lt;br/&gt;all moves, max granularity]
-        TD[training_data.json&lt;br/&gt;filtered mistakes]
+        AD[data/analysis_data.json&lt;br/&gt;all moves, max granularity]
+        TAC[data/tactics_data.json&lt;br/&gt;40 tactical motifs per move]
+        CLS[data/classifications_data.json&lt;br/&gt;per-move category: !! ! best etc.]
+        TD[data/training_data.json&lt;br/&gt;filtered mistakes]
         LS[localStorage&lt;br/&gt;SRS state per position]
     end
 
+    subgraph "Phase 1b — Tactical analysis"
+        TACT[tactics.py&lt;br/&gt;forks, pins, mates...&lt;br/&gt;parallel, python-chess]
+    end
+
+    subgraph "Phase 1c — Classification"
+        CLASS[classifier.py&lt;br/&gt;brilliant, great, best...&lt;br/&gt;uses tactics + evals]
+    end
+
     subgraph "Phase 2 — Derivation"
-        DER[annotate_and_derive&lt;br/&gt;filter + explain]
+        DER[generate_training_data&lt;br/&gt;filter + explain]
     end
 
     subgraph "PWA — Training mode"
@@ -939,9 +950,16 @@
     IMP --&gt; SF
     IMP --&gt; TB
     IMP --&gt; OE
+    IMP --&gt; CE
     SF --&gt; AD
     TB --&gt; AD
     OE --&gt; AD
+    CE --&gt; AD
+    AD --&gt; TACT
+    TACT --&gt; TAC
+    AD --&gt; CLASS
+    TAC --&gt; CLASS
+    CLASS --&gt; CLS
     AD --&gt; DER
     DER --&gt; TD
     TD --&gt; SEL
@@ -949,6 +967,7 @@
     SEL --&gt; QUIZ
     QUIZ --&gt; LS
     AD --&gt; GSEL
+    CLS --&gt; REV
     GSEL --&gt; REV</code></pre>
 <h3 id="two-layer-data-model">Two-layer data model</h3>
 <table>
@@ -963,7 +982,17 @@
 <tr>
 <td><code>analysis_data.json</code></td>
 <td>All moves, all evals, per game</td>
-<td>Phase 2 derivation + Analysis mode (game review UI)</td>
+<td>Tactical analysis + Classification + Derivation + Analysis mode</td>
+</tr>
+<tr>
+<td><code>tactics_data.json</code></td>
+<td>40 tactical motifs per move (forks, pins, mates...)</td>
+<td>Classifier</td>
+</tr>
+<tr>
+<td><code>classifications_data.json</code></td>
+<td>Per-move category (brilliant, great, best, etc.)</td>
+<td>PWA game review UI</td>
 </tr>
 <tr>
 <td><code>training_data.json</code></td>
@@ -984,7 +1013,7 @@
           eval_source, in_opening, eval_before: {score_cp, is_mate, depth, seldepth, nodes, nps, time_ms, pv_san, ...},
           eval_after: {...}, eval_after_best: {score_cp, is_mate, mate_in},
           tablebase_before, tablebase_after,
-          opening_explorer: {opening: {eco, name}, moves: [{san, white, draws, black}]},
+          opening_explorer: {opening: {eco, name}, moves: [{san, white, draws, black}], _source: &quot;masters&quot;|&quot;lichess&quot;},
           cp_loss, board: {piece_count, is_check, is_capture, ...},
           clock: {player, opponent, time_spent} }
       ]

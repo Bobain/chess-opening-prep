@@ -1122,7 +1122,7 @@
     participant API as FastAPI server
     participant SF as Stockfish (native)
     participant TB as Lichess Tablebase
-    participant OE as Lichess Opening Explorer
+    participant OE as Lichess Masters Explorer
     participant L as Lichess API
     participant C as Chess.com API
 
@@ -1138,7 +1138,7 @@
         API-&gt;&gt;C: Fetch recent rated games
     end
 
-    API-&gt;&gt;API: Filter: skip already-analyzed&lt;br/&gt;(or same-settings if reanalyze_all)
+    API-&gt;&gt;API: Filter: skip already-analyzed&lt;br/&gt;(reanalyze_all: preserve API data, re-run SF)
 
     Note over API,SF: Phase 1 — Collection (1 SF, N-1 threads)
 
@@ -1156,24 +1156,26 @@
         end
 
         API-&gt;&gt;API: Atomic write analysis_data.json
+
+        Note over API: Per-game downstream (no Stockfish)
+        API-&gt;&gt;API: analyze_game_tactics()
+        API-&gt;&gt;API: classify_game_single()
+        API-&gt;&gt;API: generate_training_data_single()
         API--&gt;&gt;PWA: SSE: analyze phase (X/Y, percent)
     end
-
-    Note over API: Phase 2 — Derivation (no Stockfish)
-    API-&gt;&gt;API: annotate_and_derive()&lt;br/&gt;Filter mistakes → training_data.json
 
     API--&gt;&gt;PWA: SSE: done (summary)
     PWA-&gt;&gt;PWA: Reload training_data.json
     PWA-&gt;&gt;PWA: Restart session
-    Note over PWA: analysis_data.json also updated&lt;br/&gt;(available for Analysis mode)</code></pre>
+    Note over PWA: All data files updated per-game&lt;br/&gt;(available for Analysis mode)</code></pre>
 <h3 id="key-details_2">Key details</h3>
 <ul>
 <li><strong>Settings modal</strong>: unified modal with Training, Accounts, Analysis (presets: Quick/Balanced/Deep + Advanced toggle), and Danger zone sections.</li>
-<li><strong>Two-phase pipeline, per-game</strong>: Phase 1 collects raw data (expensive), Phase 2 derives training data (cheap). Phase 2 runs after <strong>each game</strong> (not at end of batch), so accuracy badges, review, and training are available immediately.</li>
+<li><strong>Full per-game pipeline (server)</strong>: After each game's Stockfish analysis, tactics → classification → training data run immediately (no batch). Results available in UI after each game. CLI <code>--prepare</code> uses batch for tactics/classification (more efficient).</li>
 <li><strong>Engine model</strong>: one Stockfish with N-1 threads + 1GB hash (configurable), sequential game-by-game.</li>
-<li><strong>Opening Explorer</strong>: queries Lichess API position by position until theory departure (move not in database).</li>
-<li><strong>Incremental</strong>: only unanalyzed games are processed. <code>reanalyze_all</code> skips only same-settings games.</li>
-<li><strong>Crash safety</strong>: atomic write of <code>analysis_data.json</code> after each game. Resumable on interruption.</li>
+<li><strong>4-tier evaluation</strong>: Tablebase (≤7 pieces, priority) → Masters + cloud eval (<code>in_opening=True</code>, cp_loss=0) → Cloud eval (all positions post-masters, cp_loss computed) → Stockfish (fallback, cp_loss computed).</li>
+<li><strong>Incremental</strong>: only unanalyzed games are processed. <code>reanalyze_all</code> preserves API data (masters, cloud eval, tablebase), re-tests breakpoints, and always re-runs Stockfish.</li>
+<li><strong>Crash safety</strong>: atomic write of <code>analysis_data.json</code> after each game. <code>pipeline_status.json</code> tracks per-game phase completion; incomplete games are repaired on next run.</li>
 <li><strong>Thresholds</strong>: blunder ≥ 200cp, mistake ≥ 100cp, inaccuracy ≥ 50cp.</li>
 <li><strong>Interrupt</strong>: user can click interrupt → <code>POST /api/jobs/{id}/cancel</code> → saves progress so far.</li>
 <li><strong>Batch queuing</strong>: selecting more games while a job runs queues them for the next batch. On 409 (job running), PWA reconnects to SSE via <code>GET /api/jobs/current</code>.</li>
