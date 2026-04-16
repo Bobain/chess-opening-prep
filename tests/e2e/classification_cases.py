@@ -1287,4 +1287,10 @@ GAMES: list[dict] = [
             19: "g4 — great",
         },
     },
+    {
+        "game_id": "no_chess_hi_120903713394",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {},
+    },
 ]
