@@ -1373,4 +1373,14 @@ GAMES: list[dict] = [
             51: "Bxf1 — great",
         },
     },
+    {
+        "game_id": "mo-noby13_129224548165",
+        "brilliant_indices": [],
+        "great_indices": [27, 37, 41],  # 14.b Nxd5, 19.b Nf3+, 21.b Nh3#
+        "notes": {
+            27: "Nxd5 — great",
+            37: "Nf3+ — great",
+            41: "Nh3# — great",
+        },
+    },
 ]
