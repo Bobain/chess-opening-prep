@@ -1065,4 +1065,15 @@ GAMES: list[dict] = [
             45: "Bxe5+ — great",
         },
     },
+    {
+        "game_id": "Vega2603_125068778235",
+        "brilliant_indices": [],
+        "great_indices": [24, 31, 33, 35],  # 13.w Bxf6, 16.b a4, 17.b b5, 18.b Qc6
+        "notes": {
+            24: "Bxf6 — great",
+            31: "a4 — great",
+            33: "b5 — great",
+            35: "Qc6 — great",
+        },
+    },
 ]
