@@ -1410,4 +1410,12 @@ GAMES: list[dict] = [
             12: "Bf4 — great",
         },
     },
+    {
+        "game_id": "bhanu_bhakta014_129895192129",
+        "brilliant_indices": [],
+        "great_indices": [31],  # 16.b Bxc3
+        "notes": {
+            31: "Bxc3 — great",
+        },
+    },
 ]
