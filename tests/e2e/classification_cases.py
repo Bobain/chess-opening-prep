@@ -1209,4 +1209,15 @@ GAMES: list[dict] = [
             61: "Bd1+ — great",
         },
     },
+    {
+        "game_id": "gschwandner_125079545561",
+        "brilliant_indices": [],
+        "great_indices": [23, 34, 36, 41],  # 12.b d5, 18.w a3, 19.w b4, 21.b Nb3
+        "notes": {
+            23: "d5 — great",
+            34: "a3 — great",
+            36: "b4 — great",
+            41: "Nb3 — great",
+        },
+    },
 ]
