@@ -1484,4 +1484,13 @@ GAMES: list[dict] = [
         "great_indices": [],
         "notes": {},
     },
+    {
+        "game_id": "AndrzejMucius_165884849470",
+        "brilliant_indices": [],
+        "great_indices": [18, 35],  # 10.w Nc7+, 18.b Bxd6
+        "notes": {
+            18: "Nc7+ — great",
+            35: "Bxd6 — great",
+        },
+    },
 ]
