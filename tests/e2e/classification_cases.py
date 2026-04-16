@@ -1126,4 +1126,13 @@ GAMES: list[dict] = [
             57: "dxe6 — great",
         },
     },
+    {
+        "game_id": "Abdallah_youssef_166978769074",
+        "brilliant_indices": [],
+        "great_indices": [35, 45],  # 18.b Kf7, 23.b Kc7
+        "notes": {
+            35: "Kf7 — great",
+            45: "Kc7 — great",
+        },
+    },
 ]
