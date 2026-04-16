@@ -1135,4 +1135,12 @@ GAMES: list[dict] = [
             45: "Kc7 — great",
         },
     },
+    {
+        "game_id": "cosmostronomer_166966697026",
+        "brilliant_indices": [],
+        "great_indices": [42],  # 22.w Nxh4
+        "notes": {
+            42: "Nxh4 — great",
+        },
+    },
 ]
