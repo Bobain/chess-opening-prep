@@ -127,11 +127,11 @@ Uses a win probability model (chess.com-style): `winProb(cp) = 1 / (1 + 10^(-cp/
 | Best       | ≤ 0.00              | #96bc4b | ★      |
 | Excellent  | ≤ 0.02              | #96bc4b | ↑      |
 | Good       | ≤ 0.05              | #95b776 | ✓      |
-| Book       | (opening explorer)  | #a88764 | ♗      |
+| Book       | in Masters database (FIDE 2200+ theory) | #a88764 | ♗      |
 | Inaccuracy | ≤ 0.10              | #f7c631 | ?!     |
 | Mistake    | ≤ 0.20              | #e6912a | ?      |
 | Blunder    | > 0.20              | #ca3431 | ??     |
 
 ### Data source
 
-Analysis mode reads `analysis_data.json` (full per-move analysis from the pipeline). In [demo] mode, a sample file is bundled. In [app] mode, served fresh via `GET /analysis_data.json`.
+Analysis mode reads `data/analysis_data.json` (full per-move analysis from the pipeline). In [demo] mode, a sample file is bundled. In [app] mode, served fresh via `GET /analysis_data.json`.

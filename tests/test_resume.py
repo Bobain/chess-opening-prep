@@ -49,24 +49,35 @@ def _make_game(
 
 
 def _mock_engine():
-    """Create a mock Stockfish engine."""
+    """Create a mock Stockfish engine that handles multipv."""
     engine = MagicMock(spec=chess.engine.SimpleEngine)
     call_count = {"n": 0}
 
     def mock_analyse(board, limit, **kwargs):
         call_count["n"] += 1
-        pv = list(board.legal_moves)[:2]
-        return {
-            "score": chess.engine.PovScore(chess.engine.Cp(20 + call_count["n"]), chess.WHITE),
-            "pv": pv,
-            "depth": 5,
-            "seldepth": 8,
-            "nodes": 10000,
-            "nps": 100000,
-            "time": 0.05,
-            "tbhits": 0,
-            "hashfull": 10,
-        }
+        multipv = kwargs.get("multipv", 1)
+        legal = list(board.legal_moves)
+        score_val = 20 + call_count["n"]
+
+        def _make_info(idx: int) -> dict:
+            pv_moves = legal[idx : idx + 2] if idx < len(legal) else []
+            return {
+                "score": chess.engine.PovScore(
+                    chess.engine.Cp(score_val - idx * 30), chess.WHITE
+                ),
+                "pv": pv_moves,
+                "depth": 5,
+                "seldepth": 8,
+                "nodes": 10000,
+                "nps": 100000,
+                "time": 0.05,
+                "tbhits": 0,
+                "hashfull": 10,
+            }
+
+        if multipv > 1:
+            return [_make_info(i) for i in range(min(multipv, len(legal)))]
+        return _make_info(0)
 
     engine.analyse = mock_analyse
     engine.configure = MagicMock()
@@ -81,9 +92,10 @@ SETTINGS = AnalysisSettings(threads=1, hash_mb=64, limits={"default": {"depth": 
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_cancel_interrupts_analysis(mock_popen, mock_tb, mock_syz):
+def test_cancel_interrupts_analysis(mock_popen, mock_tb, mock_cloud, mock_syz):
     """Setting the cancel event raises AnalysisInterrupted."""
     mock_popen.return_value = _mock_engine()
 
@@ -92,10 +104,10 @@ def test_cancel_interrupts_analysis(mock_popen, mock_tb, mock_syz):
 
     original_collect = None
 
-    def tracking_collect(game, engine, player_color, settings, lichess_token=None, game_id=""):
+    def tracking_collect(game, engine, player_color, settings, lichess_token=None, game_id="", **kwargs):
         games_done.append(1)
         cancel.set()  # Cancel after first game
-        return original_collect(game, engine, player_color, settings, lichess_token, game_id=game_id)
+        return original_collect(game, engine, player_color, settings, lichess_token, game_id=game_id, **kwargs)
 
     # We need the real collect_game_data for the mock to work
     from chess_self_coach.analysis import collect_game_data as real_collect
@@ -124,9 +136,10 @@ def test_cancel_interrupts_analysis(mock_popen, mock_tb, mock_syz):
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_malformed_games_filtered(mock_popen, mock_tb, mock_syz):
+def test_malformed_games_filtered(mock_popen, mock_tb, mock_cloud, mock_syz):
     """Games with White:'?' and Black:'?' are silently filtered."""
     mock_popen.return_value = _mock_engine()
 
@@ -161,9 +174,10 @@ def test_malformed_games_filtered(mock_popen, mock_tb, mock_syz):
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_player_not_found_skipped(mock_popen, mock_tb, mock_syz):
+def test_player_not_found_skipped(mock_popen, mock_tb, mock_cloud, mock_syz):
     """Games where player is not found in headers are skipped."""
     mock_popen.return_value = _mock_engine()
 
@@ -194,9 +208,10 @@ def test_player_not_found_skipped(mock_popen, mock_tb, mock_syz):
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_error_in_game_continues(mock_popen, mock_tb, mock_syz):
+def test_error_in_game_continues(mock_popen, mock_tb, mock_cloud, mock_syz):
     """An error in one game doesn't stop analysis of remaining games."""
     mock_popen.return_value = _mock_engine()
 
@@ -211,7 +226,7 @@ def test_error_in_game_continues(mock_popen, mock_tb, mock_syz):
     def mock_save(data, path=None):
         saved_data.update(data)
 
-    def mock_collect(game, engine, player_color, settings, lichess_token=None, game_id=""):
+    def mock_collect(game, engine, player_color, settings, lichess_token=None, game_id="", **kwargs):
         call_count["n"] += 1
         if call_count["n"] == 1:
             raise RuntimeError("Engine crashed")

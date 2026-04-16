@@ -11,15 +11,13 @@ import json
 import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 
 import chess.pgn
 
-from chess_self_coach.config import _find_project_root
+from chess_self_coach.config import analysis_data_path, fetched_games_path
+from chess_self_coach.io import atomic_write_json
 
 _log = logging.getLogger(__name__)
-
-CACHE_FILENAME = "fetched_games.json"
 
 
 @dataclass
@@ -188,8 +186,7 @@ def fetch_and_cache_games(
     if chesscom_user:
         all_games.extend(fetch_chesscom_games(chesscom_user, fetch_count))
 
-    root = _find_project_root()
-    cache_path = root / CACHE_FILENAME
+    cache_path = fetched_games_path()
 
     # Merge with existing cache (preserve previously fetched games)
     cache_games: dict[str, dict] = dict(existing_cache.get("games", {}))
@@ -241,9 +238,7 @@ def fetch_and_cache_games(
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "games": cache_games,
     }
-    with open(cache_path, "w") as f:
-        json.dump(cache_data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    atomic_write_json(cache_path, cache_data)
 
     _log.info("Cached %d games (%d new) to %s", len(cache_games), new_count, cache_path)
     return summaries
@@ -255,8 +250,7 @@ def load_game_cache() -> dict:
     Returns:
         Cache dict with 'fetched_at' and 'games' keys, or empty structure.
     """
-    root = _find_project_root()
-    cache_path = root / CACHE_FILENAME
+    cache_path = fetched_games_path()
     if not cache_path.exists():
         return {"fetched_at": None, "games": {}}
     try:
@@ -299,10 +293,8 @@ def get_unified_game_list(limit: int = 20) -> list[GameSummary]:
     """
     from chess_self_coach.analysis import load_analysis_data
 
-    root = _find_project_root()
-
     # Load analysis data
-    analysis_data = load_analysis_data(root / "analysis_data.json")
+    analysis_data = load_analysis_data(analysis_data_path())
     analyzed_games = analysis_data.get("games", {})
     player_info = analysis_data.get("player", {})
     lichess_user = player_info.get("lichess", "")

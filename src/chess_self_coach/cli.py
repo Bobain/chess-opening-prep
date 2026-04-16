@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from chess_self_coach import __version__
 
@@ -139,19 +140,30 @@ def main(argv: list[str] | None = None) -> None:
         update()
 
     elif args.command == "syzygy":
-        from chess_self_coach.syzygy import download_syzygy, syzygy_status
+        from chess_self_coach.syzygy import (
+            _DEFAULT_DIR as _SYZYGY_DEFAULT,
+            download_syzygy,
+            syzygy_status,
+        )
 
         if args.action == "download":
+            default = str(_SYZYGY_DEFAULT)
+            custom = input(f"  Installation directory [{default}]: ").strip()
+            target = Path(custom) if custom else _SYZYGY_DEFAULT
+
             try:
-                path = download_syzygy()
+                path = download_syzygy(target_dir=target)
                 print(f"  ✓ Syzygy tables downloaded to {path}")
             except (FileNotFoundError, Exception) as e:
                 print(f"  ❌ {e}", file=sys.stderr)
                 sys.exit(1)
         elif args.action == "status":
-            from chess_self_coach.config import load_config
+            from chess_self_coach.config import ConfigError, error_exit, load_config
 
-            config = load_config()
+            try:
+                config = load_config()
+            except ConfigError as e:
+                error_exit(str(e), hint=e.hint)
             status = syzygy_status(config)
             if status["found"]:
                 print(f"  Path: {status['path']}")
@@ -164,10 +176,10 @@ def main(argv: list[str] | None = None) -> None:
 
     elif args.command == "train":
         if args.derive:
-            from chess_self_coach.analysis import annotate_and_derive
+            from chess_self_coach.training_data import generate_training_data
 
             try:
-                annotate_and_derive()
+                generate_training_data()
             except (FileNotFoundError, RuntimeError) as e:
                 print(f"  {e}", file=sys.stderr)
                 sys.exit(1)
@@ -177,11 +189,15 @@ def main(argv: list[str] | None = None) -> None:
             refresh_explanations()
         elif args.prepare:
             from chess_self_coach.analysis import AnalysisSettings, analyze_games
+            from chess_self_coach.opening_explorer import ExplorerAPIError
 
             # Build settings from config, with CLI overrides
-            from chess_self_coach.config import load_config
+            from chess_self_coach.config import ConfigError, error_exit, load_config
 
-            config = load_config()
+            try:
+                config = load_config()
+            except ConfigError as e:
+                error_exit(str(e), hint=e.hint)
             settings = AnalysisSettings.from_config(config)
             if args.threads is not None:
                 settings.threads = args.threads
@@ -195,9 +211,17 @@ def main(argv: list[str] | None = None) -> None:
                     settings=settings,
                     engine_path=args.engine,
                 )
-            except (FileNotFoundError, RuntimeError) as e:
+            except (FileNotFoundError, RuntimeError, ExplorerAPIError) as e:
                 print(f"  {e}", file=sys.stderr)
                 sys.exit(1)
+
+            from chess_self_coach.tactics import run_tactical_analysis
+
+            run_tactical_analysis()
+
+            from chess_self_coach.classifier import run_classification
+
+            run_classification()
         elif args.serve:
             print("  Tip: you can now just run `chess-self-coach` directly.\n")
             _launch_server()
@@ -212,12 +236,13 @@ def main(argv: list[str] | None = None) -> None:
 
 def _setup() -> None:
     """Interactive setup: Stockfish, Syzygy, game platforms."""
-    import json
-
     from chess_self_coach.config import (
-        _find_project_root,
+        ConfigError,
         check_stockfish_version,
+        config_path,
         find_stockfish,
+        load_config,
+        save_config,
     )
 
     print("\n  === Chess Self-Coach Setup ===\n")
@@ -231,25 +256,34 @@ def _setup() -> None:
     except SystemExit:
         return
 
-    # Step 1b: Syzygy tablebases
+    # Step 2: Syzygy tablebases
+    syzygy_config_path: str | None = None
     print("  Step 2: Syzygy endgame tablebases")
-    try:
-        from chess_self_coach.syzygy import find_syzygy
+    from chess_self_coach.syzygy import _DEFAULT_DIR as _SYZYGY_DEFAULT, find_syzygy
 
-        syzygy_path = find_syzygy()
-        print(f"  ✓ Found: {syzygy_path}\n")
-    except FileNotFoundError:
+    existing_syzygy = find_syzygy()
+    if existing_syzygy is not None:
+        print(f"  ✓ Found: {existing_syzygy}\n")
+        syzygy_config_path = str(existing_syzygy)
+    else:
         answer = input("  Syzygy tables not found. Download (~1 GB)? [y/N] ")
         if answer.strip().lower() == "y":
             from chess_self_coach.syzygy import download_syzygy
 
+            default = str(_SYZYGY_DEFAULT)
+            custom = input(f"  Installation directory [{default}]: ").strip()
+            target = Path(custom) if custom else _SYZYGY_DEFAULT
+
             try:
-                syzygy_path = download_syzygy()
+                syzygy_path = download_syzygy(target_dir=target)
+                syzygy_config_path = str(syzygy_path)
                 print(f"  ✓ Downloaded to {syzygy_path}\n")
             except Exception as e:
                 print(f"  ⚠ Download failed: {e}. You can retry later.\n")
+        else:
+            print("  Skipped. You can download later with: chess-self-coach syzygy download\n")
 
-    # Step 2: Game platforms
+    # Step 3: Game platforms
     print("  Step 3: Game platforms (at least one required)\n")
 
     lichess_user = input("  Lichess username (leave empty to skip): ").strip()
@@ -268,12 +302,12 @@ def _setup() -> None:
         sys.exit(1)
 
     # Write config
-    root = _find_project_root()
-    config: dict = {}
-    config_path = root / "config.json"
-    if config_path.exists():
-        with open(config_path) as f:
-            config = json.load(f)
+    cfg = config_path()
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        config = load_config()
+    except ConfigError:
+        config = {}
 
     config["stockfish"] = {"path": str(sf_path)}
     players: dict[str, str] = {}
@@ -283,21 +317,22 @@ def _setup() -> None:
         players["chesscom"] = chesscom_user
     config["players"] = players
 
+    if syzygy_config_path:
+        config["syzygy"] = {"path": syzygy_config_path}
+
     # Remove legacy studies section if present
     config.pop("studies", None)
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    save_config(config)
 
     # Write .env if token provided
     if lichess_token:
-        env_path = root / ".env"
+        from chess_self_coach.config import _find_project_root
+
+        env_path = _find_project_root() / ".env"
         with open(env_path, "w") as f:
             f.write(f"LICHESS_API_TOKEN={lichess_token}\n")
         print(f"\n  ✓ Token saved to {env_path}")
-
-    print(f"  ✓ Config saved to {config_path}")
     print("\n  Setup complete! Run 'chess-self-coach train --prepare' to start.\n")
 
 

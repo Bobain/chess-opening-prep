@@ -4,27 +4,50 @@ Probes the public Lichess tablebase API (no token required) for positions
 with <= 7 pieces. Returns mathematically exact Win/Draw/Loss verdicts
 instead of heuristic Stockfish evaluations.
 
+Transient errors (429, 5xx, timeouts) are retried with exponential backoff.
+Only a genuine 404 (position not in database) returns None.
+
 API: https://tablebase.lichess.ovh/standard?fen=<FEN>
 Coverage: up to 7 pieces (Syzygy tablebases)
 """
 
 from __future__ import annotations
 
+import logging
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 import chess
 import requests
 
 from chess_self_coach.constants import ENDGAME_PIECES_MAX
 
+_log = logging.getLogger(__name__)
+
 # API endpoint (public, no auth required)
 _API_URL = "https://tablebase.lichess.ovh/standard"
 
 # Request timeout (seconds)
-_TIMEOUT = 5.0
+_TIMEOUT = 10.0
 
 # Maximum pieces for tablebase lookup
 MAX_PIECES = ENDGAME_PIECES_MAX
+
+# Delay between consecutive requests to avoid saturating the API.
+_RATE_LIMIT_DELAY = 1.0
+
+# Exponential backoff for transient errors (429, 5xx, network).
+_BACKOFF_BASE = 60.0   # seconds — Lichess recommends ≥1 min wait after 429
+_BACKOFF_MAX = 7680.0  # 128 minutes — raise error if still failing after this
+
+
+class RateLimitExhaustedError(Exception):
+    """Raised when the API rate limit persists after maximum backoff (128 min)."""
+
+# Timestamp of the last request, for rate limiting.
+_last_request_time: float = 0.0
 
 # Map API categories to WDL tiers
 _CATEGORY_TIERS: dict[str, str] = {
@@ -63,30 +86,117 @@ class TablebaseResult:
         return tier
 
 
+def _fetch_tablebase(
+    fen: str,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any] | None:
+    """Fetch tablebase data with retry and exponential backoff.
+
+    Retries indefinitely on transient errors (429, 5xx, network) with
+    exponential backoff. Only returns None for a genuine cache miss (404).
+
+    Args:
+        fen: FEN string of the position to query.
+        on_wait: Optional callback(attempt, delay_seconds) called before
+            each retry sleep, so callers can surface the wait to the UI.
+
+    Returns:
+        API response dict or None if the position is not in the database (404).
+
+    Raises:
+        RateLimitExhaustedError: If rate limit persists after max backoff.
+    """
+    global _last_request_time
+    params = {"fen": fen}
+    attempt = 0
+    at_max_count = 0
+
+    while True:
+        # Rate limit: wait between consecutive requests
+        since_last = time.time() - _last_request_time
+        if since_last < _RATE_LIMIT_DELAY:
+            time.sleep(_RATE_LIMIT_DELAY - since_last)
+
+        t0 = time.time()
+        try:
+            _last_request_time = time.time()
+            resp = requests.get(_API_URL, params=params, timeout=_TIMEOUT)
+
+            if resp.status_code == 200:
+                result = resp.json()
+                _log.info(
+                    "    tablebase %s → hit (%.0fms)",
+                    fen[:40], (time.time() - t0) * 1000,
+                )
+                return result
+
+            if resp.status_code == 404:
+                _log.info(
+                    "    tablebase %s → miss/404 (%.0fms)",
+                    fen[:40], (time.time() - t0) * 1000,
+                )
+                return None
+
+            # Transient error (429, 5xx, etc.) — retry with backoff
+            delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Tablebase rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg)
+            retry_after = resp.headers.get("Retry-After", "?")
+            _log.warning(
+                "    tablebase %s → HTTP %d (Retry-After: %s), retrying in %.0fs (attempt %d)",
+                fen[:40], resp.status_code, retry_after, delay, attempt + 1,
+            )
+            if on_wait:
+                on_wait(attempt + 1, delay)
+            time.sleep(delay)
+            attempt += 1
+
+        except (requests.RequestException, ValueError) as exc:
+            delay = min(_BACKOFF_BASE * (2 ** attempt), _BACKOFF_MAX)
+            if delay >= _BACKOFF_MAX:
+                at_max_count += 1
+                if at_max_count > 1:
+                    msg = f"Tablebase rate limit exhausted after {attempt + 1} retries (fen={fen[:40]})"
+                    _log.error("    %s", msg)
+                    raise RateLimitExhaustedError(msg) from exc
+            _log.warning(
+                "    tablebase %s → %s, retrying in %.0fs (attempt %d)",
+                fen[:40], exc, delay, attempt + 1,
+            )
+            if on_wait:
+                on_wait(attempt + 1, delay)
+            time.sleep(delay)
+            attempt += 1
+
+
 def probe_position(fen: str) -> TablebaseResult | None:
     """Probe the Lichess tablebase API for a position.
+
+    Retries indefinitely on transient errors (429, 5xx, network) with
+    exponential backoff. Only returns None for too many pieces or 404.
 
     Args:
         fen: FEN string of the position.
 
     Returns:
-        TablebaseResult if the position has <= 7 pieces and the API responds,
-        None otherwise (too many pieces, network error, timeout).
+        TablebaseResult if the position has <= 7 pieces and is in the
+        tablebase, None otherwise.
     """
     board = chess.Board(fen)
     if len(board.piece_map()) > MAX_PIECES:
         return None
 
-    try:
-        resp = requests.get(_API_URL, params={"fen": fen}, timeout=_TIMEOUT)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-    except (requests.RequestException, ValueError):
+    data = _fetch_tablebase(fen)
+    if data is None:
         return None
 
     category = data.get("category")
     if not category or category not in _CATEGORY_TIERS:
+        _log.warning("    tablebase %s → unknown category %r", fen[:40], category)
         return None
 
     # Best move from the moves list
@@ -103,15 +213,23 @@ def probe_position(fen: str) -> TablebaseResult | None:
     )
 
 
-def probe_position_full(fen: str) -> dict | None:
+def probe_position_full(
+    fen: str,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any] | None:
     """Probe the Lichess tablebase API and return the complete response.
 
     Unlike probe_position() which returns a simplified TablebaseResult,
     this returns the raw API response including all legal moves with their
     WDL/DTM/DTZ data — suitable for storing in analysis_data.json.
 
+    Retries indefinitely on transient errors (429, 5xx, network) with
+    exponential backoff. Only returns None for too many pieces or 404.
+
     Args:
         fen: FEN string of the position.
+        on_wait: Optional callback(attempt, delay_seconds) called before
+            each retry sleep, so callers can surface the wait to the UI.
 
     Returns:
         Full API response dict (category, dtm, dtz, precise_dtz, dtw, dtc,
@@ -121,16 +239,13 @@ def probe_position_full(fen: str) -> dict | None:
     if len(board.piece_map()) > MAX_PIECES:
         return None
 
-    try:
-        resp = requests.get(_API_URL, params={"fen": fen}, timeout=_TIMEOUT)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-    except (requests.RequestException, ValueError):
+    data = _fetch_tablebase(fen, on_wait=on_wait)
+    if data is None:
         return None
 
     category = data.get("category")
     if not category or category not in _CATEGORY_TIERS:
+        _log.warning("    tablebase %s → unknown category %r", fen[:40], category)
         return None
 
     # Add computed tier for convenience

@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import shutil
 import socket
 import subprocess
@@ -25,7 +26,7 @@ import uuid
 import webbrowser
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TypedDict, cast
+from typing import Any, TypedDict, cast
 
 import chess
 import chess.engine
@@ -36,9 +37,21 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from chess_self_coach import __version__
-from chess_self_coach.config import _find_project_root, find_stockfish
+from chess_self_coach.config import (
+    ANALYSIS_DATA_FILE,
+    CLASSIFICATIONS_DATA_FILE,
+    CONFIG_FILE,
+    ConfigError,
+    DATA_DIR,
+    TRAINING_DATA_FILE,
+    _find_project_root,
+    find_stockfish,
+)
+from chess_self_coach.io import atomic_write_json
 
 # --- State ---
+
+_log = logging.getLogger(__name__)
 
 _engine: chess.engine.SimpleEngine | None = None
 _engine_lock = asyncio.Lock()
@@ -64,9 +77,9 @@ async def lifespan(app: FastAPI):
         _engine = chess.engine.SimpleEngine.popen_uci(str(_sf_path))
         # Parse version from engine id
         _sf_version = _engine.id.get("name", "unknown")
-        print(f"  Stockfish: {_sf_version}")
+        _log.info("Stockfish: %s", _sf_version)
     except SystemExit:
-        print("  Warning: Stockfish not found. /api/stockfish/* will be unavailable.")
+        _log.warning("Stockfish not found. /api/stockfish/* will be unavailable.")
         _engine = None
 
     yield
@@ -84,6 +97,15 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(ConfigError)
+async def _config_error_handler(request: Request, exc: ConfigError) -> JSONResponse:
+    """Convert ConfigError to a 503 response instead of crashing the server."""
+    detail = str(exc)
+    if exc.hint:
+        detail += f" {exc.hint}"
+    return JSONResponse(status_code=503, content={"detail": detail})
 
 
 # --- Crash reporter ---
@@ -252,7 +274,7 @@ async def bestmove(req: BestMoveRequest) -> BestMoveResponse:
             result = await asyncio.to_thread(_engine.play, board, limit)
         except chess.engine.EngineTerminatedError:
             # Engine crashed — restart and retry
-            print("  Warning: Stockfish crashed, restarting...")
+            _log.warning("Stockfish crashed, restarting...")
             if _sf_path:
                 _engine = chess.engine.SimpleEngine.popen_uci(str(_sf_path))
                 result = await asyncio.to_thread(_engine.play, board, limit)
@@ -268,7 +290,7 @@ async def bestmove(req: BestMoveRequest) -> BestMoveResponse:
 @app.get("/api/config")
 async def get_config() -> ConfigResponse:
     """Return editable config fields (players, analysis)."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -284,7 +306,7 @@ async def get_config() -> ConfigResponse:
 @app.post("/api/config")
 async def update_config(req: ConfigUpdateRequest) -> ConfigResponse:
     """Update editable config fields (players, analysis). Preserves other fields."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -296,9 +318,7 @@ async def update_config(req: ConfigUpdateRequest) -> ConfigResponse:
     if req.analysis is not None:
         config["analysis"] = req.analysis
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    atomic_write_json(config_path, config)
 
     return ConfigResponse(
         players=config.get("players", {}),
@@ -373,7 +393,7 @@ async def get_analysis_settings() -> AnalysisSettingsResponse:
 @app.post("/api/analysis/settings")
 async def update_analysis_settings(req: AnalysisSettingsResponse) -> AnalysisSettingsResponse:
     """Save analysis engine settings to config.json."""
-    config_path = _project_root / "config.json"
+    config_path = _project_root / DATA_DIR / CONFIG_FILE
     if not config_path.exists():
         raise HTTPException(status_code=404, detail="config.json not found")
 
@@ -386,9 +406,7 @@ async def update_analysis_settings(req: AnalysisSettingsResponse) -> AnalysisSet
         "limits": req.limits,
     }
 
-    with open(config_path, "w") as f:
-        json.dump(config, f, indent=2, ensure_ascii=False)
-        f.write("\n")
+    atomic_write_json(config_path, config)
 
     return req
 
@@ -452,8 +470,18 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
     from chess_self_coach.analysis import (
         AnalysisInterrupted,
         analyze_games,
-        annotate_and_derive,
+        load_analysis_data,
     )
+    from chess_self_coach.classifier import classify_game_single
+    from chess_self_coach.pipeline_status import (
+        get_incomplete_games,
+        load_pipeline_status,
+        mark_analyzed,
+        mark_phase_done,
+        save_pipeline_status,
+    )
+    from chess_self_coach.tactics import analyze_game_tactics
+    from chess_self_coach.training_data import generate_training_data_single
 
     assert _current_job is not None
     job = _current_job
@@ -474,12 +502,75 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
         raw_ids = params.get("game_ids")
         game_ids = cast(list[str] | None, raw_ids) if raw_ids else None
 
-        def _on_game_done(game_id: str) -> None:
-            _push({"phase": "derive", "message": "Deriving training data...", "game_id": game_id})
+        status = load_pipeline_status()
+
+        def _run_downstream(game_id: str, game_data: dict[str, Any]) -> None:
+            """Run tactics → classification → training for one game."""
+            # Tactics
+            _push({"phase": "tactics", "message": "Tactical analysis...", "game_id": game_id})
+            tactics = None
             try:
-                annotate_and_derive()
+                tactics = analyze_game_tactics(game_id, game_data)
+                mark_phase_done(status, game_id, "tactics")
             except Exception as e:
-                _log.error("annotate_and_derive failed for %s: %s", game_id, e)
+                _log.error("tactics failed for %s: %s", game_id, e)
+
+            # Classification
+            _push({"phase": "classification", "message": "Classifying moves...", "game_id": game_id})
+            try:
+                classify_game_single(game_id, game_data, tactics)
+                mark_phase_done(status, game_id, "classification")
+            except Exception as e:
+                _log.error("classification failed for %s: %s", game_id, e)
+
+            # Training data
+            _push({"phase": "training", "message": "Generating training data...", "game_id": game_id})
+            try:
+                generate_training_data_single(game_id, game_data)
+                mark_phase_done(status, game_id, "training")
+            except Exception as e:
+                _log.error("generate_training_data_single failed for %s: %s", game_id, e)
+
+            save_pipeline_status(status)
+
+        # --- Repair incomplete games from prior interrupted runs ---
+        incomplete = get_incomplete_games(status)
+        if incomplete:
+            _push({"phase": "repair", "message": f"Repairing {len(incomplete)} incomplete games..."})
+            analysis = load_analysis_data()
+            for gid, gstatus in incomplete:
+                gdata = analysis.get("games", {}).get(gid)
+                if not gdata:
+                    continue
+                _push({"phase": "repair", "message": f"Repairing {gid}...", "game_id": gid})
+                if not gstatus.get("tactics"):
+                    try:
+                        tactics = analyze_game_tactics(gid, gdata)
+                        mark_phase_done(status, gid, "tactics")
+                    except Exception as e:
+                        _log.error("repair tactics failed for %s: %s", gid, e)
+                        tactics = None
+                else:
+                    tactics = None
+                if not gstatus.get("classification"):
+                    try:
+                        classify_game_single(gid, gdata, tactics)
+                        mark_phase_done(status, gid, "classification")
+                    except Exception as e:
+                        _log.error("repair classification failed for %s: %s", gid, e)
+                if not gstatus.get("training"):
+                    try:
+                        generate_training_data_single(gid, gdata)
+                        mark_phase_done(status, gid, "training")
+                    except Exception as e:
+                        _log.error("repair training failed for %s: %s", gid, e)
+            save_pipeline_status(status)
+
+        # --- Per-game callback: analysis + all downstream phases ---
+        def _on_game_done(game_id: str, game_data: dict[str, Any]) -> None:
+            mark_analyzed(status, game_id, game_data.get("analyzed_at", ""))
+            save_pipeline_status(status)
+            _run_downstream(game_id, game_data)
 
         analyze_games(
             game_ids=game_ids,
@@ -489,6 +580,7 @@ def _run_analysis_job(job_id: str, loop: asyncio.AbstractEventLoop) -> None:
             on_game_done=_on_game_done,
             cancel=cancel,
         )
+
         job["status"] = "done"
     except AnalysisInterrupted as exc:
         _push({"phase": "interrupted", "message": str(exc), "percent": 100})
@@ -544,7 +636,7 @@ async def job_cancel(job_id: str):
 @app.get("/training_data.json")
 async def training_data():
     """Serve training data directly from project root (always fresh)."""
-    path = _project_root / "training_data.json"
+    path = _project_root / DATA_DIR / TRAINING_DATA_FILE
     if not path.exists():
         raise HTTPException(status_code=404, detail="No training data. Run: chess-self-coach train --prepare")
     return FileResponse(path, media_type="application/json")
@@ -553,9 +645,18 @@ async def training_data():
 @app.get("/analysis_data.json")
 async def analysis_data():
     """Serve analysis data directly from project root (always fresh)."""
-    path = _project_root / "analysis_data.json"
+    path = _project_root / DATA_DIR / ANALYSIS_DATA_FILE
     if not path.exists():
         raise HTTPException(status_code=404, detail="No analysis data. Run: chess-self-coach train --analyze")
+    return FileResponse(path, media_type="application/json")
+
+
+@app.get("/classifications_data.json")
+async def classifications_data():
+    """Serve pre-computed move classifications (always fresh)."""
+    path = _project_root / DATA_DIR / CLASSIFICATIONS_DATA_FILE
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="No classifications data")
     return FileResponse(path, media_type="application/json")
 
 
@@ -605,8 +706,6 @@ def run_server() -> None:
     Called by cli.py when user runs `chess-self-coach` (no subcommand)
     or `chess-self-coach train --serve`.
     """
-    import threading
-
     import uvicorn
 
     port = _find_available_port()

@@ -33,24 +33,35 @@ def _make_game(pgn_text: str = MINI_PGN_TEXT) -> chess.pgn.Game:
 
 
 def _mock_engine():
-    """Create a mock Stockfish engine."""
+    """Create a mock Stockfish engine that handles multipv."""
     engine = MagicMock(spec=chess.engine.SimpleEngine)
     call_count = {"n": 0}
 
     def mock_analyse(board, limit, **kwargs):
         call_count["n"] += 1
-        pv = list(board.legal_moves)[:2]
-        return {
-            "score": chess.engine.PovScore(chess.engine.Cp(20 + call_count["n"]), chess.WHITE),
-            "pv": pv,
-            "depth": 5,
-            "seldepth": 8,
-            "nodes": 10000,
-            "nps": 100000,
-            "time": 0.05,
-            "tbhits": 0,
-            "hashfull": 10,
-        }
+        multipv = kwargs.get("multipv", 1)
+        legal = list(board.legal_moves)
+        score_val = 20 + call_count["n"]
+
+        def _make_info(idx: int) -> dict:
+            pv_moves = legal[idx : idx + 2] if idx < len(legal) else []
+            return {
+                "score": chess.engine.PovScore(
+                    chess.engine.Cp(score_val - idx * 30), chess.WHITE
+                ),
+                "pv": pv_moves,
+                "depth": 5,
+                "seldepth": 8,
+                "nodes": 10000,
+                "nps": 100000,
+                "time": 0.05,
+                "tbhits": 0,
+                "hashfull": 10,
+            }
+
+        if multipv > 1:
+            return [_make_info(i) for i in range(min(multipv, len(legal)))]
+        return _make_info(0)
 
     engine.analyse = mock_analyse
     engine.configure = MagicMock()
@@ -89,9 +100,10 @@ def _apply_patches(extra: dict | None = None):
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_analyze_games_writes_analysis_data(mock_popen, mock_tb, mock_syz, tmp_path):
+def test_analyze_games_writes_analysis_data(mock_popen, mock_tb, mock_cloud, mock_syz, tmp_path):
     """analyze_games produces analysis_data.json with per-game entries."""
     mock_popen.return_value = _mock_engine()
 
@@ -121,9 +133,10 @@ def test_analyze_games_writes_analysis_data(mock_popen, mock_tb, mock_syz, tmp_p
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_analyze_games_incremental_skips_analyzed(mock_popen, mock_tb, mock_syz, tmp_path):
+def test_analyze_games_incremental_skips_analyzed(mock_popen, mock_tb, mock_cloud, mock_syz, tmp_path):
     """Second run skips games already in analysis_data.json."""
     mock_popen.return_value = _mock_engine()
 
@@ -160,18 +173,21 @@ def test_analyze_games_incremental_skips_analyzed(mock_popen, mock_tb, mock_syz,
 
 
 @patch("chess_self_coach.syzygy.find_syzygy", return_value=Path("/fake/syzygy"))
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
 @patch("chess.engine.SimpleEngine.popen_uci")
-def test_analyze_games_reanalyze_different_settings(mock_popen, mock_tb, mock_syz, tmp_path):
-    """reanalyze_all=True re-analyzes games with different settings."""
+def test_analyze_games_reanalyze_always_reruns(mock_popen, mock_tb, mock_cloud, mock_syz, tmp_path):
+    """reanalyze_all=True always re-runs, even with identical settings."""
     mock_popen.return_value = _mock_engine()
 
+    # Existing game with SAME settings as we'll request
+    same_settings = {"threads": 1, "hash_mb": 64, "limits": {"default": {"depth": 5}}}
     existing_data = {
         "version": "1.0",
         "player": {"lichess": "testplayer"},
         "games": {
             "https://lichess.org/test123": {
-                "settings": {"threads": 1, "hash_mb": 64, "limits": {"default": {"depth": 5}}},
+                "settings": same_settings,
                 "moves": [],
             }
         },
@@ -191,11 +207,10 @@ def test_analyze_games_reanalyze_different_settings(mock_popen, mock_tb, mock_sy
          patch("chess_self_coach.analysis.load_analysis_data", return_value=existing_data), \
          patch("chess_self_coach.analysis.save_analysis_data", side_effect=mock_save):
 
-        # Different settings → should re-analyze
-        new_settings = AnalysisSettings(threads=4, hash_mb=2048, limits={"default": {"depth": 18}})
-        analyze_games(max_games=1, reanalyze_all=True, settings=new_settings)
+        # Same settings → should STILL re-analyze (CPU conditions may differ)
+        settings = AnalysisSettings(threads=1, hash_mb=64, limits={"default": {"depth": 5}})
+        analyze_games(max_games=1, reanalyze_all=True, settings=settings)
 
     assert "games" in saved_data
     game_data = list(saved_data["games"].values())[0]
-    # Settings should be the new ones
-    assert game_data["settings"]["hash_mb"] == 2048
+    assert len(game_data["moves"]) == 5  # Re-analyzed, not skipped

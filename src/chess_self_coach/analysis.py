@@ -1,22 +1,20 @@
-"""Full game analysis: collect raw data from Stockfish, tablebase, and opening explorer.
+"""Phase 1: collect raw per-move data from Stockfish, tablebase, and opening explorer.
 
-Phase 1 collects all per-move evaluation data and stores it in analysis_data.json.
-Phase 2 annotates moves and derives training_data.json from the raw data.
-
-This decoupling allows re-running Phase 2 (cheap) without re-running Phase 1 (expensive).
+Stores all evaluation data in analysis_data.json with maximum granularity.
+Phase 2 (training_data.py) annotates and filters this data into training_data.json.
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 import threading
 import time as _time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 import chess
 import chess.engine
@@ -24,25 +22,20 @@ import chess.pgn
 
 from chess_self_coach import worker_count
 from chess_self_coach.cloud_eval import query_cloud_eval
-from chess_self_coach.config import _find_project_root
+from chess_self_coach.config import analysis_data_path as _default_analysis_path
 from chess_self_coach.constants import (
     ANALYSIS_LIMITS,
     ANALYSIS_TIME_LIMIT,
-    DOMINATED_POSITION_CP,
     ENDGAME_PIECES_MAX,
     MATE_CP,
-    MAX_PV_MOVES,
     MIDDLEGAME_PIECES_MAX,
 )
-from chess_self_coach.tablebase import (
-    MAX_PIECES,
-    TablebaseResult,
-    probe_position_full,
-    tablebase_context,
-    tablebase_explanation,
-)
+from chess_self_coach.io import atomic_write_json
+from chess_self_coach.tablebase import MAX_PIECES, probe_position_full
 
 _log = logging.getLogger(__name__)
+
+MULTIPV = 3  # number of principal variations for MultiPV analysis
 
 
 @dataclass
@@ -101,33 +94,17 @@ class AnalysisSettings:
         }
 
 
-def _atomic_write_json(path: Path, data: dict) -> None:
-    """Write JSON atomically: temp file, fsync, os.replace.
-
-    Args:
-        path: Target file path.
-        data: Dict to serialize as JSON.
-    """
-    tmp_path = path.with_suffix(".tmp")
-    with open(tmp_path, "w") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-        f.flush()
-        os.fsync(f.fileno())
-    os.replace(tmp_path, path)
-
-
 def load_analysis_data(path: Path | None = None) -> dict:
     """Load analysis_data.json, returning empty structure if not found.
 
     Args:
-        path: Path to analysis_data.json. Defaults to project root.
+        path: Path to analysis_data.json. Defaults to data directory.
 
     Returns:
         Parsed dict with at least {version, player, games}.
     """
     if path is None:
-        path = _find_project_root() / "analysis_data.json"
+        path = _default_analysis_path()
     if not path.exists():
         return {"version": "1.0", "player": {}, "games": {}}
     try:
@@ -143,21 +120,12 @@ def save_analysis_data(data: dict, path: Path | None = None) -> None:
 
     Args:
         data: Full analysis data dict.
-        path: Target path. Defaults to project root.
+        path: Target path. Defaults to data directory.
     """
     if path is None:
-        path = _find_project_root() / "analysis_data.json"
+        path = _default_analysis_path()
     data["version"] = "1.0"
-    _atomic_write_json(path, data)
-
-
-def analysis_data_path() -> Path:
-    """Return the default path for analysis_data.json.
-
-    Returns:
-        Path to analysis_data.json in the project root.
-    """
-    return _find_project_root() / "analysis_data.json"
+    atomic_write_json(path, data)
 
 
 def settings_match(stored: dict, current: dict) -> bool:
@@ -238,6 +206,34 @@ def _score_to_cp(score: chess.engine.PovScore) -> tuple[int | None, bool, int | 
     return white.score(), False, None
 
 
+def _convert_pv(
+    board: chess.Board, moves: list[chess.Move] | list[str],
+) -> tuple[list[str], list[str]]:
+    """Convert a principal variation to SAN and UCI string lists.
+
+    Accepts either chess.Move objects (from Stockfish) or UCI strings (from APIs).
+
+    Args:
+        board: Board position before the PV starts.
+        moves: PV as Move objects or UCI strings.
+
+    Returns:
+        Tuple of (pv_san, pv_uci).
+    """
+    pv_san: list[str] = []
+    pv_uci: list[str] = []
+    pv_board = board.copy()
+    for raw_move in moves:
+        try:
+            move = chess.Move.from_uci(raw_move) if isinstance(raw_move, str) else raw_move
+            pv_san.append(pv_board.san(move))
+            pv_uci.append(move.uci())
+            pv_board.push(move)
+        except (ValueError, AssertionError):
+            break
+    return pv_san, pv_uci
+
+
 def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
     """Extract full evaluation data from a Stockfish info dict.
 
@@ -246,8 +242,7 @@ def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
         board: Board position that was analyzed (for PV SAN conversion).
 
     Returns:
-        Dict with score_cp, is_mate, mate_in, depth, seldepth, nodes, nps,
-        time_ms, tbhits, hashfull, pv_san, pv_uci, best_move_san, best_move_uci.
+        Typed eval dict with score, PV, best move, and engine metadata.
     """
     score = info.get("score")
     if score is None:
@@ -271,21 +266,9 @@ def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
     score_cp, is_mate, mate_in = _score_to_cp(score)
     pv = info.get("pv", [])
 
-    # Convert full PV to SAN and UCI
-    pv_san: list[str] = []
-    pv_uci: list[str] = []
-    pv_board = board.copy()
-    for move in pv:
-        try:
-            pv_san.append(pv_board.san(move))
-            pv_uci.append(move.uci())
-            pv_board.push(move)
-        except (ValueError, AssertionError):
-            break
-
-    best_move = pv[0] if pv else None
-    best_san = board.san(best_move) if best_move else None
-    best_uci = best_move.uci() if best_move else None
+    pv_san, pv_uci = _convert_pv(board, pv)
+    best_san = pv_san[0] if pv_san else None
+    best_uci = pv_uci[0] if pv_uci else None
 
     # Time: python-chess reports seconds as float, convert to ms
     time_s = info.get("time")
@@ -307,6 +290,52 @@ def _extract_eval(info: chess.engine.InfoDict, board: chess.Board) -> dict:
         "best_move_san": best_san,
         "best_move_uci": best_uci,
     }
+
+
+def _extract_multipv(
+    infos: list[chess.engine.InfoDict], board: chess.Board,
+) -> dict:
+    """Extract compact MultiPV data from engine.analyse(multipv=N) results.
+
+    PV1 data is NOT stored here — it lives in eval_before (score_cp, pv_uci,
+    best_move_uci). This function only stores derived features and alternatives.
+
+    Args:
+        infos: List of info dicts from engine.analyse(multipv=N).
+        board: Board position analyzed.
+
+    Returns:
+        Compact dict with move_gap, n_good_moves, and alt moves with scores.
+    """
+    scores: list[tuple[int | None, str | None]] = []  # (cp, first_move_uci)
+    for info in infos:
+        score = info.get("score")
+        if score is None:
+            continue
+        cp, _, _ = _score_to_cp(score)
+        pv = info.get("pv", [])
+        first_move = pv[0].uci() if pv else None
+        scores.append((cp, first_move))
+
+    if not scores:
+        return {"move_gap": None, "n_good_moves": 0, "alt": []}
+
+    best_cp = scores[0][0]
+    move_gap = (
+        (best_cp - scores[1][0])
+        if len(scores) >= 2
+        and best_cp is not None
+        and scores[1][0] is not None
+        else None
+    )
+    n_good = sum(
+        1
+        for cp, _ in scores
+        if cp is not None and best_cp is not None and abs(cp - best_cp) <= 50
+    )
+    alt = [{"move": m, "cp": cp} for cp, m in scores[1:] if m is not None]
+
+    return {"move_gap": move_gap, "n_good_moves": n_good, "alt": alt}
 
 
 def _tb_to_eval(tb_data: dict, board_turn: chess.Color) -> dict:
@@ -352,7 +381,7 @@ def _cloud_eval_to_eval(cloud_data: dict, board: chess.Board) -> dict:
         board: Board position (for PV UCI-to-SAN conversion).
 
     Returns:
-        Dict matching the _extract_eval() structure.
+        Typed eval dict matching the _extract_eval() structure.
     """
     pv_entry = cloud_data.get("pvs", [{}])[0]
 
@@ -366,20 +395,8 @@ def _cloud_eval_to_eval(cloud_data: dict, board: chess.Board) -> dict:
         score_cp = MATE_CP if mate_in > 0 else -MATE_CP
 
     # PV: space-separated UCI moves
-    pv_uci_str = pv_entry.get("moves", "")
-    pv_uci = pv_uci_str.split() if pv_uci_str else []
-
-    # Convert PV to SAN
-    pv_san: list[str] = []
-    pv_board = board.copy()
-    for uci in pv_uci:
-        try:
-            move = chess.Move.from_uci(uci)
-            pv_san.append(pv_board.san(move))
-            pv_board.push(move)
-        except (ValueError, AssertionError):
-            break
-
+    pv_uci_raw = pv_entry.get("moves", "").split() if pv_entry.get("moves") else []
+    pv_san, pv_uci = _convert_pv(board, pv_uci_raw)
     best_uci = pv_uci[0] if pv_uci else None
     best_san = pv_san[0] if pv_san else None
 
@@ -408,11 +425,20 @@ def collect_game_data(
     settings: AnalysisSettings,
     lichess_token: str | None = None,
     game_id: str = "",
-) -> dict:
+    existing_moves: list[dict[str, Any]] | None = None,
+    on_wait: Callable[[int, float], None] | None = None,
+) -> dict[str, Any]:
     """Collect full per-move analysis data for one game (Phase 1).
 
-    Runs Stockfish, Lichess tablebase, and Opening Explorer on every position.
-    Stores all raw data with maximum granularity — no filtering, no annotation.
+    Source hierarchy per move:
+      1. Tablebase (priority if ≤7 pieces — perfect information)
+      2. Masters opening explorer (in_opening=True, cp_loss=0)
+      3. Cloud eval (depth 50-70, cp_loss computed)
+      4. Stockfish (fallback, always re-run on re-analysis)
+
+    When *existing_moves* is provided (re-analysis), API data (masters,
+    cloud eval, tablebase) is preserved and only breakpoints are re-tested.
+    Stockfish positions are always re-run regardless.
 
     Args:
         game: Parsed PGN game.
@@ -422,6 +448,10 @@ def collect_game_data(
         lichess_token: Lichess API token for Opening Explorer. None to skip.
         game_id: Unique game identifier. Passed to engine.analyse() so python-chess
             sends ucinewgame between different games (hash table reset).
+        existing_moves: Previous per-move data from a prior analysis. When set,
+            preserves API data and only re-tests breakpoints + re-runs Stockfish.
+        on_wait: Optional callback(attempt, delay_seconds) called when an API
+            request is retrying after a transient error (429, 5xx).
 
     Returns:
         Dict with game headers, settings, and moves[] array ready for
@@ -439,19 +469,28 @@ def collect_game_data(
         fens_and_moves.append((board.fen(), next_node.move.uci()))
         node = next_node
 
-    # Query Opening Explorer for opening-phase positions (stops at departure)
+    # Query Masters Opening Explorer (stops at departure)
     explorer_results: list[dict | None] = [None] * len(fens_and_moves)
     if lichess_token:
         from chess_self_coach.opening_explorer import query_opening_sequence
 
-        explorer_results = query_opening_sequence(fens_and_moves, lichess_token)
+        existing_explorer = (
+            [m.get("opening_explorer") for m in existing_moves]
+            if existing_moves
+            else None
+        )
+        explorer_results = query_opening_sequence(
+            fens_and_moves, lichess_token, existing_results=existing_explorer
+        )
 
     # Walk through the game and collect eval data for each move
     node = game
     ply = 0
     # Cache: eval_before for current position (reused as eval_after of previous move)
-    cached_eval: dict | None = None
-    cached_tb: dict | None = None
+    cached_eval: dict[str, Any] | None = None
+    cached_tb: dict[str, Any] | None = None
+    cached_mpv: dict[str, Any] | None = None
+    cloud_departed = False
     prev_player_clock: float | None = None
     prev_opponent_clock: float | None = None
 
@@ -491,140 +530,292 @@ def collect_game_data(
             if opponent_clock is not None and prev_opponent_clock is not None:
                 time_spent = prev_opponent_clock - opponent_clock
 
-        # --- Opening Explorer: determine if move is in opening theory ---
+        # --- Opening Explorer: determine if move is in Masters theory ---
         explorer_data = explorer_results[ply] if ply < len(explorer_results) else None
-        in_opening = False
-        if explorer_data is not None:
-            known_moves_uci = {m["uci"] for m in explorer_data.get("moves", [])}
-            in_opening = actual_move.uci() in known_moves_uci
+        in_opening = (
+            explorer_data is not None
+            and explorer_data.get("_source") == "masters"
+        )
 
-        # --- Eval: board_after_fen needed by both branches ---
+        # --- Existing move data (re-analysis) ---
+        existing: dict[str, Any] | None = (
+            existing_moves[ply]
+            if existing_moves is not None and ply < len(existing_moves)
+            else None
+        )
+
+        # --- board_after_fen needed by all tiers ---
         board_after_fen = board_after.fen()
 
-        # --- Eval source + eval_before / eval_after ---
-        if in_opening:
-            # Opening book move: use Lichess Cloud Eval (fast), fall back to Stockfish
-            # eval_source is set below based on actual evaluation provider
+        # --- Tier dispatch: tablebase → masters+cloud → cloud → stockfish ---
+        tb_before: dict[str, Any] | None = None
+        tb_after: dict[str, Any] | None = None
+        mpv_before: dict[str, Any] | None = None
+        pc_after = len(board_after.piece_map())
 
-            # eval_before
-            t0 = _time.time()
-            if cached_eval is not None:
-                eval_before = cached_eval
-                _eb_src = "cache"
+        if piece_count <= MAX_PIECES:
+            # ── Tier 1: Tablebase (priority, ≤7 pieces, perfect information) ──
+            # Probe tablebase for current position
+            _tb_probed: dict[str, Any] | None = None
+            if existing and existing.get("tablebase_before"):
+                _tb_probed = existing["tablebase_before"]
             else:
-                cloud = query_cloud_eval(board.fen())
-                if cloud:
-                    eval_before = _cloud_eval_to_eval(cloud, board)
-                    _eb_src = "cloud_eval"
-                else:
-                    info = engine.analyse(
-                        board,
-                        _analysis_limit_from_settings(board, limits),
-                        game=game_id,
-                    )
-                    eval_before = _extract_eval(info, board)
-                    _eb_src = "sf_fallback"
-            eval_before_ms = (_time.time() - t0) * 1000
+                _tb_probed = probe_position_full(board.fen(), on_wait=on_wait)
 
-            # eval_after
             t0 = _time.time()
-            cloud_after = query_cloud_eval(board_after_fen)
-            if cloud_after:
-                eval_after = _cloud_eval_to_eval(cloud_after, board_after)
-                _ea_src = "cloud_eval"
-            else:
-                info_after = engine.analyse(
-                    board_after,
-                    _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
-                )
-                eval_after = _extract_eval(info_after, board_after)
-                _ea_src = "sf_fallback"
-            eval_after_ms = (_time.time() - t0) * 1000
-
-            eval_source = "cloud_eval" if _ea_src == "cloud_eval" else "stockfish"
-
-            _log.info(
-                "  ply %d %s: opening — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s)",
-                ply + 1,
-                board.san(actual_move),
-                _eb_src,
-                eval_before_ms,
-                eval_before.get("score_cp"),
-                _ea_src,
-                eval_after_ms,
-                eval_after.get("score_cp"),
-            )
-
-            cached_eval = eval_after
-            cached_tb = None
-            cp_loss = 0
-            tb_before_stored = None
-            tb_after_stored = None
-        else:
-            tb_before = None
-            eval_source = "stockfish"
-
-            # eval_before (+ tablebase probe)
-            t0 = _time.time()
-            if piece_count <= MAX_PIECES:
-                tb_before = probe_position_full(board.fen())
-
-            if cached_eval is not None:
-                eval_before = cached_eval
+            if cached_eval is not None and cached_tb is not None:
+                score_before = cached_eval
+                tb_before = cached_tb
+                mpv_before = cached_mpv
                 _eb_src = "cache"
-                if cached_tb is not None:
-                    tb_before = cached_tb
-                    eval_source = (
-                        "tablebase"
-                        if cached_eval.get("depth") is None
-                        else "stockfish+tablebase"
-                    )
-            elif tb_before:
-                eval_before = _tb_to_eval(tb_before, board.turn)
-                eval_source = "tablebase"
+            elif _tb_probed is not None:
+                tb_before = _tb_probed
+                score_before = _tb_to_eval(_tb_probed, board.turn)
                 _eb_src = "tablebase"
             else:
-                info = engine.analyse(
-                    board, _analysis_limit_from_settings(board, limits), game=game_id
+                infos = engine.analyse(
+                    board, _analysis_limit_from_settings(board, limits),
+                    multipv=MULTIPV, game=game_id,
                 )
-                eval_before = _extract_eval(info, board)
-                _eb_src = "stockfish"
-                if tb_before:
-                    eval_source = "stockfish+tablebase"
-            eval_before_ms = (_time.time() - t0) * 1000
+                score_before = _extract_eval(infos[0], board)
+                mpv_before = _extract_multipv(infos, board)
+                _eb_src = "sf_fallback"
+            score_before_ms = (_time.time() - t0) * 1000
 
-            # --- Eval after actual move (will be cached as eval_before for next ply) ---
+            # Probe tablebase for position after move
+            _tb_probed_after: dict[str, Any] | None = None
+            if existing and existing.get("tablebase_after"):
+                _tb_probed_after = existing["tablebase_after"]
+            elif pc_after <= MAX_PIECES:
+                _tb_probed_after = probe_position_full(board_after_fen, on_wait=on_wait)
+
             t0 = _time.time()
-            pc_after = len(board_after.piece_map())
-            tb_after = None
-
-            if pc_after <= MAX_PIECES:
-                tb_after = probe_position_full(board_after_fen)
-
-            if tb_after:
-                eval_after = _tb_to_eval(tb_after, board_after.turn)
-                cached_eval = eval_after
-                cached_tb = tb_after
+            if _tb_probed_after is not None:
+                tb_after = _tb_probed_after
+                score_after = _tb_to_eval(_tb_probed_after, board_after.turn)
+                cached_eval = score_after
+                cached_tb = _tb_probed_after
+                cached_mpv = None
                 _ea_src = "tablebase"
             else:
-                info_after = engine.analyse(
+                infos_after = engine.analyse(
                     board_after,
                     _analysis_limit_from_settings(board_after, limits),
-                    game=game_id,
+                    multipv=MULTIPV, game=game_id,
                 )
-                eval_after = _extract_eval(info_after, board_after)
-                cached_eval = eval_after
+                score_after = _extract_eval(infos_after[0], board_after)
+                cached_eval = score_after
                 cached_tb = None
+                cached_mpv = _extract_multipv(infos_after, board_after)
                 _ea_src = "stockfish"
-            eval_after_ms = (_time.time() - t0) * 1000
+            score_after_ms = (_time.time() - t0) * 1000
 
-            # --- cp_loss ---
-            cp_loss = 0
+            tier_source = "tablebase" if tb_before is not None and tb_after is not None else (
+                "stockfish+tablebase" if tb_before is not None or tb_after is not None else "stockfish"
+            )
+
+        else:
+            # ── Tiers 2-4: Cloud scoring / Stockfish (>7 pieces) ──
+            tier_source = "stockfish"  # default, overridden below
+
+            # Can we reuse preserved cloud scoring data?
+            _preserved_cloud = (
+                existing is not None
+                and existing.get("eval_source") == "cloud_eval"
+            )
+
+            if in_opening and _preserved_cloud:
+                # ── Tier 2a: Masters move with preserved cloud scoring ──
+                assert existing is not None  # guaranteed by _preserved_cloud
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    score_before = existing["eval_before"]
+                    mpv_before = existing.get("multipv_before")
+                    _eb_src = "preserved"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                score_after = existing["eval_after"]
+                _ea_src = "preserved"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval"
+                cached_eval = score_after
+                cached_tb = None
+                cached_mpv = None
+
+            elif in_opening:
+                # ── Tier 2b: Masters move, fresh cloud scoring query ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    _lbl = f"[ply {ply+1} before] "
+                    cloud = query_cloud_eval(
+                        board.fen(), on_wait=on_wait, log_label=_lbl)
+                    if cloud:
+                        score_before = _cloud_eval_to_eval(cloud, board)
+                        _eb_src = "cloud_eval"
+                    else:
+                        infos = engine.analyse(
+                            board,
+                            _analysis_limit_from_settings(board, limits),
+                            multipv=MULTIPV, game=game_id,
+                        )
+                        score_before = _extract_eval(infos[0], board)
+                        mpv_before = _extract_multipv(infos, board)
+                        _eb_src = "sf_fallback"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                _lbl = f"[ply {ply+1} after] "
+                cloud_after = query_cloud_eval(
+                    board_after_fen, on_wait=on_wait, log_label=_lbl)
+                if cloud_after:
+                    score_after = _cloud_eval_to_eval(cloud_after, board_after)
+                    _ea_src = "cloud_eval"
+                    cached_mpv = None
+                else:
+                    infos_after = engine.analyse(
+                        board_after,
+                        _analysis_limit_from_settings(board_after, limits),
+                        multipv=MULTIPV, game=game_id,
+                    )
+                    score_after = _extract_eval(infos_after[0], board_after)
+                    cached_mpv = _extract_multipv(infos_after, board_after)
+                    _ea_src = "sf_fallback"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval" if _ea_src == "cloud_eval" else "stockfish"
+                cached_eval = score_after
+                cached_tb = None
+
+            elif not cloud_departed and _preserved_cloud:
+                # ── Tier 3a: Post-masters, preserved cloud scoring ──
+                assert existing is not None  # guaranteed by _preserved_cloud
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    score_before = existing["eval_before"]
+                    mpv_before = existing.get("multipv_before")
+                    _eb_src = "preserved"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                score_after = existing["eval_after"]
+                _ea_src = "preserved"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                tier_source = "cloud_eval"
+                cached_eval = score_after
+                cached_tb = None
+                cached_mpv = None
+
+            elif not cloud_departed:
+                # ── Tier 3b: Post-masters, fresh cloud scoring query ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    _lbl = f"[ply {ply+1} before] "
+                    cloud = query_cloud_eval(
+                        board.fen(), on_wait=on_wait, log_label=_lbl)
+                    if cloud:
+                        score_before = _cloud_eval_to_eval(cloud, board)
+                        _eb_src = "cloud_eval"
+                    else:
+                        infos = engine.analyse(
+                            board,
+                            _analysis_limit_from_settings(board, limits),
+                            multipv=MULTIPV, game=game_id,
+                        )
+                        score_before = _extract_eval(infos[0], board)
+                        mpv_before = _extract_multipv(infos, board)
+                        _eb_src = "sf_fallback"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                _lbl = f"[ply {ply+1} after] "
+                cloud_after = query_cloud_eval(
+                    board_after_fen, on_wait=on_wait, log_label=_lbl)
+                if cloud_after:
+                    score_after = _cloud_eval_to_eval(cloud_after, board_after)
+                    _ea_src = "cloud_eval"
+                    tier_source = "cloud_eval"
+                    cached_mpv = None
+                else:
+                    cloud_departed = True
+                    infos_after = engine.analyse(
+                        board_after,
+                        _analysis_limit_from_settings(board_after, limits),
+                        multipv=MULTIPV, game=game_id,
+                    )
+                    score_after = _extract_eval(infos_after[0], board_after)
+                    cached_mpv = _extract_multipv(infos_after, board_after)
+                    _ea_src = "stockfish"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                cached_eval = score_after
+                cached_tb = None
+
+            else:
+                # ── Tier 4: Stockfish (fallback, always re-run) ──
+                t0 = _time.time()
+                if cached_eval is not None:
+                    score_before = cached_eval
+                    mpv_before = cached_mpv
+                    _eb_src = "cache"
+                else:
+                    infos = engine.analyse(
+                        board,
+                        _analysis_limit_from_settings(board, limits),
+                        multipv=MULTIPV, game=game_id,
+                    )
+                    score_before = _extract_eval(infos[0], board)
+                    mpv_before = _extract_multipv(infos, board)
+                    _eb_src = "stockfish"
+                score_before_ms = (_time.time() - t0) * 1000
+
+                t0 = _time.time()
+                infos_after = engine.analyse(
+                    board_after,
+                    _analysis_limit_from_settings(board_after, limits),
+                    multipv=MULTIPV, game=game_id,
+                )
+                score_after = _extract_eval(infos_after[0], board_after)
+                _ea_src = "stockfish"
+                score_after_ms = (_time.time() - t0) * 1000
+
+                cached_eval = score_after
+                cached_tb = None
+                cached_mpv = _extract_multipv(infos_after, board_after)
+
+        # --- Unified variable names for the rest of the loop ---
+        eval_before = score_before
+        eval_after = score_after
+        eval_before_ms = score_before_ms
+        eval_after_ms = score_after_ms
+        eval_source = tier_source
+        tb_before_stored = tb_before
+        tb_after_stored = tb_after
+
+        # --- cp_loss: 0 for opening (masters), computed for everything else ---
+        cp_loss = 0
+        if not in_opening:
             before_cp = eval_before.get("score_cp")
             after_cp = eval_after.get("score_cp")
             if before_cp is not None and after_cp is not None:
-                # If the player delivered checkmate, cp_loss is 0 by definition
                 best_uci = eval_before.get("best_move_uci", "")
                 if best_uci and actual_move == chess.Move.from_uci(best_uci):
                     cp_loss = 0
@@ -633,23 +824,26 @@ def collect_game_data(
                 else:
                     cp_loss = max(0, after_cp - before_cp)
 
-            _log.info(
-                "  ply %d %s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d",
-                ply + 1,
-                board.san(actual_move),
-                eval_source,
-                _eb_src,
-                eval_before_ms,
-                eval_before.get("score_cp"),
-                _ea_src,
-                eval_after_ms,
-                eval_after.get("score_cp"),
-                cp_loss,
-            )
-
-            # --- Tablebase: store full responses ---
-            tb_before_stored = tb_before
-            tb_after_stored = tb_after
+        _source_tag = (
+            "[book] " if in_opening
+            else "[cloud] " if eval_source == "cloud_eval"
+            else "[tb] " if eval_source == "tablebase"
+            else ""
+        )
+        _log.info(
+            "  ply %d %s%s: %s — before=%s(%.0fms cp=%s) after=%s(%.0fms cp=%s) cp_loss=%d",
+            ply + 1,
+            _source_tag,
+            board.san(actual_move),
+            eval_source,
+            _eb_src,
+            eval_before_ms,
+            eval_before.get("score_cp"),
+            _ea_src,
+            eval_after_ms,
+            eval_after.get("score_cp"),
+            cp_loss,
+        )
 
         # --- Build move dict ---
         move_dict = {
@@ -663,6 +857,7 @@ def collect_game_data(
             "in_opening": in_opening,
             "eval_before": eval_before,
             "eval_after": eval_after,
+            "multipv_before": mpv_before,
             "tablebase_before": tb_before_stored,
             "tablebase_after": tb_after_stored,
             "opening_explorer": explorer_data,
@@ -767,13 +962,13 @@ def analyze_games(
     settings: AnalysisSettings | None = None,
     engine_path: str | None = None,
     on_progress: Callable[[dict], None] | None = None,
-    on_game_done: Callable[[str], None] | None = None,
+    on_game_done: Callable[[str, dict], None] | None = None,
     cancel: threading.Event | None = None,
 ) -> None:
     """Fetch games, analyze with Stockfish + APIs, write analysis_data.json.
 
     Phase 1 orchestrator: sequential analysis with one multi-threaded Stockfish.
-    Caller is responsible for invoking annotate_and_derive() (Phase 2) afterwards.
+    Caller is responsible for invoking generate_training_data() (Phase 2) afterwards.
 
     Args:
         game_ids: Specific game IDs to analyze from the cache. When set,
@@ -787,7 +982,7 @@ def analyze_games(
         cancel: Threading event for cancellation.
     """
     from chess_self_coach.config import (
-        _find_project_root,
+        analysis_data_path,
         check_stockfish_version,
         find_stockfish,
         load_config,
@@ -818,8 +1013,6 @@ def analyze_games(
     # Load settings
     if settings is None:
         settings = AnalysisSettings.from_config(config)
-    settings_dict = settings.to_dict()
-
     # Find Stockfish
     if engine_path:
         sf_path = Path(engine_path)
@@ -835,8 +1028,7 @@ def analyze_games(
     # Load Lichess token for Opening Explorer
     lichess_token = load_lichess_token(required=False)
 
-    root = _find_project_root()
-    analysis_path = root / "analysis_data.json"
+    analysis_path = analysis_data_path()
 
     # Load existing analysis data
     existing_data = load_analysis_data(analysis_path)
@@ -918,10 +1110,6 @@ def analyze_games(
                 if not reanalyze_all:
                     skipped += 1
                     continue
-                stored_settings = existing_games[game_id].get("settings", {})
-                if settings_match(stored_settings, settings_dict):
-                    skipped += 1
-                    continue
                 is_reanalysis = True
 
             new_games.append((game, game_id, player_color))
@@ -987,6 +1175,16 @@ def analyze_games(
             black = game.headers.get("Black", "?")
             label = f"{white} vs {black}"
 
+            # Re-analysis: pass existing move data to preserve API results
+            prev_moves = None
+            if reanalyze_all and game_id and game_id in existing_games:
+                prev_moves = existing_games[game_id].get("moves")
+
+            def _on_wait(attempt: int, delay: float) -> None:
+                msg = f"API rate limit, retry #{attempt} in {delay:.0f}s ({label})"
+                print(f"  ⏳ {msg}")
+                _emit({"phase": "analyze", "message": msg, "waiting": True})
+
             start = _time.time()
             try:
                 game_data = collect_game_data(
@@ -996,8 +1194,11 @@ def analyze_games(
                     settings,
                     lichess_token,
                     game_id=game_id,
+                    existing_moves=prev_moves,
+                    on_wait=_on_wait,
                 )
             except Exception as exc:
+                _emit({"phase": "analyze", "message": str(exc), "error": True})
                 print(f"  [{done_count}/{total_tasks}] Error analyzing {label}: {exc}")
                 continue
 
@@ -1008,8 +1209,8 @@ def analyze_games(
 
             # Per-game summary
             _moves = game_data["moves"]
-            _opening = [m for m in _moves if m["eval_source"] == "opening_explorer"]
-            _other = [m for m in _moves if m["eval_source"] != "opening_explorer"]
+            _opening = [m for m in _moves if m.get("in_opening")]
+            _other = [m for m in _moves if not m.get("in_opening")]
             _log.info(
                 "Game %d/%d: %s — %d moves in %.1fs",
                 done_count,
@@ -1052,9 +1253,9 @@ def analyze_games(
             # Atomic write after each game (crash-safe)
             save_analysis_data(existing_data, analysis_path)
 
-            # Derive training data immediately so the game is usable in the UI
+            # Run downstream phases so the game is usable in the UI
             if on_game_done:
-                on_game_done(store_id)
+                on_game_done(store_id, game_data)
 
             # Progress
             move_count = len(game_data["moves"])
@@ -1097,288 +1298,3 @@ def analyze_games(
             "percent": 100,
         }
     )
-
-
-# ---------------------------------------------------------------------------
-# Phase 2: Annotation + training data derivation
-# ---------------------------------------------------------------------------
-
-
-def annotate_and_derive(
-    analysis_path: Path | None = None,
-    output_path: Path | None = None,
-    min_cp_loss: int = 50,
-) -> None:
-    """Derive training_data.json from analysis_data.json (Phase 2).
-
-    Reads the raw analysis data, filters for player mistakes, generates
-    explanations, and writes training_data.json. Can be re-run cheaply
-    without re-running Stockfish.
-
-    Args:
-        analysis_path: Path to analysis_data.json. Defaults to project root.
-        output_path: Path to training_data.json. Defaults to project root.
-        min_cp_loss: Minimum centipawn loss to include (default: 50 = inaccuracy).
-    """
-    import hashlib
-
-    from chess_self_coach.config import _find_project_root, load_config
-    from chess_self_coach.trainer import (
-        _classify_mistake,
-        _format_score_cp,
-        _generate_context,
-        _time_pressure_context,
-        generate_explanation,
-    )
-
-    root = _find_project_root()
-    if analysis_path is None:
-        analysis_path = root / "analysis_data.json"
-    if output_path is None:
-        output_path = root / "training_data.json"
-
-    # Load analysis data
-    analysis_data = load_analysis_data(analysis_path)
-    games = analysis_data.get("games", {})
-    if not games:
-        print("  No analysis data found. Run analysis first.")
-        return
-
-    # Load existing training data (to preserve SRS state)
-    existing_positions: dict[str, dict] = {}
-    if output_path.exists():
-        try:
-            with open(output_path) as f:
-                existing_td = json.load(f)
-            for pos in existing_td.get("positions", []):
-                existing_positions[pos["id"]] = pos
-        except (json.JSONDecodeError, KeyError):
-            pass
-
-    # Process each game
-    positions: dict[str, dict] = {}
-    analyzed_game_ids: set[str] = set()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-    for game_id, game_data in games.items():
-        analyzed_game_ids.add(game_id)
-        player_color = game_data.get("player_color", "white")
-        moves = game_data.get("moves", [])
-        headers = game_data.get("headers", {})
-
-        game_info = {
-            "id": game_id,
-            "source": headers.get("source", "unknown"),
-            "opponent": (
-                headers.get("black", "?")
-                if player_color == "white"
-                else headers.get("white", "?")
-            ),
-            "date": headers.get("date", "?"),
-            "result": headers.get("result", "*"),
-            "opening": headers.get("opening", "?"),
-        }
-
-        for move_data in moves:
-            # Only look at the player's moves
-            if move_data["side"] != player_color:
-                continue
-
-            cp_loss = move_data.get("cp_loss", 0)
-            if cp_loss < min_cp_loss:
-                continue
-
-            category = _classify_mistake(cp_loss)
-            if category is None:
-                continue
-
-            # Extract scores
-            eval_before = move_data.get("eval_before", {})
-            eval_after = move_data.get("eval_after", {})
-
-            score_before_cp = eval_before.get("score_cp")
-            score_after_cp = eval_after.get("score_cp")
-
-            # Pedagogical filter: skip already-lost or already-won
-            if score_before_cp is not None and score_after_cp is not None:
-                player_cp = (
-                    score_before_cp if player_color == "white" else -score_before_cp
-                )
-                player_cp_after = (
-                    score_after_cp if player_color == "white" else -score_after_cp
-                )
-                is_mate = eval_before.get("is_mate", False)
-                if (
-                    player_cp < -DOMINATED_POSITION_CP
-                    and player_cp_after < -DOMINATED_POSITION_CP
-                    and not is_mate
-                ):
-                    continue  # Already lost
-                if (
-                    player_cp > DOMINATED_POSITION_CP
-                    and player_cp_after > DOMINATED_POSITION_CP
-                ):
-                    continue  # Already won
-
-            was_mate = eval_before.get("is_mate", False)
-            fen = move_data.get("fen_before", "")
-            actual_san = move_data.get("move_san", "")
-            best_san = eval_before.get("best_move_san", "")
-
-            # Skip if the player already played the best move
-            if best_san and actual_san == best_san:
-                continue
-
-            # Generate explanation
-            board = chess.Board(fen) if fen else chess.Board()
-            explanation = generate_explanation(
-                board,
-                actual_san,
-                best_san or actual_san,
-                cp_loss,
-                category,
-                was_mate=was_mate,
-                score_after_cp=score_after_cp,
-            )
-
-            # Generate context
-            context = _generate_context(
-                category,
-                cp_loss,
-                was_mate,
-                score_after_cp,
-                fen=fen,
-                score_before_cp=score_before_cp,
-                player_color=player_color,
-            )
-
-            # Override with tablebase-specific text for endgame positions
-            tb_before_raw = move_data.get("tablebase_before")
-            tb_after_raw = move_data.get("tablebase_after")
-            if tb_before_raw:
-                tb_res_before = TablebaseResult(
-                    category=tb_before_raw["category"],
-                    dtz=tb_before_raw.get("dtz"),
-                    dtm=tb_before_raw.get("dtm"),
-                    best_move=None,
-                )
-                piece_count = move_data.get("board", {}).get("piece_count", 0)
-                context = tablebase_context(
-                    tb_res_before, piece_count, player_color
-                )
-                if tb_after_raw:
-                    tb_res_after = TablebaseResult(
-                        category=tb_after_raw["category"],
-                        dtz=tb_after_raw.get("dtz"),
-                        dtm=tb_after_raw.get("dtm"),
-                        best_move=None,
-                    )
-                    explanation = tablebase_explanation(
-                        tb_res_before, tb_res_after, actual_san, best_san
-                    )
-
-            # Time pressure context
-            clock = move_data.get("clock", {})
-            time_ctx = _time_pressure_context(
-                clock.get("player"), clock.get("opponent")
-            )
-            if time_ctx:
-                context = f"{context} {time_ctx}"
-
-            # PV (from eval_before)
-            pv = eval_before.get("pv_san", [])
-
-            # Position ID
-            pos_id_data = f"{fen}:{actual_san}"
-            pos_id = hashlib.sha256(pos_id_data.encode()).hexdigest()[:12]
-
-            # Build position dict
-            pos = {
-                "id": pos_id,
-                "fen": fen,
-                "player_color": player_color,
-                "player_move": actual_san,
-                "best_move": best_san or actual_san,
-                "context": context,
-                "score_before": _format_score_cp(score_before_cp),
-                "score_after": _format_score_cp(score_after_cp),
-                "score_after_best": _format_score_cp(score_before_cp),
-                "cp_loss": cp_loss,
-                "category": category,
-                "explanation": explanation,
-                "acceptable_moves": [best_san] if best_san else [],
-                "pv": pv[:MAX_PV_MOVES] if not was_mate else pv,
-                "game": game_info,
-                "clock": {
-                    "player": clock.get("player"),
-                    "opponent": clock.get("opponent"),
-                },
-            }
-
-            # Tablebase data
-            tb_before = move_data.get("tablebase_before")
-            tb_after = move_data.get("tablebase_after")
-            if tb_before or tb_after:
-                tb_data = {}
-                if tb_before:
-                    tb_data["before"] = {
-                        "category": tb_before.get("category"),
-                        "dtm": tb_before.get("dtm"),
-                        "dtz": tb_before.get("dtz"),
-                    }
-                if tb_after:
-                    tb_data["after"] = {
-                        "category": tb_after.get("category"),
-                        "dtm": tb_after.get("dtm"),
-                        "dtz": tb_after.get("dtz"),
-                    }
-                if tb_before and tb_after:
-                    tier_before = tb_before.get("tier", "DRAW")
-                    tier_after = tb_after.get("tier", "DRAW")
-                    tb_data["transition"] = f"{tier_before} → {tier_after}"
-                pos["tablebase"] = tb_data
-
-            # Preserve SRS state from existing training data
-            if pos_id in existing_positions:
-                pos["srs"] = existing_positions[pos_id].get(
-                    "srs",
-                    {
-                        "interval": 0,
-                        "ease": 2.5,
-                        "next_review": today,
-                        "history": [],
-                    },
-                )
-            else:
-                pos["srs"] = {
-                    "interval": 0,
-                    "ease": 2.5,
-                    "next_review": today,
-                    "history": [],
-                }
-
-            positions[pos_id] = pos
-
-    # Build output
-    config = load_config()
-    players = config.get("players", {})
-    lichess_user = players.get("lichess", "")
-    chesscom_user = players.get("chesscom", "")
-
-    severity = {"blunder": 0, "mistake": 1, "inaccuracy": 2}
-    sorted_positions = sorted(
-        positions.values(),
-        key=lambda m: (severity.get(m["category"], 3), -m["cp_loss"]),
-    )
-
-    training_data = {
-        "version": "1.0",
-        "generated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "player": {"lichess": lichess_user, "chesscom": chesscom_user},
-        "positions": sorted_positions,
-        "analyzed_game_ids": sorted(analyzed_game_ids),
-    }
-
-    _atomic_write_json(output_path, training_data)
-    print(f"  Training data derived: {output_path}")
-    print(f"  Total positions: {len(sorted_positions)} (from {len(games)} games)")

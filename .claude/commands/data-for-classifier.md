@@ -1,19 +1,57 @@
 Find games that need labeling for the classification ground truth (!! and ! moves), present them interactively for the user to label, and update the test fixtures.
 
-Argument: $ARGUMENTS is the minimum number of ! (great) moves to include a game. Default: 4. Games with ≥1 !! are always included regardless of this threshold.
+Argument: $ARGUMENTS is the minimum number of ! (great) moves to include a game. Default: 4. Games with >=1 !! are always included regardless of this threshold.
 
-## Step 1: Find candidates using the REAL JS classifier
+## Step 1: Find candidates
 
-Run a Python+Playwright script that:
-- Loads `analysis_data.json` and the existing ground truth from `tests/e2e/classification_cases.py`
-- Starts a Playwright browser, loads `http://localhost:8000` (the real PWA)
-- For EACH game not already in the ground truth:
-  - Calls `window._classifyMove(m, side, prevMove)` on every move (the REAL classifier)
-  - Counts brilliant (!!) and great (!) moves
-- Filters: games with ≥1 brilliant OR ≥N great (N from $ARGUMENTS, default 4)
-- **Game ID matching**: `analysis_data.json` uses URLs like `https://www.chess.com/game/live/123456`, ground truth uses `opponent_123456`. Extract the numeric ID from the URL and match against existing `game_id` values to avoid duplicates.
-- Sorts: games with !! first, then by date (oldest first)
-- Prints summary: "Found X candidates (Y with !!, Z with ≥N !)"
+Run this EXACT command (do NOT write your own script):
+
+```bash
+uv run python3 -c "
+import json, sys
+sys.path.insert(0, '.')
+from chess_self_coach.classifier import classify_move
+from chess_self_coach.config import analysis_data_path, tactics_data_path
+from tests.e2e.classification_cases import GAMES
+MIN_GREAT = ${ARGUMENTS:-4}
+PLAYER = 'Tonigor1982'
+with open(analysis_data_path()) as f: analysis = json.load(f)
+tactics_games = {}
+tp = tactics_data_path()
+if tp.exists():
+    with open(tp) as f: tactics_games = json.load(f).get('games', {})
+existing = {g['game_id'] for g in GAMES}
+candidates = []
+for url, gd in analysis['games'].items():
+    h = gd['headers']
+    if h.get('source') != 'chess.com': continue
+    nid = url.rstrip('/').split('/')[-1]
+    opp = h['black'] if h['white'] == PLAYER else h['white']
+    gtid = f'{opp}_{nid}'
+    if gtid in existing: continue
+    moves = gd.get('moves', [])
+    gt = tactics_games.get(url, [])
+    bc = gc = 0
+    for i, m in enumerate(moves):
+        s = m.get('side', 'white' if i%2==0 else 'black')
+        p = moves[i-1] if i>0 else None
+        t = gt[i] if i<len(gt) else None
+        c = classify_move(m, s, p, t)
+        if c:
+            if c['c']=='brilliant': bc+=1
+            elif c['c']=='great': gc+=1
+    if bc>=1 or gc>=MIN_GREAT:
+        candidates.append(dict(url=url,gtid=gtid,b=bc,g=gc,date=h.get('date','?'),w=h['white'],bk=h['black'],moves=len(moves)))
+candidates.sort(key=lambda c:(-(c['b']>0),c['date']))
+bg=sum(1 for c in candidates if c['b']>0)
+print(f'Found {len(candidates)} candidates ({bg} with !!, {len(candidates)-bg} with >={MIN_GREAT} !)')
+for c in candidates:
+    tags=[]
+    if c['b']: tags.append(f\"{c['b']}!!\")
+    if c['g']: tags.append(f\"{c['g']}!\")
+    print(f\"  {c['gtid']:40s} {c['date']}  {' '.join(tags):10s}  {c['moves']} moves  {c['url']}\")
+"
+```
 
 If no candidates found, inform the user and stop.
 
@@ -21,37 +59,83 @@ If no candidates found, inform the user and stop.
 
 For each candidate game, from oldest to newest (!! games first):
 
-1. Show game info: White vs Black, date, result, player color, number of moves, and the **game URL** (the full game_id from analysis_data.json, e.g. https://www.chess.com/game/live/123456)
-2. Show ONLY the moves classified as !! or ! in a table:
-   ```
-   Idx  Move#  Move      Category  cp before→after  PV (first 5 moves)
-   ```
-3. Ask the user: "Which indices are !! and which are ! ?" — the user will respond with something like "idx 36 is !!, idx 38 is !" or "aucun coup !! ni !" (= all other)
-4. Any move not mentioned by the user is considered "other" (not !! or !)
+1. Show: `{White} vs {Black}, {date}, {result}, {move_count} moves`
+2. Give the user the **game URL** so they can review the game on chess.com
+3. **Wait** for the user's response. They will reply with move numbers like "9.b Bh2+ is !, 15.w Nxe6 is !!" or "aucun coup !! ni !"
+4. **Map move numbers to indices**: `index = (move_number - 1) * 2 + (1 if black else 0)`. Verify SAN with:
+```python
+python3 -c "
+import json
+with open('data/analysis_data.json') as f: d=json.load(f)
+m=d['games']['{URL}']['moves'][{IDX}]
+print(f'idx {IDX}: {(IDX//2)+1}.{\"w\" if m[\"side\"]==\"white\" else \"b\"} {m[\"move_san\"]}')
+"
+```
+5. Any move not mentioned = "other"
 
-## Step 3: Update fixtures
+## Step 3: Update ground truth JSON
 
-After the user labels a game:
+Run this command (replace `{URL}`, `{GTID}`, and the comma-separated indices):
+```bash
+uv run python scripts/add_ground_truth_game.py "{URL}" "{GTID}" "{BRILLIANT_COMMA_SEP}" "{GREAT_COMMA_SEP}"
+```
 
-1. Extract moves from `analysis_data.json` in the simplified format used by the ground truth:
-   - `fen_before`, `move_san`, `move_uci`, `side`, `in_opening`
-   - `eval_before`: only `score_cp, is_mate, mate_in, best_move_uci, pv_uci, pv_san`
-   - `eval_after`: only `score_cp, is_mate, mate_in`
-2. Build `game_id` as `opponent_numericId` (extract numeric ID from URL, opponent from headers)
-3. Append to `tests/e2e/fixtures/classification_ground_truth.json`
-4. Append entry to `tests/e2e/classification_cases.py` GAMES list with `brilliant_indices`, `great_indices`, and `notes`
+Example for a game with no brilliant and great at indices 19,31:
+```bash
+uv run python scripts/add_ground_truth_game.py "https://www.chess.com/game/live/125080133625" "shivauttangi_125080133625" "" "19,31"
+```
 
-## Step 4: Test and commit (after each game)
+Example for "aucun coup !! ni !" (all other):
+```bash
+uv run python scripts/add_ground_truth_game.py "https://www.chess.com/game/live/125083720203" "Has101010_125083720203" "" ""
+```
 
-1. Run `uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v`
-2. If test passes: commit with message "Add {opponent} game to classification ground truth ({N} total)"
-3. If test fails: report the error, do NOT commit
+## Step 4: Update classification_cases.py
 
-## Important rules
+Open `tests/e2e/classification_cases.py` and add an entry BEFORE the closing `]` of the GAMES list. Use the Edit tool, replacing the last `]` with the new entry + `]`:
 
-- NEVER use a Python proxy of the classifier. ALWAYS use `window._classifyMove` via Playwright.
-- **BOTH SIDES**: classify and count !! and ! for BOTH players (not just the user). A brilliant move by the opponent counts too. The ground truth covers all moves in the game regardless of which side played them.
-- Only show !! and ! moves to the user. ×, ?, ?!, ??, blunder, miss etc. are irrelevant for this labeling task.
-- Any move not explicitly labeled by the user is "other".
-- Process !! games before !-only games.
-- Commit after each game, not in batch.
+```python
+    {
+        "game_id": "{GTID}",
+        "brilliant_indices": [{BRILLIANT_INDICES}],  # comment with move numbers
+        "great_indices": [{GREAT_INDICES}],  # comment with move numbers
+        "notes": {
+            {idx}: "{SAN} — great",  # one line per labeled move
+        },
+    },
+]
+```
+
+For "aucun coup !! ni !":
+```python
+    {
+        "game_id": "{GTID}",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {},
+    },
+]
+```
+
+## Step 5: Test and commit
+
+Run the test:
+```bash
+uv run pytest tests/test_classifier.py::test_classifier_score_regression -v
+```
+
+If PASSED, commit:
+```bash
+git add tests/e2e/fixtures/classification_ground_truth.json tests/e2e/classification_cases.py && git commit -m "Add {opponent} game to classification ground truth ({N} total)"
+```
+
+Where `{N}` is the total number printed by the add script.
+
+If FAILED: report the error to the user, do NOT commit.
+
+## Rules
+
+- Use `classify_move` from `chess_self_coach.classifier` — NOT JS
+- **BOTH SIDES**: count !! and ! for both players
+- Process !! games before !-only games
+- Commit after each game

@@ -13,6 +13,7 @@ from chess_self_coach.analysis import (
     AnalysisSettings,
     _analysis_limit_from_settings,
     _extract_eval,
+    _extract_multipv,
     _score_to_cp,
     _tb_to_eval,
     collect_game_data,
@@ -131,6 +132,35 @@ def test_extract_eval_no_score():
     assert result["pv_san"] == []
 
 
+# --- _extract_multipv ---
+
+
+def test_extract_multipv_basic():
+    """MultiPV with 3 lines produces correct move_gap, n_good_moves, alt."""
+    board = chess.Board()
+    moves = list(board.legal_moves)
+    infos = [
+        {"score": chess.engine.PovScore(chess.engine.Cp(50), chess.WHITE), "pv": [moves[0]]},
+        {"score": chess.engine.PovScore(chess.engine.Cp(20), chess.WHITE), "pv": [moves[1]]},
+        {"score": chess.engine.PovScore(chess.engine.Cp(-40), chess.WHITE), "pv": [moves[2]]},
+    ]
+    result = _extract_multipv(infos, board)
+    assert result["move_gap"] == 30  # 50 - 20
+    assert result["n_good_moves"] == 2  # 50 and 20 are within 50cp of 50
+    assert len(result["alt"]) == 2
+    assert result["alt"][0]["cp"] == 20
+    assert result["alt"][1]["cp"] == -40
+
+
+def test_extract_multipv_empty():
+    """Empty info list returns neutral defaults."""
+    board = chess.Board()
+    result = _extract_multipv([], board)
+    assert result["move_gap"] is None
+    assert result["n_good_moves"] == 0
+    assert result["alt"] == []
+
+
 # --- _tb_to_eval ---
 
 
@@ -157,33 +187,48 @@ def test_tb_to_eval_loss_black():
 
 
 def _make_mock_engine() -> MagicMock:
-    """Create a mock Stockfish engine that returns deterministic results."""
+    """Create a mock Stockfish engine that returns deterministic results.
+
+    When called with multipv=N, returns a list of N InfoDicts with decreasing
+    scores (simulating PV1 > PV2 > PV3). Without multipv, returns a single dict.
+    """
     engine = MagicMock(spec=chess.engine.SimpleEngine)
     call_count = {"n": 0}
 
     def mock_analyse(board: chess.Board, limit: chess.engine.Limit, **kwargs):
         call_count["n"] += 1
+        multipv = kwargs.get("multipv", 1)
+        legal = list(board.legal_moves)
         # Return a simple eval that varies by position
         score_val = 20 + call_count["n"]
-        pv = list(board.legal_moves)[:2]
-        return {
-            "score": chess.engine.PovScore(chess.engine.Cp(score_val), chess.WHITE),
-            "pv": pv,
-            "depth": 5,
-            "seldepth": 8,
-            "nodes": 10000,
-            "nps": 100000,
-            "time": 0.1,
-            "tbhits": 0,
-            "hashfull": 10,
-        }
+
+        def _make_info(idx: int) -> dict:
+            pv_moves = legal[idx : idx + 2] if idx < len(legal) else []
+            return {
+                "score": chess.engine.PovScore(
+                    chess.engine.Cp(score_val - idx * 30), chess.WHITE
+                ),
+                "pv": pv_moves,
+                "depth": 5,
+                "seldepth": 8,
+                "nodes": 10000,
+                "nps": 100000,
+                "time": 0.1,
+                "tbhits": 0,
+                "hashfull": 10,
+            }
+
+        if multipv > 1:
+            return [_make_info(i) for i in range(min(multipv, len(legal)))]
+        return _make_info(0)
 
     engine.analyse = mock_analyse
     return engine
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_move_count(mock_tb: MagicMock):
+def test_collect_game_data_move_count(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Collects correct number of moves from mini.pgn (5 half-moves)."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -194,8 +239,9 @@ def test_collect_game_data_move_count(mock_tb: MagicMock):
     assert result["player_color"] == "white"
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_field_presence(mock_tb: MagicMock):
+def test_collect_game_data_field_presence(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Each move has all required fields."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -206,7 +252,7 @@ def test_collect_game_data_field_presence(mock_tb: MagicMock):
 
     required_fields = [
         "ply", "fen_before", "fen_after", "move_san", "move_uci", "side",
-        "eval_source", "eval_before", "eval_after",
+        "eval_source", "eval_before", "eval_after", "multipv_before",
         "tablebase_before", "tablebase_after", "opening_explorer",
         "cp_loss", "board", "clock",
     ]
@@ -219,9 +265,20 @@ def test_collect_game_data_field_presence(mock_tb: MagicMock):
     assert "piece_count" in move["board"]
     assert "is_check" in move["board"]
 
+    # MultiPV: for Stockfish-evaluated moves, multipv_before has expected keys
+    # (may be None for cloud-eval/tablebase moves, which lack multiPV)
+    sf_moves = [m for m in result["moves"] if m["eval_source"] == "stockfish"]
+    if sf_moves:
+        mpv = sf_moves[0]["multipv_before"]
+        assert mpv is not None, "multipv_before should not be None for Stockfish moves"
+        assert "move_gap" in mpv
+        assert "n_good_moves" in mpv
+        assert "alt" in mpv
 
+
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_ply_sequence(mock_tb: MagicMock):
+def test_collect_game_data_ply_sequence(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Ply numbers are sequential 1..N."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -232,8 +289,9 @@ def test_collect_game_data_ply_sequence(mock_tb: MagicMock):
     assert plies == [1, 2, 3, 4, 5]
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_alternating_sides(mock_tb: MagicMock):
+def test_collect_game_data_alternating_sides(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Sides alternate white/black."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -244,8 +302,9 @@ def test_collect_game_data_alternating_sides(mock_tb: MagicMock):
     assert sides == ["white", "black", "white", "black", "white"]
 
 
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
 @patch("chess_self_coach.analysis.probe_position_full", return_value=None)
-def test_collect_game_data_headers(mock_tb: MagicMock):
+def test_collect_game_data_headers(mock_tb: MagicMock, mock_cloud: MagicMock):
     """Game headers are extracted correctly."""
     game = chess.pgn.read_game(open(MINI_PGN))
     engine = _make_mock_engine()
@@ -256,3 +315,20 @@ def test_collect_game_data_headers(mock_tb: MagicMock):
     assert result["headers"]["black"] == "Black"
     assert "analyzed_at" in result
     assert "settings" in result
+
+
+@patch("chess_self_coach.analysis.query_cloud_eval", return_value=None)
+@patch("chess_self_coach.analysis.probe_position_full", return_value=None)
+def test_collect_game_data_multipv_present(mock_tb: MagicMock, mock_cloud: MagicMock):
+    """All moves have multipv_before when only Stockfish is used (no cloud/tb)."""
+    game = chess.pgn.read_game(open(MINI_PGN))
+    engine = _make_mock_engine()
+    settings = AnalysisSettings(threads=1, hash_mb=64, limits={"default": {"depth": 5}})
+
+    result = collect_game_data(game, engine, chess.WHITE, settings)
+    for move in result["moves"]:
+        mpv = move["multipv_before"]
+        assert mpv is not None, f"ply {move['ply']}: multipv_before is None"
+        assert "move_gap" in mpv
+        assert "n_good_moves" in mpv
+        assert isinstance(mpv["alt"], list)

@@ -9,12 +9,11 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
 
 import chess
 
-from chess_self_coach.analysis import _atomic_write_json
-from chess_self_coach.config import _find_project_root
+from chess_self_coach.io import atomic_write_json
+from chess_self_coach.config import training_data_path
 from chess_self_coach.tablebase import (
     TablebaseResult,
     tablebase_context,
@@ -30,7 +29,7 @@ from chess_self_coach.constants import (
 )
 
 
-def _format_score_cp(cp: int | None) -> str:
+def format_score_cp(cp: int | None) -> str:
     """Format centipawn value as score string like '+0.32'."""
     if cp is None:
         return "+0.00"
@@ -40,7 +39,7 @@ def _format_score_cp(cp: int | None) -> str:
 
 
 
-def _classify_mistake(cp_loss: int) -> str | None:
+def classify_mistake(cp_loss: int) -> str | None:
     """Classify a move by centipawn loss.
 
     Returns:
@@ -199,7 +198,7 @@ def _describe_advantage(score_before_cp: int | None, player_color: str) -> str:
     return "you were in a difficult position"
 
 
-def _time_pressure_context(
+def time_pressure_context(
     player_clock: float | None, opponent_clock: float | None,
 ) -> str:
     """Generate time pressure context string, or empty if not relevant.
@@ -232,7 +231,7 @@ def _time_pressure_context(
     return ""
 
 
-def _generate_context(
+def generate_context(
     category: str,
     cp_loss: int,
     was_mate: bool,
@@ -282,8 +281,7 @@ def refresh_explanations() -> None:
     Reads existing positions, rebuilds explanations using generate_explanation(),
     and writes back. SRS progress and all other fields are preserved.
     """
-    root = _find_project_root()
-    data_path = root / "training_data.json"
+    data_path = training_data_path()
 
     if not data_path.exists():
         print("No training data found. Run: chess-self-coach train --prepare", file=sys.stderr)
@@ -401,7 +399,7 @@ def refresh_explanations() -> None:
                 pos["cp_loss"], pos["category"],
                 was_mate=was_mate, score_after_cp=score_after_cp,
             )
-            new_context = _generate_context(
+            new_context = generate_context(
                 pos["category"], pos["cp_loss"], was_mate, score_after_cp,
                 fen=pos["fen"], score_before_cp=score_before_cp,
                 player_color=pos.get("player_color", "white"),
@@ -420,18 +418,15 @@ def refresh_explanations() -> None:
             pos["context"] = new_context
             updated += 1
 
-    _atomic_write_json(data_path, data)
+    atomic_write_json(data_path, data)
 
     print(f"  Refreshed {updated}/{len(positions)} explanation(s) in {data_path}")
     if updated:
         print("  Run /review-training to verify text quality")
 
 
-def get_stats_data(project_root: Path) -> dict:
+def get_stats_data() -> dict:
     """Compute training statistics from training_data.json.
-
-    Args:
-        project_root: Path to the project root containing training_data.json.
 
     Returns:
         Dict with keys: generated, total, by_category, by_source.
@@ -439,7 +434,7 @@ def get_stats_data(project_root: Path) -> dict:
     Raises:
         FileNotFoundError: If training_data.json does not exist.
     """
-    data_path = project_root / "training_data.json"
+    data_path = training_data_path()
     if not data_path.exists():
         raise FileNotFoundError(f"No training data at {data_path}")
 
@@ -468,9 +463,8 @@ def get_stats_data(project_root: Path) -> dict:
 
 def print_stats() -> None:
     """Show training progress from training_data.json."""
-    root = _find_project_root()
     try:
-        stats = get_stats_data(root)
+        stats = get_stats_data()
     except FileNotFoundError:
         print(
             "No training data found. Run: chess-self-coach train --prepare",

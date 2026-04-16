@@ -27,9 +27,10 @@ BOARD_TIMEOUT = 20000
 def _wait_for_board(page, pwa_url):
     """Navigate to PWA, switch to training via menu, and wait for the board."""
     page.goto(pwa_url)
-    # Default view is game list; switch to training via nav menu
+    # The menu button is in the static HTML; wait for the default game list so
+    # the startup JS and menu listeners are fully wired before clicking it.
+    page.wait_for_selector(".game-card", timeout=10000)
     page.wait_for_selector("#menu-btn", timeout=5000)
-    page.wait_for_timeout(500)  # ensure JS event listeners are attached
     page.click("#menu-btn")
     page.wait_for_selector("#nav-menu.nav-open", state="attached", timeout=10000)
     page.click("#nav-training")

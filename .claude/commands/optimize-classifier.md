@@ -1,89 +1,135 @@
-Analyze classification errors across the full ground truth dataset using per-position chess analysis, find common patterns, and derive improved rules for the !! and ! classifier.
+Iteratively optimize the !! and ! classifier using automated parameter sweep + optional structural changes.
 
-**Goal**: maximize regularized score = macro_F1 - 0.10 × complexity / 50. Rules must be simple and explainable to a 1200 ELO player. NO OVERFITTING.
+**Goal**: maximize regularized score = macro_F1 - 0.10 * complexity / 50. Rules must be simple and explainable to a 1200 ELO player. NO OVERFITTING.
 
-**Macro F1 definition**: computed globally (all TP/FP/FN aggregated across ALL games, not per-game averages) for 3 classes: `brilliant`, `great`, and `other` (any move that is neither !! nor !). F1 is calculated per class, then macro F1 = (F1_brilliant + F1_great + F1_other) / 3. Note: F1_other is typically ~0.97 because 95% of moves are "other" and most are correctly classified. The lever for improvement is F1_brilliant (~0.67) and F1_great (~0.49). Reducing FP great hurts F1_other too (FP great = FN other), so there's a trade-off.
+**Macro F1**: (F1_brilliant + F1_great) / 2, computed globally (aggregate TP/FP/FN across ALL games). F1_other excluded.
 
-## Step 1: Collect data + BEFORE score
+**Classifier location**: `src/chess_self_coach/classifier.py` → `classify_move()` function + `DEFAULT_CONFIG` dict.
+**Sweep script**: `scripts/sweep_classifier.py` — automated parameter sweep, ~500 evaluations in ~15s.
+**Scoring function**: `from chess_self_coach.classifier import score_classifier` — callable standalone, no pytest needed.
 
-Run `/collect-classifier-data` to get all TP/FP/FN moves with 3-move context.
+---
 
-This outputs `/tmp/classifier_data.json` with all !! and ! classified moves (by the REAL JS classifier via Playwright), their ground truth labels, and Stockfish evaluations.
+## Tier 1: Automated Parameter Sweep
 
-Also note the BEFORE baseline: macro F1, complexity breakdown, regularized score.
+### Step 1: Collect data + BEFORE baseline
 
-## Step 2: Per-position chess analysis with parallel agents
+Run `/collect-classifier-data` to get `/tmp/classifier_data.json` with enriched features + tactical motifs (useful for interpreting results later).
 
-Read `/tmp/classifier_data.json`. Launch `chess-position-analyst` agents in parallel (use `subagent_type` from the `.claude/agents/` directory).
+Then get the BEFORE baseline score:
+```bash
+uv run python3 -c "from chess_self_coach.classifier import score_classifier; score_classifier()"
+```
 
-**Batching**: group moves into batches of ~10-15 positions per agent to balance parallelism and context. Each batch should mix TP, FP, and FN to give the agent perspective on what works vs what doesn't.
+### Step 2: Run the sweep
 
-Each agent receives the batch of moves with full context and must analyze each position individually, explaining:
-- TP: why the classification is correct (what chess principle)
-- FP: why this is NOT really !! or ! (what makes it routine)
-- FN: why this SHOULD be !! or ! (what the algorithm misses)
+```bash
+uv run python3 scripts/sweep_classifier.py
+```
 
-Each move includes `prev_move_class` — the classifier's category for the opponent's preceding move (blunder, mistake, inaccuracy, etc.). This is a key signal: exploiting a blunder (??) is different from finding a great move independently. A move that follows a blunder is a punishment (potentially !), not a discovery (!!).
+This runs 4 phases automatically (~15s total):
+- **Phase A**: Single-parameter sensitivity — sweeps each threshold + tests each of 34 motifs as brilliant/great trigger
+- **Phase B**: Greedy combination — builds the best multi-parameter config from Phase A winners
+- **Phase C**: Random perturbation — 200 random variations around Phase B result to catch non-linear interactions
+- **Phase D**: LOGO cross-validation — Leave-One-Game-Out on top candidates to detect overfitting
 
-For each move, the agent returns: chess analysis, key principle, and quantitative signal.
+Output: full report to stdout + `/tmp/sweep_results.json`.
 
-## Step 3: Pattern synthesis
+### Step 3: Interpret results
 
-Collect all agent analyses. Group them:
+Read the sweep report and evaluate:
 
-**For !! moves**: what principles do TP brilliant share? What makes FP brilliant incorrect? What makes FN brilliant special?
+1. **Score improvement**: Is the delta meaningful (> 0.005)?
+2. **LOGO divergence**: Is |full_score - LOGO_score| < 0.03? If not, overfitting risk.
+3. **Brilliant stability**: Only 7 labels — any change to brilliant F1 is noisy.
+4. **Chess validity**: Does every config change represent a general chess principle?
+   - Example GOOD: "Require larger EPL gain for brilliant" → more selective, reduces false positives
+   - Example BAD: "Add isEnPassant as great motif" → en passant captures aren't inherently great moves
+5. **TP/FP/FN tradeoff**: Losing TP to eliminate FP is good when FP >> FN.
 
-**For ! moves**: what principles do TP great share? What makes FP great incorrect? What makes FN great special?
+### Step 4: Apply best config
 
-Find COMMON patterns — principles that appear across multiple positions, not one-off explanations. These patterns become candidate rules.
+If the sweep found a valid improvement:
 
-## Step 4: Rule derivation
+1. Update `DEFAULT_CONFIG` in `src/chess_self_coach/classifier.py` with the new values
+2. Verify the score matches:
+```bash
+uv run python3 -c "from chess_self_coach.classifier import score_classifier; score_classifier()"
+```
+3. Regenerate classifications:
+```bash
+uv run python3 -c "from chess_self_coach.classifier import run_classification; run_classification()"
+```
+4. Run tests:
+```bash
+uv run pytest tests/test_classifier.py -v
+```
+5. Commit with BEFORE/AFTER scores.
 
-From the common patterns, derive quantitative rules. Requirements:
-- **Explainable**: a 1200 ELO player must understand why a move is !/!!
-- **General**: must apply to chess in general, not our specific games
-- **No overfitting**: reject rules that only help 2-3 positions
-- **Quantitative**: must use available data (eval, PV, material, oppEPL, eplLost, wpBefore, is_best, is_capture, is_check)
+---
 
-For each proposed rule:
-- The rule in plain language
-- Pseudocode
-- Expected FN reduction and FP change
-- **Complexity cost**: thresholds + conditions + helpers. Complexity is computed by `_count_classifier_complexity()` in `tests/e2e/test_review.py`:
-  - **Zone analyzed**: only the code from the start of `classifyMove()` up to and including the last `return { category: 'brilliant'` or `return { category: 'great'` — NOT the miss/best/excellent/etc. code after it.
-  - **Thresholds**: unique numeric constants in comparisons (e.g. `>= 0.15`, `< -0.005`). Integers ≤ 2 are excluded (loop indices). Reusing an existing threshold costs 0.
-  - **Conditions**: only RULE conditions count — `if()` statements containing numeric comparisons, function calls, or domain keywords (`isOpening`, `is_mate`, `isRecapture`, etc.). Pure null/type GUARDS (`if (!prevMove || score_cp == null)`) are NOT counted — they are defensive boilerplate, not classification logic.
-  - **Helpers**: functions called from the brilliant/great zone (e.g. `isSacrifice`, `winProb`). Discovered dynamically, not hardcoded.
-  - **Total** = thresholds + rule_conditions + helpers. Removing a redundant condition REDUCES complexity and improves the score.
-- **Expected score impact**: will regularized score improve? A rule adding 5 conditions for 0.01 F1 gain will LOWER the score.
+## Tier 2: Structural Changes (optional)
 
-Present rules to the user for validation before implementing.
+Only proceed to Tier 2 if:
+- Tier 1 found no improvement OR the score plateaus
+- There are clear FN patterns that no threshold/motif change can fix
+- The `/tmp/classifier_data.json` shows categories of missed moves requiring new detection logic
 
-## Step 5: Implementation
+### When to use Tier 2
 
-After user approval:
-1. Update `classifyMove()` in `pwa/app.js`
-2. Run `uv run pytest tests/e2e/test_review.py -v` — all tests must pass
-3. Run `uv run pytest tests/e2e/test_review.py::test_classification_macro_f1_regression -v -s -n0` for AFTER metrics
-4. Print BEFORE/AFTER comparison table:
-   ```
-   | Metric              | BEFORE | AFTER | Delta |
-   |---------------------|--------|-------|-------|
-   | Macro F1            |        |       |       |
-   | Thresholds          |        |       |       |
-   | Conditions          |        |       |       |
-   | Helpers             |        |       |       |
-   | Total complexity    |        |       |       |
-   | Penalty             |        |       |       |
-   | Regularized score   |        |       |       |
-   ```
-5. **AUTOMATIC ROLLBACK**: If regularized score decreases OR macro F1 decreases OR tests fail → immediately `git checkout pwa/app.js`. Do NOT try to fix forward. Report failure with the table showing why.
-6. Only if score strictly improves: commit with before/after scores in message.
+Examine the FN list from `/tmp/classifier_data.json`:
+- FN brilliants without `isSacrifice` → needs new brilliant detection path
+- FN greats without opponent blunder → needs motif-based great path (but Tier 1 tests this automatically)
+- FN with specific tactical patterns → might need new helper functions
+
+### How to execute Tier 2
+
+Launch **up to 4 Agent calls in a single message** with `isolation: "worktree"`. Each agent:
+
+1. Edits `src/chess_self_coach/classifier.py` — the `classify_move()` function or adds helpers
+2. Runs: `uv run python3 -c "from chess_self_coach.classifier import score_classifier; r=score_classifier(); print(r)"`
+3. Reports the result in structured format
+
+**Agent prompt must include**: the EXACT current code of `classify_move()` + the specific structural change to make.
+
+After all agents complete:
+- Compare scores, record learnings
+- Apply best structural change to `dev` branch
+- Re-run Tier 1 sweep to find optimal thresholds for the new structure
+- Commit with BEFORE/AFTER scores
+
+---
+
+## Tunable parameters in DEFAULT_CONFIG
+
+```python
+DEFAULT_CONFIG = {
+    "brilliant_epl_max": -0.005,        # epl_lost < this → brilliant candidate
+    "brilliant_wp_min": 0.20,           # wp_before > this
+    "brilliant_wp_max": 0.95,           # wp_before < this
+    "brilliant_motifs": ["isSacrifice"],  # motifs that trigger brilliant
+    "great_epl_max": 0.02,             # epl_lost <= this
+    "great_opp_epl_min": 0.15,         # opp_epl >= this
+    "great_filter_recapture": True,     # filter trivial recaptures
+    "great_motifs": [],                 # motifs that trigger great (without opp_epl)
+    "miss_epl_min": 0.05,              # epl_lost > this
+    "miss_opp_epl_min": 0.15,          # opp_epl >= this
+}
+```
+
+## Complexity reference
+
+Complexity is computed by `count_config_complexity()` (fast, analytical) or `count_complexity()` (regex on source):
+- **Thresholds**: numeric parameters in the brilliant/great zone (5 in DEFAULT_CONFIG)
+- **Conditions**: base structure conditions + len(brilliant_motifs) + len(great_motifs)
+- **Helpers**: fallback functions called from the zone
+- **Total** = thresholds + conditions + helpers
 
 ## Important rules
 
-- NEVER use a Python proxy of the classifier. The `/collect-classifier-data` skill uses `window._classifyMove` via Playwright.
-- **BOTH SIDES**: all moves from both players are analyzed.
-- **NO OVERFITTING**: every rule must be a general chess principle.
-- **ROLLBACK ON REGRESSION**: revert immediately, analyze, try different approach.
-- Pay special attention to !! — rare, each error matters more.
+- **Tier 1 first**: always run the sweep before attempting structural changes
+- Use the **Python classifier** (`classifier.py`) — NOT JS
+- **Scoring**: call `score_classifier()` directly — no pytest needed for hypothesis testing
+- **NO OVERFITTING**: every rule must be a general chess principle
+- **LOGO validation**: check cross-validation divergence before applying any change
+- **Brilliant warning**: only 7 labels — brilliant F1 is inherently unstable

@@ -10,9 +10,11 @@ import sys
 
 import chess
 
+from chess_self_coach.config import training_data_path
+
 
 def main():
-    with open("training_data.json") as f:
+    with open(training_data_path()) as f:
         data = json.load(f)
 
     sample = data["positions"]
