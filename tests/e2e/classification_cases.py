@@ -1301,4 +1301,13 @@ GAMES: list[dict] = [
             41: "Nc2 — great",
         },
     },
+    {
+        "game_id": "REGALToOs_121011197318",
+        "brilliant_indices": [],
+        "great_indices": [24, 45],  # 13.w axb5, 23.b Bxb5
+        "notes": {
+            24: "axb5 — great",
+            45: "Bxb5 — great",
+        },
+    },
 ]
