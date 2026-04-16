@@ -1493,4 +1493,10 @@ GAMES: list[dict] = [
             35: "Bxd6 — great",
         },
     },
+    {
+        "game_id": "parasdhamecha_165880572576",
+        "brilliant_indices": [],
+        "great_indices": [],
+        "notes": {},
+    },
 ]
