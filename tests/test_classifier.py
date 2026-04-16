@@ -40,7 +40,7 @@ def test_checkmate_classified_as_best_white():
 
 
 def test_sacrifice_is_brilliant():
-    """A sacrifice (material loss in PV chain) is brilliant when it improves position."""
+    """A sacrifice with a concrete tactical point can be brilliant."""
     move = {
         "fen_before": "r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4",
         "move_uci": "d2d4",
@@ -53,7 +53,7 @@ def test_sacrifice_is_brilliant():
         "eval_after": {"score_cp": 60, "is_mate": False, "mate_in": None},
         "in_opening": False,
     }
-    tactics = {"isSacrifice": True}
+    tactics = {"isSacrifice": True, "isFork": True}
     result = classify_move(move, "white", None, tactics)
     assert result is not None
     assert result["c"] == "brilliant"
@@ -93,10 +93,67 @@ def test_exchange_sacrifice_is_brilliant():
         "eval_after": {"score_cp": 0, "is_mate": False, "mate_in": None},
         "in_opening": False,
     }
-    tactics = {"isSacrifice": True, "isExchangeSacrifice": True}
+    tactics = {
+        "isSacrifice": True,
+        "isExchangeSacrifice": True,
+        "isRemovalOfDefender": True,
+    }
     result = classify_move(move, "white", None, tactics)
     assert result is not None
     assert result["c"] == "brilliant"
+
+
+def test_plain_sacrifice_without_tactical_point_not_brilliant():
+    """A generic sacrifice is not brilliant without a clear tactical justification."""
+    move = {
+        "eval_before": {"score_cp": -194, "is_mate": False, "mate_in": None},
+        "eval_after": {"score_cp": -218, "is_mate": False, "mate_in": None},
+        "in_opening": False,
+    }
+    tactics = {"isSacrifice": True, "isExchangeSacrifice": True, "isOpenFileControl": True}
+    result = classify_move(move, "black", None, tactics)
+    assert result is not None
+    assert result["c"] != "brilliant"
+
+
+def test_knight_sacrifice_with_fork_and_windmill_is_brilliant():
+    """A best knight sacrifice with two immediate tactical threats can be brilliant."""
+    move = {
+        "move_uci": "g5f7",
+        "move_san": "Nxf7",
+        "eval_before": {
+            "score_cp": 278,
+            "is_mate": False,
+            "mate_in": None,
+            "best_move_uci": "g5f7",
+        },
+        "eval_after": {"score_cp": 282, "is_mate": False, "mate_in": None},
+        "in_opening": False,
+    }
+    tactics = {"isSacrifice": True, "isFork": True, "isWindmill": True}
+    result = classify_move(move, "white", None, tactics)
+    assert result is not None
+    assert result["c"] == "brilliant"
+
+
+def test_non_best_knight_sacrifice_with_fork_and_windmill_not_brilliant():
+    """This narrow brilliant feature must still require the engine best move."""
+    move = {
+        "move_uci": "g5f7",
+        "move_san": "Nxf7",
+        "eval_before": {
+            "score_cp": 278,
+            "is_mate": False,
+            "mate_in": None,
+            "best_move_uci": "a2a3",
+        },
+        "eval_after": {"score_cp": 282, "is_mate": False, "mate_in": None},
+        "in_opening": False,
+    }
+    tactics = {"isSacrifice": True, "isFork": True, "isWindmill": True}
+    result = classify_move(move, "white", None, tactics)
+    assert result is not None
+    assert result["c"] != "brilliant"
 
 
 def test_sacrifice_without_exchange_needs_strict_threshold():

@@ -218,10 +218,40 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "miss_opp_epl_min": 0.16,          # opp_epl >= this
 }
 
+BRILLIANT_TACTICAL_MOTIFS = (
+    "createsMateThreat",
+    "createsPin",
+    "isFork",
+    "isQueenSacrifice",
+    "isRemovalOfDefender",
+    "isWindmill",
+)
+
 
 def _win_prob(cp: int, sign: int) -> float:
     """Win probability from centipawn score (logistic model)."""
     return 1.0 / (1.0 + math.pow(10, -cp * sign / 400))
+
+
+def _has_brilliant_tactical_point(move: dict, tactics: dict | None) -> bool:
+    """Require a concrete tactical idea behind a brilliant sacrifice."""
+    if tactics is None:
+        return _is_sacrifice_fallback(move)
+    return any(tactics.get(motif, False) for motif in BRILLIANT_TACTICAL_MOTIFS)
+
+
+def _is_knight_sacrifice_with_fork_and_windmill(move: dict, tactics: dict | None) -> bool:
+    """Recognize the rare knight sac that wins by immediate double tactical pressure."""
+    if tactics is None:
+        return False
+    eval_before = move.get("eval_before", {})
+    return (
+        move.get("move_san", "").startswith("N")
+        and move.get("move_uci") == eval_before.get("best_move_uci")
+        and tactics.get("isSacrifice", False)
+        and tactics.get("isFork", False)
+        and tactics.get("isWindmill", False)
+    )
 
 
 def classify_move(
@@ -287,15 +317,29 @@ def classify_move(
         has_motif = any(tact.get(m, False) for m in brilliant_motifs)
         if not has_motif and tactics is None:
             has_motif = _is_sacrifice_fallback(move)
-        if has_motif:
+        if has_motif and _has_brilliant_tactical_point(move, tactics):
             return {"c": "brilliant", **CATEGORIES["brilliant"]}
 
     # Brilliant detection (exchange sacrifice path: relaxed threshold)
     brilliant_es_epl_max = float(cfg["brilliant_exchange_sac_epl_max"])  # type: ignore[arg-type]
     if epl_lost < brilliant_es_epl_max and wp_before > brilliant_wp_min and wp_before < brilliant_wp_max and not is_opening:
         tact = tactics or {}
-        if tact.get("isExchangeSacrifice", False) and tact.get("isSacrifice", False):
+        if (
+            tact.get("isExchangeSacrifice", False)
+            and tact.get("isSacrifice", False)
+            and _has_brilliant_tactical_point(move, tactics)
+        ):
             return {"c": "brilliant", **CATEGORIES["brilliant"]}
+
+    # Brilliant detection (specific knight-sac tactical pattern)
+    if (
+        epl_lost <= 0
+        and wp_before > brilliant_wp_min
+        and wp_before < brilliant_wp_max
+        and not is_opening
+        and _is_knight_sacrifice_with_fork_and_windmill(move, tactics)
+    ):
+        return {"c": "brilliant", **CATEGORIES["brilliant"]}
 
     # Great detection (XGBoost hybrid — replaces rule-based great)
     if not is_opening and _predict_great(
