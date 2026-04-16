@@ -1189,4 +1189,15 @@ GAMES: list[dict] = [
             49: "Nf3+ — great",
         },
     },
+    {
+        "game_id": "MrNov37_945393651",
+        "brilliant_indices": [56],  # 29.w Nh5
+        "great_indices": [14, 58, 60],  # 8.w Nxc3, 30.w Qg2+, 31.w Qg7+
+        "notes": {
+            14: "Nxc3 — great",
+            56: "Nh5 — brilliant",
+            58: "Qg2+ — great",
+            60: "Qg7+ — great",
+        },
+    },
 ]
