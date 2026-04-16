@@ -1363,4 +1363,14 @@ GAMES: list[dict] = [
             37: "Nxf7 — great",
         },
     },
+    {
+        "game_id": "angad491_129119018737",
+        "brilliant_indices": [],
+        "great_indices": [27, 38, 51],  # 14.b gxf6, 20.w Rb8+, 26.b Bxf1
+        "notes": {
+            27: "gxf6 — great",
+            38: "Rb8+ — great",
+            51: "Bxf1 — great",
+        },
+    },
 ]
