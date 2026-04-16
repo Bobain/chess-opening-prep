@@ -1228,4 +1228,12 @@ GAMES: list[dict] = [
             23: "g5 — great",
         },
     },
+    {
+        "game_id": "Muhendisemilyo_125140156527",
+        "brilliant_indices": [],
+        "great_indices": [14],  # 8.w Nxc6
+        "notes": {
+            14: "Nxc6 — great",
+        },
+    },
 ]
