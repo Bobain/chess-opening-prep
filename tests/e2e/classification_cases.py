@@ -1236,4 +1236,13 @@ GAMES: list[dict] = [
             14: "Nxc6 — great",
         },
     },
+    {
+        "game_id": "NithiSri10_120859893796",
+        "brilliant_indices": [],
+        "great_indices": [41, 49],  # 21.b a5, 25.b Nxd4
+        "notes": {
+            41: "a5 — great",
+            49: "Nxd4 — great",
+        },
+    },
 ]
