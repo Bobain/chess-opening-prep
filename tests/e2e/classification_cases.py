@@ -1336,4 +1336,12 @@ GAMES: list[dict] = [
             29: "Bb3+ — great",
         },
     },
+    {
+        "game_id": "capivara_do_xadras_121717799286",
+        "brilliant_indices": [],
+        "great_indices": [50],  # 26.w Rxd7
+        "notes": {
+            50: "Rxd7 — great",
+        },
+    },
 ]
