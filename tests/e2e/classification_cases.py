@@ -1181,4 +1181,12 @@ GAMES: list[dict] = [
             52: "Re7+ — great",
         },
     },
+    {
+        "game_id": "BornWild10_130589457291",
+        "brilliant_indices": [],
+        "great_indices": [49],  # 25.b Nf3+
+        "notes": {
+            49: "Nf3+ — great",
+        },
+    },
 ]
