@@ -1469,4 +1469,13 @@ GAMES: list[dict] = [
             46: "Qxf8 — great",
         },
     },
+    {
+        "game_id": "C4Forev3r_165152987592",
+        "brilliant_indices": [],
+        "great_indices": [27, 33],  # 14.b Rxd1+, 17.b Qxe4
+        "notes": {
+            27: "Rxd1+ — great",
+            33: "Qxe4 — great",
+        },
+    },
 ]
