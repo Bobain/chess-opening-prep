@@ -1076,4 +1076,12 @@ GAMES: list[dict] = [
             35: "Qc6 — great",
         },
     },
+    {
+        "game_id": "MisterMoltisanti_121108381224",
+        "brilliant_indices": [],
+        "great_indices": [26],  # 14.w dxe6
+        "notes": {
+            26: "dxe6 — great",
+        },
+    },
 ]
