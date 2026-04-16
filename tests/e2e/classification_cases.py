@@ -1344,4 +1344,13 @@ GAMES: list[dict] = [
             50: "Rxd7 — great",
         },
     },
+    {
+        "game_id": "Editousek_121717759344",
+        "brilliant_indices": [],
+        "great_indices": [10, 17],  # 6.w Qa4+, 9.b Nxb4
+        "notes": {
+            10: "Qa4+ — great",
+            17: "Nxb4 — great",
+        },
+    },
 ]
