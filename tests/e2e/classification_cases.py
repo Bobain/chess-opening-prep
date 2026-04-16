@@ -1200,4 +1200,13 @@ GAMES: list[dict] = [
             60: "Qg7+ — great",
         },
     },
+    {
+        "game_id": "TignoRboda_166788097780",
+        "brilliant_indices": [],
+        "great_indices": [45, 61],  # 23.b c6, 31.b Bd1+
+        "notes": {
+            45: "c6 — great",
+            61: "Bd1+ — great",
+        },
+    },
 ]
