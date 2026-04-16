@@ -1048,4 +1048,13 @@ GAMES: list[dict] = [
             86: "Rxf7 — great",
         },
     },
+    {
+        "game_id": "lapulsaqk_166679850834",
+        "brilliant_indices": [],
+        "great_indices": [56, 83],  # 29.w Kg2, 42.b Rxf2+
+        "notes": {
+            56: "Kg2 — great",
+            83: "Rxf2+ — great",
+        },
+    },
 ]
