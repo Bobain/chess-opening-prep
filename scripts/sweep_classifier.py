@@ -18,6 +18,7 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import sys
 from typing import Any
 import pathlib
 import time
@@ -489,6 +490,27 @@ def print_report(
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 
+def _make_progress_callback(n_trials_total: int, t_start: float, log_every: int = 50):
+    """Build an Optuna callback that logs progress + ETA every N trials."""
+
+    def callback(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
+        done = trial.number + 1
+        if done % log_every != 0 and done != n_trials_total:
+            return
+        elapsed = time.monotonic() - t_start
+        rate = done / elapsed if elapsed > 0 else 0.0
+        remaining = (n_trials_total - done) / rate if rate > 0 else 0.0
+        best = study.best_value if study.best_trial is not None else float("nan")
+        print(
+            f"  [trial {done:>4d}/{n_trials_total}] "
+            f"elapsed={elapsed:.0f}s rate={rate:.1f}/s "
+            f"ETA={remaining:.0f}s best={best:.4f}",
+            flush=True,
+        )
+
+    return callback
+
+
 def main() -> None:
     """Run the full sweep pipeline."""
     import argparse
@@ -497,6 +519,8 @@ def main() -> None:
     parser.add_argument("--trials", type=int, default=2000,
                         help="Number of Optuna trials (default: 2000)")
     args = parser.parse_args()
+
+    sys.stdout.reconfigure(line_buffering=True)  # pyright: ignore[reportAttributeAccessIssue]
 
     t0 = time.monotonic()
 
@@ -555,6 +579,7 @@ def main() -> None:
         create_objective(data, selected_brilliant, selected_great),
         n_trials=args.trials,
         show_progress_bar=False,
+        callbacks=[_make_progress_callback(args.trials, t_opt)],
     )
     t_opt_elapsed = time.monotonic() - t_opt
     print(f"  {len(study.trials)} trials in {t_opt_elapsed:.1f}s "
