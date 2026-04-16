@@ -1170,4 +1170,15 @@ GAMES: list[dict] = [
             23: "Nb4 — great",
         },
     },
+    {
+        "game_id": "handi14_129317557287",
+        "brilliant_indices": [],
+        "great_indices": [17, 29, 35, 52],  # 9.b Nxc3, 15.b Bxf3, 18.b b6, 27.w Re7+
+        "notes": {
+            17: "Nxc3 — great",
+            29: "Bxf3 — great",
+            35: "b6 — great",
+            52: "Re7+ — great",
+        },
+    },
 ]
