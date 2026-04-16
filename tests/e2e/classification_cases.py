@@ -1095,4 +1095,18 @@ GAMES: list[dict] = [
             65: "Rd7 — great",
         },
     },
+    {
+        "game_id": "zhyxs_166023796044",
+        "brilliant_indices": [31],  # 16.b Rfe8
+        "great_indices": [18, 24, 26, 30, 33, 35],  # 10.w Ne2, 13.w Nxd4, 14.w Rd1, 16.w Rf4, 17.b Qd3, 18.b Rad8
+        "notes": {
+            18: "Ne2 — great",
+            24: "Nxd4 — great",
+            26: "Rd1 — great",
+            30: "Rf4 — great",
+            31: "Rfe8 — brilliant",
+            33: "Qd3 — great",
+            35: "Rad8 — great",
+        },
+    },
 ]
